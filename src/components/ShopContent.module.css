@@ -1,0 +1,233 @@
+.shopContainer {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 10rem 2rem 5rem;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.widgetTitle {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+.searchBox {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.searchBox input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.searchIcon {
+    position: absolute;
+    right: 15px;
+    color: #666;
+    cursor: pointer;
+}
+
+.categoryList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.categoryList li {
+    font-size: 0.95rem;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.categoryList li:hover,
+.activeCategory {
+    color: #000;
+    font-weight: 600;
+}
+
+.categoryList li span {
+    color: #999;
+    font-weight: 400;
+}
+
+.priceFilter {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.rangeInput {
+    width: 100%;
+    accent-color: #000;
+}
+
+.priceDisplay {
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.filterBtn {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: opacity 0.2s ease;
+}
+
+.filterBtn:hover {
+    opacity: 0.8;
+}
+
+.mainContent {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.topBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.breadcrumb {
+    font-size: 0.85rem;
+    color: #999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.controls select {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.viewToggle {
+    display: flex;
+    gap: 10px;
+    color: #999;
+}
+
+.viewToggle svg {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.activeView {
+    color: #000;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 50px;
+}
+
+.pageBtn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+}
+
+.pageBtn:hover:not(:disabled) {
+    border-color: #000;
+}
+
+.activePage {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+}
+
+.pageBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.loader {
+    padding: 100px;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: #666;
+}
+
+@media (max-width: 1024px) {
+    .shopContainer {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .topBar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

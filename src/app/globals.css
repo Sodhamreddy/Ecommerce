@@ -1,0 +1,97 @@
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --primary-red: #3340d3;
+  /* Jersey Royal Blue */
+  --sale-blue: #171940;
+  /* For SALE tags */
+  --text-dark: #111111;
+  --text-gray: #555555;
+  --border: #e0e0e0;
+
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+
+  --max-width: 1400px;
+  --header-height: 140px;
+  /* Taller for 2-row header */
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  /* Most headers on perfumebox are actually clean sans or serif */
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 2.5rem;
+  font-family: var(--font-serif);
+  /* Section titles get serif */
+  text-align: center;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Common Utilities */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+}
+
+.btn-primary {
+  background: var(--primary-red);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--sale-blue);
+}
+
+.text-center {
+  text-align: center;
+}

@@ -1,0 +1,171 @@
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 6rem 2rem;
+}
+
+.successCard {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 4rem 3rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.iconCircle {
+    width: 100px;
+    height: 100px;
+    background: #e8f5e9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+}
+
+.checkIcon {
+    color: #4caf50;
+}
+
+.title {
+    font-family: var(--font-serif);
+    font-size: 2.8rem;
+    color: #111;
+    margin-bottom: 1rem;
+}
+
+.message {
+    color: #666;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+}
+
+.orderBox {
+    background: #fdfdfd;
+    border: 2px dashed #e0e0e0;
+    padding: 1.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 4rem;
+}
+
+.orderDetail {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.label {
+    color: #888;
+    font-weight: 500;
+}
+
+.value {
+    color: #111;
+    font-weight: 800;
+    font-family: var(--font-sans);
+    letter-spacing: 0.1em;
+}
+
+/* Tracking Timeline */
+.trackingTimeline {
+    text-align: left;
+    max-width: 450px;
+    margin: 0 auto 4rem;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 2.5rem;
+}
+
+.trackingTitle {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+    color: #333;
+}
+
+.timelineItem {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+/* Tracking connection line */
+.timelineItem:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 35px;
+    left: 17px;
+    width: 2px;
+    height: calc(100% - 15px);
+    background: #e0e0e0;
+}
+
+.bubble {
+    width: 36px;
+    height: 36px;
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    z-index: 2;
+    background: white;
+}
+
+.activeBubble {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: white;
+}
+
+/* Make line green behind active bubble */
+.timelineItem:first-child::after {
+    background: #4caf50;
+}
+
+.timelineContent h4 {
+    font-size: 1rem;
+    color: #111;
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+    padding-top: 5px;
+}
+
+.timelineContent p {
+    font-size: 0.9rem;
+    color: #777;
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+}
+
+.shopBtn {
+    background: #000;
+    color: white;
+    padding: 1.2rem 3rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    transition: background 0.3s;
+}
+
+.shopBtn:hover {
+    background: #333;
+}

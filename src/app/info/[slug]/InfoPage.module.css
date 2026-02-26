@@ -1,0 +1,104 @@
+.infoPageWrapper {
+    background-color: #fdfdfd;
+    min-height: 70vh;
+}
+
+.infoPageHeader {
+    background: #fff;
+    padding: 3rem 0;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.breadcrumbs a {
+    color: #111;
+    transition: color 0.3s;
+}
+
+.breadcrumbs a:hover {
+    color: #3340d3;
+}
+
+.pageTitle {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    font-weight: 600;
+    color: #111;
+    letter-spacing: 0.02em;
+}
+
+.infoPageContent {
+    padding: 5rem 0;
+}
+
+.contentBox {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 4rem;
+    border-radius: 4px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+    border: 1px solid #eee;
+    color: #444;
+    line-height: 1.8;
+    font-size: 1.05rem;
+}
+
+/* Base WordPress Content Styling to make sure fetched HTML looks classy */
+.contentBox h1,
+.contentBox h2,
+.contentBox h3,
+.contentBox h4 {
+    font-family: var(--font-serif);
+    color: #111;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.contentBox p {
+    margin-bottom: 1.5rem;
+}
+
+.contentBox ul,
+.contentBox ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.contentBox li {
+    margin-bottom: 0.5rem;
+}
+
+.contentBox a {
+    color: #3340d3;
+    text-decoration: underline;
+}
+
+.contentBox img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+    .contentBox {
+        padding: 2rem;
+    }
+
+    .pageTitle {
+        font-size: 2.2rem;
+    }
+}

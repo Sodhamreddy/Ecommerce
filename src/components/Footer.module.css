@@ -1,0 +1,177 @@
+.footer {
+    background: #0f112e;
+    /* Dark Blue */
+    color: #f3f4f6;
+    padding: 6rem 0 2rem;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+    /* "Elevate more" */
+    z-index: 10;
+}
+
+.footerGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4rem;
+    margin-bottom: 4rem;
+}
+
+.brandColumn h3 {
+    font-family: serif;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+}
+
+.brandColumn p {
+    color: #a1a1aa;
+    line-height: 1.8;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+
+.socialIcons {
+    display: flex;
+    gap: 1rem;
+}
+
+.socialIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    /* Lighter background for visibility */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.3s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.socialIcon:hover {
+    background: var(--primary-red);
+    color: white;
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(51, 64, 211, 0.4);
+}
+
+.colTitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.linkList {
+    list-style: none;
+    padding: 0;
+}
+
+.linkItem {
+    margin-bottom: 0.8rem;
+}
+
+.link {
+    color: #ccc;
+    transition: color 0.2s;
+    font-size: 0.95rem;
+}
+
+.link:hover {
+    color: var(--primary-red);
+    padding-left: 8px;
+}
+
+.newsletterText {
+    color: #999;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.newsletterForm {
+    position: relative;
+}
+
+.input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    outline: none;
+    border-radius: 4px;
+    transition: border-color 0.3s, background 0.3s;
+}
+
+.decorative-element {
+    width: 60px;
+    height: 80px;
+    border: 4px solid rgba(0, 0, 0, 0.08);
+    /* Increased visibility */
+    border-radius: 10px 10px 30px 30px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.input:focus {
+    border-color: var(--primary-red);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.submitBtn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.bottomFooter {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.copyright {
+    color: #555;
+    font-size: 0.85rem;
+}
+
+.payments {
+    display: flex;
+    gap: 1rem;
+    color: #555;
+}
+
+.payIcon {
+    width: 32px;
+    height: 22px;
+    background: #ccc;
+    /* Lighter gray so it's visible against dark bg */
+    border-radius: 3px;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.payIcon:hover {
+    opacity: 1;
+    background: #fff;
+}
+
+@media (max-width: 900px) {
+    .footerGrid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
