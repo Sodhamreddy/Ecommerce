@@ -1,4 +1,4 @@
-"use server";
+// Removed 'use server' for static export compatibility
 
 import { fetchProducts as apiFetchProducts } from '@/lib/api';
 
@@ -31,9 +31,7 @@ export async function fetchReviewsAction(productId: number) {
 
 export async function fetchBlogPostsAction(limit = 3) {
     try {
-        const response = await fetch(`https://jerseyperfume.com/wp-json/wp/v2/posts?per_page=${limit}&_embed`, {
-            next: { revalidate: 3600 }
-        });
+        const response = await fetch(`https://jerseyperfume.com/wp-json/wp/v2/posts?per_page=${limit}&_embed`);
         if (!response.ok) {
             console.error(`Failed to fetch blogs: ${response.statusText}`);
             return [];
@@ -47,9 +45,7 @@ export async function fetchBlogPostsAction(limit = 3) {
 
 export async function fetchWPPageAction(slug: string) {
     try {
-        const response = await fetch(`https://jerseyperfume.com/wp-json/wp/v2/pages?slug=${slug}`, {
-            next: { revalidate: 3600 }
-        });
+        const response = await fetch(`https://jerseyperfume.com/wp-json/wp/v2/pages?slug=${slug}`);
         if (!response.ok) {
             console.error(`Failed to fetch page ${slug}: ${response.statusText}`);
             return null;

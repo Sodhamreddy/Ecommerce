@@ -1,0 +1,53 @@
+.container {
+    margin-top: 2rem;
+}
+
+.inner {
+    width: 100%;
+}
+
+.title {
+    color: #9090a0;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: block;
+}
+
+.methodsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.badge {
+    width: 44px;
+    height: 28px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.svgFill {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.visa { background: #1a1f71; }
+.mastercard { background: #141414; }
+.amex { background: #227bbb; }
+.discover { background: #ffffff; border: 1px solid #eee; }
+.jcb { background: #ffffff; border: 1px solid #1a1f71; }
+.diners { background: #ffffff; border: 1px solid #ccc; }
+
+.paypal { background: #ffffff; }
+.amazon { background: #ffffff; border: 1px solid #eee; }
+.apple { background: #ffffff; border: 1px solid #eee; }
+.gpay { background: #ffffff; border: 1px solid #eee; }

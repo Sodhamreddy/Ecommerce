@@ -10,9 +10,7 @@ export const metadata: Metadata = {
 
 async function getPosts() {
     try {
-        const res = await fetch('https://jerseyperfume.com/wp-json/wp/v2/posts?_embed', {
-            next: { revalidate: 3600 }
-        });
+        const res = await fetch('https://jerseyperfume.com/wp-json/wp/v2/posts?_embed');
         if (!res.ok) throw new Error('Failed to fetch posts');
         return await res.json();
     } catch (error) {

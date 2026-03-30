@@ -1,0 +1,202 @@
+.accountContainer {
+    max-width: 1000px;
+    margin: 4rem auto;
+    padding: 0 1.5rem;
+}
+
+.accountHeader {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.accountHeader h1 {
+    font-size: 2.5rem;
+    font-family: var(--font-serif);
+    margin-bottom: 0.5rem;
+}
+
+.accountHeader p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+/* Auth Cards */
+.authGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+.authCard {
+    background: #fff;
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.cardTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #111;
+}
+
+.formGroup {
+    margin-bottom: 1.25rem;
+}
+
+.formGroup label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #444;
+}
+
+.formGroup input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid #eee;
+    border-radius: 8px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.formGroup input:focus {
+    outline: none;
+    border-color: #3340d3;
+}
+
+.forgotLink {
+    display: block;
+    font-size: 0.85rem;
+    color: #3340d3;
+    margin-top: 0.5rem;
+    text-decoration: underline;
+}
+
+.submitBtn {
+    width: 100%;
+    padding: 1rem;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 1rem;
+}
+
+.submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Dashboard */
+.dashboard {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 3rem;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebarItem {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sidebarItem:hover {
+    background: #f5f5f5;
+    color: #111;
+}
+
+.activeItem {
+    background: #3340d3;
+    color: #fff !important;
+}
+
+.mainArea {
+    background: #fff;
+    border: 1px solid #eee;
+}
+
+.welcomeSection h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.welcomeSection p {
+    color: #555;
+    line-height: 1.6;
+}
+
+.orderTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+}
+
+.orderTable th {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 2px solid #eee;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.orderTable td {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.statusBadge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-processing { background: #e3f2fd; color: #1e88e5; }
+.status-completed { background: #e8f5e9; color: #2e7d32; }
+.status-on-hold { background: #fff3e0; color: #f57c00; }
+
+.errorMsg {
+    background: #fff0f0;
+    color: #c53030;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .authGrid, .dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
+    
+    .sidebarItem {
+        white-space: nowrap;
+    }
+}

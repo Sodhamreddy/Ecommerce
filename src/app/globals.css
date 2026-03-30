@@ -1,16 +1,16 @@
 :root {
   --background: #ffffff;
-  --foreground: #000000;
-  --primary-red: #3340d3;
-  /* Jersey Royal Blue */
+  --foreground: #001026;
+  --primary-red: #3340d3; /* Jersey Blue */
   --sale-blue: #171940;
   /* For SALE tags */
   --text-dark: #111111;
   --text-gray: #555555;
-  --border: #e0e0e0;
+  --border: #eeeeee;
 
-  --font-serif: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: 'Mulish', sans-serif;
+  --font-serif: 'Mulish', sans-serif;
+  --font-display: 'Mulish', sans-serif;
 
   --max-width: 1400px;
   --header-height: 140px;
@@ -30,6 +30,8 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -52,9 +54,8 @@ h6 {
 }
 
 h2 {
-  font-size: 2.5rem;
-  font-family: var(--font-serif);
-  /* Section titles get serif */
+  font-size: 1.8rem;
+  font-weight: 700;
   text-align: center;
   margin-bottom: 2rem;
   text-transform: uppercase;

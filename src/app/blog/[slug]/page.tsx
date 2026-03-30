@@ -1,3 +1,4 @@
+import { fetchWPPostBySlug, fetchAllWPPosts } from '@/lib/woocommerce';
 import { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -7,22 +8,23 @@ interface Props {
     params: Promise<{ slug: string }>;
 }
 
-async function getPost(slug: string) {
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
     try {
-        const res = await fetch(`https://jerseyperfume.com/wp-json/wp/v2/posts?slug=${slug}&_embed`, {
-            next: { revalidate: 3600 }
-        });
-        const posts = await res.json();
-        return posts.length > 0 ? posts[0] : null;
+        const posts = await fetchAllWPPosts();
+        return posts.map((post) => ({
+            slug: post.slug,
+        }));
     } catch (error) {
-        console.error(error);
-        return null;
+        console.error("Error generating static params for blog:", error);
+        return [];
     }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const post = await getPost(slug);
+        const post = await fetchWPPostBySlug(slug);
 
     if (!post) {
         return {
@@ -38,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogPostPage({ params }: Props) {
     const { slug } = await params;
-    const post = await getPost(slug);
+        const post = await fetchWPPostBySlug(slug);
 
     if (!post) {
         notFound();

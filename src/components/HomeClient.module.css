@@ -1,0 +1,1647 @@
+/* ===========================
+   HOMEPAGE — HomeClient.module.css
+   =========================== */
+
+/* ── Layout ── */
+.homeWrapper {
+    width: 100%;
+    background: #fff;
+    overflow-x: hidden;
+}
+
+.section {
+    padding: 6rem 0;
+    background: #fff;
+    position: relative;
+}
+
+.sectionDark {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.sectionDark::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(212, 168, 83, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.sectionDark::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.reviewsSection {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #12123e 0%, #1a1a5e 100%);
+}
+
+.brandsSection {
+    padding: 5rem 0;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    overflow: hidden;
+}
+
+/* ── Section Headers ── */
+.sectionHeader {
+    text-align: center;
+    margin-bottom: 3.5rem;
+}
+
+.sectionEyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 0.6rem;
+}
+
+.sectionEyebrowLight {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 0.6rem;
+}
+
+.sectionTitle {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    font-weight: 600;
+    color: #111;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.sectionTitleLight {
+    color: #fff;
+}
+
+.sectionCta {
+    text-align: center;
+    margin-top: 3rem;
+}
+
+.outlineBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1rem 2.5rem;
+    border: 2px solid #111;
+    color: #111;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.outlineBtn:hover {
+    background: #111;
+    color: #fff;
+}
+
+.solidBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1rem 2.5rem;
+    background: #fff;
+    color: #111;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    border: 2px solid #fff;
+}
+
+.solidBtn:hover {
+    background: transparent;
+    color: #fff;
+}
+
+.textLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #111;
+    transition: color 0.2s;
+}
+
+.textLink:hover {
+    color: #555;
+}
+
+/* ── Hero Slider ── */
+.heroSlider {
+    position: relative;
+    width: 100%;
+    height: 88vh;
+    min-height: 560px;
+    background: #000;
+    overflow: hidden;
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+}
+
+.activeSlide {
+    opacity: 1;
+    z-index: 5;
+}
+
+.slideLink {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+}
+
+.slideOverlay {
+    position: absolute;
+    inset: 0;
+    /* Reduced overlay intensity for better banner visibility */
+    background: linear-gradient(105deg,
+            rgba(0, 0, 0, 0.45) 0%,
+            rgba(0, 0, 0, 0.2) 55%,
+            rgba(0, 0, 0, 0) 100%);
+    z-index: 1;
+}
+
+.slideContent {
+    position: absolute;
+    bottom: 6rem;
+    z-index: 10;
+    padding-left: max(5%, 3rem);
+    max-width: 700px;
+    color: #fff;
+    transform: translateY(24px);
+    opacity: 0;
+    transition: all 1s cubic-bezier(0.165, 0.84, 0.44, 1) 0.3s;
+}
+
+.activeSlide .slideContent {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.slideAccent {
+    width: 48px;
+    height: 3px;
+    margin-bottom: 1.5rem;
+    border-radius: 2px;
+}
+
+.slideEyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 1.2rem;
+    display: block;
+}
+
+.sliderTitle {
+    font-family: var(--font-serif);
+    font-size: clamp(3.5rem, 8vw, 7.5rem);
+    font-weight: 600;
+    line-height: 1.0;
+    white-space: pre-line;
+    margin-bottom: 1.2rem;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.sliderSubtitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2.5rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.sliderBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1.1rem 3rem;
+    background: transparent;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    transition: all 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+.sliderBtn:hover {
+    background: #fff;
+    color: #111;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+/* Arrows */
+.slideArrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: all 0.3s;
+}
+
+.slideArrow:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.slideArrowLeft {
+    left: 2rem;
+}
+
+.slideArrowRight {
+    right: 2rem;
+}
+
+/* Dots */
+.slideDots {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+}
+
+.slideDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    padding: 0;
+}
+
+.activeDot {
+    background: #d4a853;
+    width: 28px;
+    border-radius: 4px;
+}
+
+/* ── Promo Ticker ── */
+.promoTicker {
+    background: #171940;
+    color: #fff;
+    padding: 0.75rem 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.tickerContent {
+    display: flex;
+    width: max-content;
+    animation: scrollTicker 35s linear infinite;
+}
+
+.tickerItem {
+    white-space: nowrap;
+    margin: 0 1.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tickerSep {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1rem;
+    align-self: center;
+}
+
+@keyframes scrollTicker {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* ── Category Grid ── */
+.categoryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1.2rem;
+}
+
+.categoryCard {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.catImageWrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2/3;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #f0f0f0;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    will-change: transform;
+}
+
+.categoryCard:hover .catImageWrapper {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+}
+
+.catImage {
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.categoryCard:hover .catImage {
+    transform: scale(1.08);
+}
+
+.catOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 55%);
+    z-index: 1;
+}
+
+.catNameOverlay {
+    position: absolute;
+    bottom: 1rem;
+    left: 0.8rem;
+    right: 0.8rem;
+    z-index: 2;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* Hidden on desktop, shown via mobile media query */
+.catDots {
+    display: none;
+}
+
+.catSwipeHint {
+    display: none;
+}
+
+.catScrollWrapper::after {
+    display: none;
+}
+
+/* ── Editorial Split Banner ── */
+.editorialSection {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    height: 650px;
+    gap: 1.5rem;
+    padding: 0 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.editorialLeft {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.editorialRight {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.editorialSmall {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.editorialOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.1) 55%);
+    z-index: 1;
+    transition: background 0.4s;
+}
+
+.editorialLeft:hover .editorialOverlay,
+.editorialSmall:hover .editorialOverlay {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.2) 55%);
+}
+
+.editorialContent {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 2.5rem;
+    z-index: 2;
+    color: #fff;
+}
+
+.editorialTag {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.6rem;
+}
+
+.editorialHeading {
+    font-family: var(--font-serif);
+    font-size: 2.8rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.editorialHeadingSm {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.editorialSub {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.8rem;
+    font-style: italic;
+}
+
+.editorialCta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    padding-bottom: 2px;
+    transition: border-color 0.3s;
+}
+
+.editorialLeft:hover .editorialCta,
+.editorialSmall:hover .editorialCta {
+    border-color: #fff;
+}
+
+/* ── Products Grid ── */
+.productsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+}
+
+/* ── Trust Bar ── */
+.trustBar {
+    background: #111;
+    color: #fff;
+    padding: 2rem 0;
+}
+
+.trustGrid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 0;
+}
+
+.trustItem {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+}
+
+.trustIcon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.trustTitle {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+}
+
+.trustSub {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.trustDivider {
+    width: 1px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Watch & Shop Video Reels ── */
+.reelsSection {
+    padding: 6rem 0;
+    background: #0a0a0a;
+    overflow: hidden;
+}
+
+.reelsScroll {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-top: 3rem;
+}
+
+/* reel card (video version) */
+.reelCard {
+    position: relative;
+    display: block;
+    aspect-ratio: 9/16;
+    overflow: hidden;
+    text-decoration: none;
+    cursor: pointer;
+    background: #111;
+}
+
+.reelVideo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+
+.reelCard:hover .reelVideo {
+    transform: scale(1.04);
+}
+
+/* image fallback if video fails */
+.reelCardImg {
+    position: absolute;
+    inset: 0;
+}
+
+.reelCardImg img {
+    transition: transform 0.7s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.reelCard:hover .reelCardImg img {
+    transform: scale(1.1);
+}
+
+.reelCardOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.85) 0%,
+            rgba(0, 0, 0, 0.2) 50%,
+            rgba(0, 0, 0, 0) 100%);
+    z-index: 1;
+    transition: background 0.4s;
+}
+
+.reelCard:hover .reelCardOverlay {
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.9) 0%,
+            rgba(0, 0, 0, 0.4) 55%,
+            rgba(0, 0, 0, 0.05) 100%);
+}
+
+/* ── Reel Play Button (was missing) ── */
+.reelPlayBtn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.65);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: background 0.3s, opacity 0.3s;
+}
+
+.reelPlayBtn:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+.reelIsPlaying .reelPlayBtn {
+    opacity: 0;
+}
+
+.reelIsPlaying:hover .reelPlayBtn {
+    opacity: 1;
+}
+
+.reelBadge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(6px);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.reelCardInfo {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    transform: translateY(8px);
+    transition: transform 0.4s ease;
+}
+
+.reelCard:hover .reelCardInfo {
+    transform: translateY(0);
+}
+
+.reelCardName {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.reelCardPrices {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.reelCardPrice {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.reelCardOld {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration: line-through;
+}
+
+.reelCardBtn {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 1px;
+    transition: color 0.2s, border-color 0.2s;
+    width: fit-content;
+}
+
+.reelCard:hover .reelCardBtn {
+    color: #fff;
+    border-color: #fff;
+}
+
+/* ── Reviews ── */
+.reviewsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.reviewCard {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 3rem 2.5rem;
+    backdrop-filter: blur(12px);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.reviewCard:hover {
+    transform: translateY(-8px);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    border-color: rgba(212, 168, 83, 0.3);
+}
+
+.reviewStars {
+    color: #f4c430;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    margin-bottom: 1.2rem;
+}
+
+.reviewText {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1.8rem;
+    font-style: italic;
+}
+
+.reviewAuthorRow {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.reviewAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.reviewAuthor {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Brand Carousel ── */
+.brandCarousel {
+    overflow: hidden;
+    padding: 2rem 0;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    margin-top: 2.5rem;
+}
+
+.brandTrack {
+    display: inline-flex;
+    gap: 4rem;
+    animation: scrollBrands 40s linear infinite;
+}
+
+.brandTrack:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scrollBrands {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* ── Blog ── */
+.blogGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.blogCard {
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    text-decoration: none;
+}
+
+.blogCard:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.blogImgWrapper {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    overflow: hidden;
+}
+
+.blogImgWrapper img {
+    transition: transform 0.7s ease;
+}
+
+.blogCard:hover .blogImgWrapper img {
+    transform: scale(1.06);
+}
+
+.blogCardOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 50%);
+}
+
+.blogContent {
+    padding: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.blogDate {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #999;
+}
+
+.blogTitle {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0.3rem 0 0.8rem;
+}
+
+.blogReadBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #111;
+    margin-top: auto;
+    transition: color 0.2s;
+}
+
+.blogCard:hover .blogReadBtn {
+    color: #3340d3;
+}
+
+/* ── Footer Banner ── */
+.footerBanner {
+    position: relative;
+    height: 520px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+}
+
+.footerBannerOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+    z-index: 1;
+}
+
+.footerBannerContent {
+    position: relative;
+    z-index: 2;
+    color: #fff;
+    max-width: 680px;
+    padding: 3.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(4px);
+}
+
+.footerBannerEyebrow {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 1rem;
+}
+
+.footerBannerTitle {
+    font-family: var(--font-serif);
+    font-size: 3.2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.footerBannerSub {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+}
+
+.footerBannerBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1rem 2.5rem;
+    background: transparent;
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: all 0.35s ease;
+}
+
+.footerBannerBtn:hover {
+    background: #fff;
+    color: #111;
+}
+
+/* Slider layout extras */
+.slideNumber {
+    position: absolute;
+    bottom: 2rem;
+    right: 2.5rem;
+    z-index: 20;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+    .categoryGrid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .editorialSection {
+        height: auto;
+        grid-template-columns: 1fr;
+        padding: 0 1rem;
+        gap: 1rem;
+    }
+    .editorialLeft {
+        height: 420px;
+    }
+    .editorialRight {
+        height: auto;
+        grid-template-rows: auto;
+        grid-template-columns: 1fr 1fr;
+    }
+    .editorialSmall {
+        height: 260px;
+    }
+    .categoryGrid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .section,
+    .sectionDark,
+    .reviewsSection {
+        padding: 4rem 0;
+    }
+
+    .sectionTitle {
+        font-size: 2rem;
+    }
+
+    .categoryGrid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.8rem;
+    }
+
+    .productsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .trustGrid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+    }
+
+    .trustDivider {
+        display: none;
+    }
+
+    .reviewsGrid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .blogGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .heroSlider {
+        height: 65vh;
+        min-height: 400px;
+    }
+
+    .sliderTitle {
+        font-size: 3.5rem;
+    }
+
+    .footerBannerTitle {
+        font-size: 2rem;
+    }
+
+    .brandCarousel {
+        padding: 1.5rem 0;
+    }
+
+    .reelsScroll {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .heroSlider {
+        height: 60vh;
+        min-height: 380px;
+    }
+
+    .editorialSection {
+        grid-template-columns: 1fr;
+        padding: 0 1rem;
+        gap: 0.8rem;
+    }
+
+    .editorialLeft {
+        height: 320px;
+    }
+
+    .editorialRight {
+        grid-template-rows: auto;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .editorialSmall {
+        height: 200px;
+    }
+
+    /* Watch & Shop — horizontal scroll on tablet */
+    .reelsScroll {
+        display: flex;
+        grid-template-columns: none;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 8px;
+        padding: 0 1rem 1rem;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        margin-top: 2rem;
+    }
+
+    .reelsScroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .reelCard {
+        flex: 0 0 72vw;
+        scroll-snap-align: start;
+        max-width: 320px;
+    }
+}
+
+@media (max-width: 600px) {
+    /* ── Hero Slider ── */
+    .heroSlider {
+        height: auto;
+        aspect-ratio: 16 / 9;
+        min-height: 200px;
+        max-height: 260px;
+    }
+
+    /* Remove dark overlay on mobile — banners are designed to be seen cleanly */
+    .slideOverlay {
+        background: none;
+    }
+
+    .slideArrow {
+        display: none;
+    }
+
+    .slideDots {
+        bottom: 0.6rem;
+        gap: 6px;
+    }
+
+    .slideDot {
+        width: 6px;
+        height: 6px;
+    }
+
+    .activeDot {
+        width: 20px;
+    }
+
+    /* ── Sections ── */
+    .section,
+    .sectionDark,
+    .reviewsSection,
+    .brandsSection {
+        padding: 3rem 0;
+    }
+
+    .sectionTitle {
+        font-size: 1.75rem;
+    }
+
+    .sectionHeader {
+        margin-bottom: 2rem;
+    }
+
+    /* ── Categories → horizontal scroll on mobile ── */
+    .catScrollWrapper {
+        position: relative;
+    }
+
+    .catScrollWrapper::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: 50px;
+        background: linear-gradient(to right, transparent, #f8f5f0 90%);
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .categoryGrid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 0.7rem;
+        padding: 0.5rem 1rem 0.5rem;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        grid-template-columns: none;
+    }
+
+    .categoryGrid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .categoryCard {
+        flex: 0 0 36vw;
+        max-width: 150px;
+        scroll-snap-align: start;
+    }
+
+    .catImageWrapper {
+        aspect-ratio: 2/3;
+    }
+
+    .catNameOverlay {
+        font-size: 0.7rem;
+        padding: 0.4rem;
+    }
+
+    /* Scroll indicator — dots row */
+    .catDots {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        margin-top: 0.75rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .catDot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #ccc;
+        transition: all 0.25s ease;
+        flex-shrink: 0;
+    }
+
+    .catDotActive {
+        background: #b8963e;
+        width: 18px;
+        border-radius: 3px;
+    }
+
+    /* Swipe hint pill — shown briefly */
+    .catSwipeHint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        margin-top: 0.5rem;
+        font-size: 0.7rem;
+        color: #999;
+        letter-spacing: 0.04em;
+    }
+
+    /* ── Products ── */
+    .productsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    /* ── Trust bar ── */
+    .trustGrid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+    }
+
+    .trustItem {
+        padding: 0.8rem 1rem;
+        gap: 0.6rem;
+    }
+
+    .trustIcon {
+        font-size: 1.4rem;
+    }
+
+    .trustTitle {
+        font-size: 0.78rem;
+    }
+
+    /* ── Blog ── */
+    .blogGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .blogImgWrapper {
+        height: 200px;
+    }
+
+    /* ── Editorial ── */
+    .editorialSection {
+        grid-template-columns: 1fr;
+        padding: 0 0.8rem;
+        gap: 0.7rem;
+    }
+
+    .editorialLeft {
+        height: 260px;
+    }
+
+    .editorialRight {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.7rem;
+    }
+
+    .editorialSmall {
+        height: 160px;
+    }
+
+    .editorialHeading {
+        font-size: 1.6rem;
+    }
+
+    .editorialHeadingSm {
+        font-size: 1.1rem;
+    }
+
+    .editorialContent {
+        bottom: 1rem;
+        left: 1rem;
+    }
+
+    /* ── Reviews ── */
+    .reviewsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .reviewCard {
+        padding: 2rem 1.5rem;
+    }
+
+    /* ── Footer banner ── */
+    .footerBanner {
+        height: 340px;
+    }
+
+    .footerBannerContent {
+        padding: 1.8rem 1rem;
+        margin: 0 1rem;
+    }
+
+    .footerBannerTitle {
+        font-size: 1.4rem;
+    }
+
+    .footerBannerSub {
+        font-size: 0.82rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ── Reels ── */
+    .reelsSection {
+        padding: 3rem 0;
+    }
+
+    .reelCard {
+        flex: 0 0 75vw;
+        max-width: 260px;
+    }
+
+    .reelCardInfo {
+        padding: 1rem;
+    }
+
+    /* ── Gourmand ── */
+    .gourmandCard {
+        width: 220px;
+    }
+
+    .gourmandImgBox {
+        height: 280px;
+    }
+
+    /* ── Buttons ── */
+    .outlineBtn,
+    .solidBtn {
+        padding: 0.85rem 1.5rem;
+        font-size: 0.78rem;
+    }
+}
+
+/* ── Very small phones (≤ 400px) ── */
+@media (max-width: 400px) {
+    .heroSlider {
+        aspect-ratio: 16 / 9;
+        height: auto;
+        min-height: 180px;
+        max-height: 220px;
+    }
+
+    .categoryCard {
+        flex: 0 0 42vw;
+    }
+
+    .productsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .reelCard {
+        flex: 0 0 85vw;
+        max-width: 260px;
+    }
+
+    .gourmandCard {
+        width: 190px;
+    }
+
+    .gourmandImgBox {
+        height: 240px;
+    }
+
+    .sectionTitle {
+        font-size: 1.5rem;
+    }
+
+    .trustGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .editorialLeft {
+        height: 220px;
+    }
+
+    .editorialSmall {
+        height: 140px;
+    }
+
+    .footerBannerTitle {
+        font-size: 1.2rem;
+    }
+}
+
+/* ── Gourmand Section (Small Slider) ── */
+.sectionGourmand {
+    padding: 6rem 0;
+    background: #0a0a0a; /* Ultra deep dark */
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid rgba(212, 168, 83, 0.2);
+    border-bottom: 1px solid rgba(212, 168, 83, 0.2);
+}
+
+.sectionGourmand::after {
+    content: '';
+    position: absolute;
+    bottom: -20%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(212, 168, 83, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.gourmandScrollWrapper {
+    width: 100%;
+    margin-top: 2rem;
+    overflow-x: auto;
+    padding-bottom: 2rem;
+    -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+    position: relative;
+    z-index: 10;
+}
+
+.gourmandScrollWrapper::-webkit-scrollbar {
+    display: none; /* Hide scrollbar Chrome/Safari */
+}
+
+.gourmandScroll {
+    display: flex;
+    gap: 24px;
+    width: max-content; /* Ensure items don't wrap */
+    padding: 0 5%;
+}
+
+.gourmandCard {
+    width: 280px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.gourmandCard:hover {
+    transform: translateY(-12px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #d4a853;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.gourmandImgBox {
+    width: 100%;
+    height: 380px;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+}
+
+.gourmandCard:hover .gourmandImgBox img {
+    transform: scale(1.1);
+}
+
+.gourmandImgBox img {
+    transition: transform 0.8s ease;
+}
+
+.gourmandInfo {
+    padding: 1.5rem;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gourmandName {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #fff;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.4;
+    height: 2.8em;
+}
+
+.gourmandPrice {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #d4a853;
+    display: block;
+}
+
+.sectionSub {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}

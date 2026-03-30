@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchReviewsAction } from '@/app/actions';
+import { Facebook, Instagram, MessageSquare, ExternalLink } from 'lucide-react';
 import styles from './ProductTabs.module.css';
 
 interface Review {
@@ -21,6 +22,34 @@ export default function ProductTabs({ productId, description, attributes }: Prod
     const [activeTab, setActiveTab] = useState('description');
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loadingReviews, setLoadingReviews] = useState(false);
+
+    // Transform text links to icons
+    const renderDescription = (html: string) => {
+        if (!html) return '';
+        
+        let processed = html;
+        
+        // Remove those specific follow links from the text and we'll append icons instead
+        const followRegex = /<p[^>]*><a[^>]*>(?:follow Us On|follow us on|Contact Us)[^<]*<\/a><\/p>/gi;
+        const hasFollowLinks = followRegex.test(html);
+        processed = processed.replace(followRegex, '');
+
+        return (
+            <>
+                <div dangerouslySetInnerHTML={{ __html: processed }} />
+                {hasFollowLinks && (
+                    <div className={styles.socialFollowRow}>
+                        <span className={styles.followLabel}>Connect with us:</span>
+                        <div className={styles.followIcons}>
+                            <a href="https://www.facebook.com/profile.php?id=61576907750503" target="_blank" className={styles.socialLink} title="Facebook"><Facebook size={18} /></a>
+                            <a href="https://www.instagram.com/jerseyperfumeusa/" target="_blank" className={styles.socialLink} title="Instagram"><Instagram size={18} /></a>
+                            <a href="/info/contact-us" className={styles.socialLink} title="Contact Us"><MessageSquare size={18} /></a>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    };
 
     useEffect(() => {
         if (activeTab === 'reviews' && reviews.length === 0) {
@@ -66,10 +95,9 @@ export default function ProductTabs({ productId, description, attributes }: Prod
 
             <div className={styles.tabContent}>
                 {activeTab === 'description' && (
-                    <div
-                        className={styles.description}
-                        dangerouslySetInnerHTML={{ __html: description }}
-                    />
+                    <div className={styles.description}>
+                        {renderDescription(description)}
+                    </div>
                 )}
 
                 {activeTab === 'specifications' && (

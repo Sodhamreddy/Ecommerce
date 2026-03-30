@@ -20,14 +20,10 @@ export default function Header() {
   return (
     <>
       <div className={styles.headerWrapper}>
-        <div className={styles.topBar}>
-          SPEND $59 TO UNLOCK FREE SHIPPING FOR U.S.A ORDERS <Link href="/shop" style={{ textDecoration: 'underline', marginLeft: '5px' }}>SHOP NOW</Link>
-        </div>
-
         <div className={`container ${styles.mainHeader}`}>
           <div
             className={styles.mobileMenuTrigger}
-            style={{ display: 'none', position: 'absolute', left: '20px', cursor: 'pointer' }}
+            style={{ position: 'absolute', left: '20px', cursor: 'pointer' }}
             onClick={toggleMenu}
           >
             <Menu size={24} />
@@ -35,11 +31,20 @@ export default function Header() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <Link href="/" className={styles.logo}>
-              <Image src="/jersey-logo.png" alt="Jersey Perfume" width={200} height={60} style={{ objectFit: 'contain' }} priority />
+              <Image 
+                src="/jersey-logo.png" 
+                alt="Jersey Perfume" 
+                width={260} 
+                height={78} 
+                style={{ width: '100%', height: 'auto', maxWidth: '260px' }} 
+                priority 
+              />
             </Link>
           </div>
 
-          <AutoSuggestSearch />
+          <div className={styles.searchContainer}>
+            <AutoSuggestSearch />
+          </div>
 
           <div className={styles.headerActions}>
             <Link href="/wishlist" className={styles.iconBtn}>
@@ -100,18 +105,16 @@ export default function Header() {
         <div className="container" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <div className={styles.navBar}>
             <nav className={styles.navLinks}>
-              <Link href="/shop?category=best-sellers" className={styles.navLink}>Best Sellers</Link>
-              <Link href="/shop?category=hot-products" className={styles.navLink}>Hot Products</Link>
-              <Link href="/shop?category=bundles" className={styles.navLink}>Bundles</Link>
+              <Link href="/shop?category=mens-fragrances" className={styles.navLink}>Men&apos;s Fragrances</Link>
+              <Link href="/shop?category=womens-fragrances" className={styles.navLink}>Women&apos;s Fragrances</Link>
               <Link href="/shop?category=gift-sets" className={styles.navLink}>Gift Sets</Link>
-              <Link href="/shop?category=mens-fragrances" className={styles.navLink}>Men</Link>
-              <Link href="/shop?category=womens-fragrances" className={styles.navLink}>Women</Link>
-              <Link href="/shop?category=unisex-fragrances" className={styles.navLink}>Unisex</Link>
+              <Link href="/shop?category=best-sellers" className={styles.navLink}>Best Sellers</Link>
+              <Link href="/shop?category=bundles" className={styles.navLink}>Bundles</Link>
               <Link href="/blog" className={styles.navLink}>Blog</Link>
             </nav>
-            <div className={styles.trackOrder}>
+            <Link href="/track-order" className={styles.trackOrder}>
               <Truck size={16} /> Track Order
-            </div>
+            </Link>
           </div>
         </div>
       </div>
@@ -122,13 +125,11 @@ export default function Header() {
           <div className={styles.closeBtn} onClick={toggleMenu}>
             <X size={24} />
           </div>
-          <Link href="/shop?category=best-sellers" className={styles.mobileNavLink} onClick={toggleMenu}>Best Sellers</Link>
-          <Link href="/shop?category=hot-products" className={styles.mobileNavLink} onClick={toggleMenu}>Hot Products</Link>
-          <Link href="/shop?category=bundles" className={styles.mobileNavLink} onClick={toggleMenu}>Bundles</Link>
+          <Link href="/shop?category=mens-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Men&apos;s Fragrances</Link>
+          <Link href="/shop?category=womens-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Women&apos;s Fragrances</Link>
           <Link href="/shop?category=gift-sets" className={styles.mobileNavLink} onClick={toggleMenu}>Gift Sets</Link>
-          <Link href="/shop?category=mens-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Men</Link>
-          <Link href="/shop?category=womens-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Women</Link>
-          <Link href="/shop?category=unisex-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Unisex</Link>
+          <Link href="/shop?category=best-sellers" className={styles.mobileNavLink} onClick={toggleMenu}>Best Sellers</Link>
+          <Link href="/shop?category=bundles" className={styles.mobileNavLink} onClick={toggleMenu}>Bundles</Link>
           <Link href="/blog" className={styles.mobileNavLink} onClick={toggleMenu}>Blog</Link>
         </div>
       </div>
@@ -152,7 +153,12 @@ export default function Header() {
           <span>Account</span>
         </Link>
         <Link href="/cart" className={styles.mobileNavItem}>
-          <ShoppingBag size={22} strokeWidth={1.5} />
+          <span style={{ position: 'relative', display: 'inline-flex' }}>
+            <ShoppingBag size={22} strokeWidth={1.5} />
+            {cartCount > 0 && (
+              <span className={styles.mobileCartBadge}>{cartCount > 99 ? '99+' : cartCount}</span>
+            )}
+          </span>
           <span>Cart</span>
         </Link>
       </div>

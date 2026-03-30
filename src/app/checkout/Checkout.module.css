@@ -26,6 +26,12 @@
     font-weight: 700;
     cursor: pointer;
     margin-top: 2rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.shoppingBtn:hover {
+    background: #333;
 }
 
 .checkoutHeader {
@@ -42,9 +48,20 @@
 
 .checkoutHeader p {
     color: #388e3c;
-    /* Secure green */
     font-weight: 600;
     font-size: 0.95rem;
+}
+
+.errorBanner {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-align: center;
 }
 
 .checkoutGrid {
@@ -104,6 +121,25 @@
     box-shadow: 0 0 0 1px #000;
 }
 
+.textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    padding: 12px 15px;
+    font-size: 1rem;
+    border-radius: 4px;
+    background: #fdfdfd;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.textarea:focus {
+    border-color: #000;
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 1px #000;
+}
+
 /* Payment Section */
 .paymentMethods {
     display: flex;
@@ -112,27 +148,61 @@
     margin-bottom: 1.5rem;
 }
 
+.gatewayLoader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1.5rem;
+    color: #666;
+    font-size: 0.95rem;
+}
+
 .paymentRadio {
     display: flex;
     align-items: center;
     justify-content: space-between;
     border: 1px solid #e0e0e0;
     padding: 1.2rem;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     background: #fafafa;
     transition: border 0.2s, background 0.2s;
 }
 
-.paymentRadio input[type="radio"] {
-    margin-right: 15px;
+.paymentRadio:hover {
+    border-color: #999;
+}
+
+.radioLeft {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.radioLeft input[type="radio"] {
+    margin-top: 3px;
     transform: scale(1.2);
+    accent-color: #111;
+}
+
+.gatewayTitle {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #111;
+}
+
+.gatewayDesc {
+    font-weight: 400;
+    font-size: 0.82rem;
+    color: #888;
+    margin-top: 2px;
 }
 
 .activeRadio {
     border-color: #000;
-    background: #f4f6fc;
+    background: #f8f9fc;
+    box-shadow: 0 0 0 1px #000;
 }
 
 .creditCardBox {
@@ -146,7 +216,7 @@
 .summaryBlock {
     background: #f8f9fa;
     padding: 2.5rem;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid #eee;
     position: sticky;
     top: 100px;
@@ -181,6 +251,7 @@
     align-items: center;
     justify-content: center;
     margin-right: 1.5rem;
+    flex-shrink: 0;
 }
 
 .itemBadge {
@@ -215,6 +286,131 @@
 .itemPrice {
     font-weight: 500;
     color: #444;
+    flex-shrink: 0;
+    margin-left: 12px;
+}
+
+.summaryTotalSection {
+    margin-top: 1.5rem;
+}
+
+.couponSection {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.couponForm {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.couponInputWrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.couponIcon {
+    position: absolute;
+    left: 14px;
+    color: #888;
+}
+
+.couponInput {
+    width: 100%;
+    padding: 14px 14px 14px 40px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background: #fff;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.couponInput:focus {
+    border-color: #333;
+    box-shadow: 0 0 0 1px #333;
+}
+
+.couponBtn {
+    padding: 14px 24px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    min-width: 90px;
+}
+
+.couponBtn:hover:not(:disabled) {
+    background: #111;
+}
+
+.couponBtn:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+.couponError {
+    color: #d32f2f;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.couponSuccess {
+    color: #388e3c;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.appliedCoupons {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.appliedCouponTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0f0f0;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    border: 1px dashed #aaa;
+}
+
+.removeCouponBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 4px;
+    transition: color 0.1s;
+}
+
+.removeCouponBtn:hover {
+    color: #d32f2f;
 }
 
 .summaryTotals {
@@ -237,12 +433,17 @@
     width: 100%;
     height: 60px;
     border: none;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     text-transform: uppercase;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 8px;
     transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.03em;
 }
 
 .payBtn:hover:not(:disabled) {
@@ -254,6 +455,14 @@
     cursor: not-allowed;
 }
 
+.spinIcon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .trustSignals {
     margin-top: 2rem;
     display: flex;
@@ -261,7 +470,6 @@
     gap: 0.8rem;
     font-size: 0.85rem;
     color: #666;
-    text-align: center;
 }
 
 .trustSignals div {

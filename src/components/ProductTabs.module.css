@@ -112,3 +112,44 @@
     font-size: 0.85rem;
     color: #999;
 }
+
+/* Social Follow Section */
+.socialFollowRow {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #eee;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.followLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.followIcons {
+    display: flex;
+    gap: 1rem;
+}
+
+.socialLink {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    transition: all 0.25s ease;
+    border: 1px solid #eee;
+}
+
+.socialLink:hover {
+    background: #000;
+    color: #fff !important;
+    border-color: #000;
+    transform: translateY(-2px);
+}

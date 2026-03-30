@@ -2,39 +2,72 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    margin: 1rem 0;
+    margin: 1.5rem 0;
+}
+
+.attributeGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.attributeHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .attributeName {
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 0.95rem;
+    font-weight: 600;
     text-transform: uppercase;
-    margin-bottom: 0.75rem;
-    color: #1a1a1a;
+    color: #333;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.selectedValue {
+    font-size: 0.95rem;
+    color: #666;
+    font-weight: 400;
 }
 
 .termGrid {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 0.75rem;
 }
 
 .termBtn {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
+    padding: 10px 18px;
+    border: 1px solid #e0e0e0;
     background: #fff;
-    border-radius: 4px;
-    font-size: 0.9rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: #333;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    font-weight: 500;
 }
 
 .termBtn:hover {
-    border-color: #000;
+    border-color: #999;
 }
 
 .termBtn.active {
-    background: #000;
-    color: #fff;
     border-color: #000;
+    box-shadow: 0 0 0 1px #000;
+    background: #fff;
+    color: #000;
+}
+
+@media (max-width: 768px) {
+    .termBtn {
+        padding: 8px 14px;
+        font-size: 0.9rem;
+    }
 }

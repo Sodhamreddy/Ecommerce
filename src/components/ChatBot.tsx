@@ -136,8 +136,8 @@ export default function ChatBot() {
                                     msg.text
                                 )}
                             </div>
-                            <span className={styles.timestamp}>
-                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            <span className={styles.timestamp} suppressHydrationWarning>
+                                {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
                         </div>
                     ))}

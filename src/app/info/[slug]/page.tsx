@@ -4,6 +4,20 @@ import { fetchWPPageAction } from '@/app/actions';
 import styles from './InfoPage.module.css';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { fetchAllWPPages } from '@/lib/woocommerce';
+
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+    try {
+        const pages = await fetchAllWPPages();
+        return pages.map((page) => ({
+            slug: page.slug,
+        }));
+    } catch {
+        return [];
+    }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;

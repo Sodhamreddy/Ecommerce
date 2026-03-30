@@ -59,6 +59,11 @@
     border-bottom: none;
 }
 
+.mobileMenuTrigger {
+    display: none;
+    color: white;
+}
+
 /* Existing Styles */
 .headerWrapper {
     width: 100%;
@@ -74,11 +79,18 @@
     background-color: #151c39;
     color: #e1e1e1;
     text-align: center;
-    padding: 8px 0;
-    font-size: 0.75rem;
+    padding: 8px 10px;
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+    .topBar {
+        font-size: 0.6rem;
+        padding: 6px 5px;
+    }
 }
 
 .mainHeader {
@@ -225,11 +237,43 @@
     color: var(--primary-red);
 }
 
+.mobileCartBadge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background: #e53e3e;
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+    pointer-events: none;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
+    .mainHeader {
+        flex-direction: column;
+        padding: 1rem 0;
+        gap: 0.75rem;
+    }
+
+    .logo img {
+        max-width: 180px !important;
+        height: auto !important;
+    }
+
     .searchContainer {
-        display: none;
-        /* Hide standard search on mobile/tablet */
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 0 1rem;
     }
 
     .navBar {
@@ -244,14 +288,26 @@
 
     .mobileMenuTrigger {
         display: block !important;
+        top: 1.5rem;
     }
 
     .mobileBottomNav {
         display: flex;
     }
+}
 
+@media (max-width: 480px) {
+    .logo img {
+        max-width: 150px !important;
+    }
+    
     .mainHeader {
-        justify-content: center;
+        padding: 0.75rem 0;
+    }
+
+    .mobileMenuTrigger {
+        top: 1.2rem;
+        left: 15px;
     }
 }
 
