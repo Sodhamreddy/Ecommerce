@@ -76,19 +76,33 @@
 }
 
 .topBar {
-    background-color: #151c39;
-    color: #e1e1e1;
+    background-color: #0b0f20;
+    color: #ffffff;
     text-align: center;
     padding: 8px 10px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.topBarLink {
+    text-decoration: underline;
+    color: white;
+    font-weight: 500;
+    margin-left: 2px;
+}
+
+.topBarLink:hover {
+    color: #e1e1e1;
 }
 
 @media (max-width: 600px) {
     .topBar {
-        font-size: 0.6rem;
+        font-size: 0.7rem;
         padding: 6px 5px;
     }
 }
@@ -193,6 +207,86 @@
     text-shadow: 0 0 10px rgba(51, 64, 211, 0.5);
 }
 
+/* Dropdown Nav */
+.navDropdownWrapper {
+    position: relative;
+}
+
+.navDropdownWrapper .navLink {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.navDropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #151c39;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    z-index: 2000;
+    overflow: hidden;
+}
+
+.navDropdownWrapper:hover .navDropdown {
+    display: block;
+}
+
+.navDropdownItem {
+    display: block;
+    padding: 0.7rem 1.2rem;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.navDropdownItem:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+}
+
+/* Mobile dropdown */
+.mobileNavDropdownToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.mobileSubLinks {
+    background: #f9f9f9;
+    border-left: 3px solid #151c39;
+    margin-bottom: 0.5rem;
+}
+
+.mobileSubLink {
+    display: block;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #444;
+    text-decoration: none;
+    border-bottom: 1px solid #efefef;
+}
+
+.mobileSubLink:last-child {
+    border-bottom: none;
+}
+
+.mobileSubLink:hover {
+    color: #151c39;
+}
+
 .trackOrder {
     position: absolute;
     right: 0;
@@ -273,7 +367,7 @@
         display: block;
         width: 100%;
         margin: 0;
-        padding: 0 1rem;
+        padding: 0 1.25rem;
     }
 
     .navBar {
@@ -307,7 +401,7 @@
 
     .mobileMenuTrigger {
         top: 1.2rem;
-        left: 15px;
+        left: 20px;
     }
 }
 

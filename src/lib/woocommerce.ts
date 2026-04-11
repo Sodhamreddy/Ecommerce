@@ -9,10 +9,12 @@ let _wcNonce: string | null = null;
 function setNonce(v: string | null) { if (typeof window !== 'undefined') _wcNonce = v; }
 function nonceHeaders(): Record<string, string> { return _wcNonce ? { 'Nonce': _wcNonce } : {}; }
 
+import { API_BASE_URL, SITE_DOMAIN, WC_STORE_API } from './config';
+
 const getApiUrl = (path: string, params: Record<string, string | number> = {}) => {
     const isServer = typeof window === 'undefined';
     const isProd = process.env.NODE_ENV === 'production';
-    let baseUrl = `https://jerseyperfume.com/wp-json/${path}`;
+    let baseUrl = `${API_BASE_URL}/${path}`;
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, val]) => query.append(key, val.toString()));
     const queryString = query.toString();
@@ -143,6 +145,16 @@ export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> 
     }
 }
 
+/** Decode HTML entities returned in WC API error messages */
+function decodeHtml(str: string): string {
+    return str
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+}
+
 /**
  * Apply coupon to WooCommerce cart
  */
@@ -158,11 +170,35 @@ export async function applyCoupon(code: string): Promise<WCCart | null> {
         if (nonce) setNonce(nonce);
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            throw new Error(err.message || err.error || 'Failed to apply coupon');
+            const rawMsg = err.message || err.error || 'Failed to apply coupon';
+            throw new Error(decodeHtml(rawMsg));
         }
         return await response.json();
     } catch (e: any) {
-        throw new Error(e.message || 'Coupon error');
+        throw new Error(decodeHtml(e.message || 'Coupon error'));
+    }
+}
+
+/**
+ * Update cart customer address so WooCommerce recalculates tax + shipping rates
+ */
+export async function updateCartCustomer(data: {
+    billing_address?: { country?: string; state?: string; postcode?: string; city?: string };
+    shipping_address?: { country?: string; state?: string; postcode?: string; city?: string };
+}): Promise<WCCart | null> {
+    try {
+        const url = getApiUrl('wc/store/v1/cart/update-customer');
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            body: JSON.stringify(data),
+        });
+        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        if (nonce) setNonce(nonce);
+        if (!response.ok) return null;
+        return await response.json().catch(() => null);
+    } catch {
+        return null;
     }
 }
 
@@ -196,12 +232,15 @@ export interface PaymentGateway {
 }
 
 /**
- * Get available payment gateways via proxy
+ * Get available payment gateways via server-side API route (uses WC REST API v3 with consumer keys)
  */
 export async function getPaymentGateways(): Promise<PaymentGateway[]> {
     try {
-        const url = getApiUrl('wc/store/v1/checkout/payment-gateways');
-        const response = await fetch(url);
+        const isServer = typeof window === 'undefined';
+        const url = isServer
+            ? `${API_BASE_URL}/wc/store/v1/checkout/payment-gateways`
+            : '/api/wc/payment-gateways';
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) return getDefaultGateways();
         const data = await response.json().catch(() => null);
         return (data && Array.isArray(data) && data.length > 0) ? data : getDefaultGateways();
@@ -212,7 +251,8 @@ export async function getPaymentGateways(): Promise<PaymentGateway[]> {
 
 function getDefaultGateways(): PaymentGateway[] {
     return [
-        { id: 'paypal', title: 'PayPal', description: 'Pay securely via PayPal', order: 1 }
+        { id: 'stripe', title: 'Debit & Credit Cards', description: 'Pay with your credit card.', order: 0 },
+        { id: 'paypal', title: 'PayPal', description: 'Pay securely via PayPal.', order: 1 },
     ];
 }
 
@@ -270,10 +310,14 @@ export interface OrderResult {
  * Submit checkout via local proxy
  */
 export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderResult> {
-    const url = getApiUrl('wc/store/v1/checkout');
+    const isServer = typeof window === 'undefined';
+    const url = isServer
+        ? `${WC_STORE_API}/checkout`
+        : '/api/wc/checkout';
+
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
         body: JSON.stringify(checkoutData),
     });
 
@@ -283,12 +327,14 @@ export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderR
     if (contentType && contentType.includes('application/json')) {
         data = await response.json();
     } else {
-        await response.text();
-        throw new Error(`Server returned non-JSON response. Status: ${response.status}`);
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response. Status: ${response.status}. Body snippet: ${text.substring(0, 100)}`);
     }
 
     if (!response.ok) {
-        throw new Error(data.error || 'Checkout failed');
+        // WC Store API errors usually have a 'message' field, proxy might have 'error'
+        const errMsg = data.message || data.error || 'Checkout failed';
+        throw new Error(decodeHtml(errMsg));
     }
 
     return data;
@@ -486,59 +532,20 @@ export interface SlideData {
 }
 
 /**
- * Fetch SmartSlider 3 images by scraping the homepage HTML.
- * SmartSlider Free does not expose a REST API, so we parse the rendered HTML
- * to extract background image URLs from the slider section (id="n2-ss-2").
+ * Returns the homepage hero slider images.
+ * URLs are sourced directly from the WordPress media library.
+ * Update this list whenever the SmartSlider is updated on WordPress.
  */
 export async function fetchSmartSliderSlides(_sliderId: number = 1): Promise<SlideData[]> {
     try {
-        const response = await fetch('https://jerseyperfume.com/', {
-            next: { revalidate: 1800 },
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-        });
-        if (!response.ok) return [];
-
-        const html = await response.text();
-
-        // Locate the SmartSlider section
-        const ssStart = html.indexOf('id="n2-ss-2"');
-        if (ssStart < 0) return [];
-        const ssEnd = html.indexOf('</section>', ssStart);
-        const section = html.slice(ssStart, ssEnd > 0 ? ssEnd : ssStart + 40000);
-
-        const slides: SlideData[] = [];
-
-        // Each slide background is wrapped in <div class="n2-ss-slide-background" data-public-id="N">
-        const bgBlockRe = /data-public-id="(\d+)"[\s\S]*?n2-ss-slide-background-image[\s\S]*?<img[^>]+>/g;
-        let bgMatch: RegExpExecArray | null;
-        while ((bgMatch = bgBlockRe.exec(section)) !== null) {
-            const imgTag = bgMatch[0];
-
-            // Prefer bv-data-src (lazy-loaded), fall back to src
-            const bvSrc = imgTag.match(/bv-data-src="([^"]+)"/)?.[1] ?? '';
-            const plainSrc = imgTag.match(/\ssrc="([^"]+)"/)?.[1] ?? '';
-            let raw = bvSrc || plainSrc;
-
-            if (!raw || raw.includes('svg+xml')) continue;
-
-            // Strip BV optimizer wrapper: .../al_opt_content/IMAGE/jerseyperfume.com/wp-content/...
-            if (raw.includes('al_opt_content/IMAGE/')) {
-                raw = raw.replace(/.*al_opt_content\/IMAGE\/jerseyperfume\.com/, 'https://jerseyperfume.com').split('?')[0];
-            }
-            if (raw.startsWith('//')) raw = 'https:' + raw;
-
-            // Skip thumbnail-sized images (100x, 150x, 300x, etc.)
-            if (/\d{2,3}x\d{2,3}\.(jpg|png|webp|jpeg)$/i.test(raw)) continue;
-
-            slides.push({
-                bg: raw,
-                href: '/shop',
-                cta: 'SHOP NOW',
-                accent: '#d4a853',
-            });
-        }
-
-        return slides;
+        return [
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2025/11/Jersey-Banner-7.png`,         href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`,     href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`,  href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`,     href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+        ];
     } catch {
         return [];
     }

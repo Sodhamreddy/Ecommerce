@@ -2,45 +2,69 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingBag, Search, User, Heart, Truck, Menu, Home, X } from 'lucide-react';
+import { ShoppingBag, Search, User, Heart, Truck, Menu, Home, X, ChevronDown } from 'lucide-react';
 import styles from './Header.module.css';
 import AutoSuggestSearch from './AutoSuggestSearch';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
+
+const NAV_ITEMS = [
+  { label: 'Men', href: '/product-category/mens-fragrances' },
+  { label: 'Women', href: '/product-category/womens-fragrances' },
+  { label: 'Unisex', href: '/product-category/unisex-fragrances' },
+  {
+    label: 'Gift Sets',
+    href: '/product-category/gift-sets',
+    children: [
+      { label: 'Men', href: '/product-category/men-gift-sets' },
+      { label: 'Women', href: '/product-category/womens-fragrances' },
+    ],
+  },
+  { label: 'Bundle', href: '/product-category/bundles' },
+  { label: 'Best Seller', href: '/product-category/best-sellers' },
+  { label: 'Hot Products', href: '/product-category/hot-products' },
+  { label: 'Blog', href: '/blog' },
+];
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mobileGiftOpen, setMobileGiftOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { cart } = useCart();
-  const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
   return (
     <>
       <div className={styles.headerWrapper}>
+        <div className={styles.topBar}>
+          <Truck size={14} /> Free Shipping Over $59.99
+          <Link href="/shop" className={styles.topBarLink}>Go shop</Link>
+        </div>
+
         <div className={`container ${styles.mainHeader}`}>
           <div
             className={styles.mobileMenuTrigger}
             style={{ position: 'absolute', left: '20px', cursor: 'pointer' }}
-            onClick={toggleMenu}
+            onClick={() => setIsMenuOpen(true)}
           >
             <Menu size={24} />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <Link href="/" className={styles.logo}>
-              <Image 
-                src="/jersey-logo.png" 
-                alt="Jersey Perfume" 
-                width={260} 
-                height={78} 
-                style={{ width: '100%', height: 'auto', maxWidth: '260px' }} 
-                priority 
-              />
-            </Link>
-          </div>
+          <Link href="/" className={styles.logo}>
+            <Image
+              src="/jersey-logo.png"
+              alt="Jersey Perfume"
+              width={260}
+              height={78}
+              style={{ width: '100%', height: 'auto', maxWidth: '260px' }}
+              priority
+            />
+          </Link>
 
           <div className={styles.searchContainer}>
             <AutoSuggestSearch />
@@ -56,9 +80,8 @@ export default function Header() {
             <div className={styles.cartContainer}>
               <Link href="/cart" className={styles.iconBtn} style={{ gap: '6px' }}>
                 <ShoppingBag size={24} strokeWidth={1.5} />
-                <span className={styles.cartCountText}>{cartCount}</span>
+                {mounted && <span className={styles.cartCountText}>{cartCount}</span>}
               </Link>
-
               <div className={styles.cartDropdown}>
                 {cart.length === 0 ? (
                   <p className={styles.emptyCartMsg}>Your cart is currently empty.</p>
@@ -69,13 +92,7 @@ export default function Header() {
                         <div key={item.product.id} className={styles.cartDropdownItem}>
                           <div className={styles.cartDropdownItemImg}>
                             {item.product.images?.[0]?.src && (
-                              <Image
-                                src={item.product.images[0].src}
-                                alt={item.product.name}
-                                width={60}
-                                height={60}
-                                style={{ objectFit: 'cover' }}
-                              />
+                              <Image src={item.product.images[0].src} alt={item.product.name} width={60} height={60} style={{ objectFit: 'cover' }} />
                             )}
                           </div>
                           <div className={styles.cartDropdownItemInfo}>
@@ -102,62 +119,77 @@ export default function Header() {
           </div>
         </div>
 
+        {/* Desktop Nav */}
         <div className="container" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <div className={styles.navBar}>
             <nav className={styles.navLinks}>
-              <Link href="/shop?category=mens-fragrances" className={styles.navLink}>Men&apos;s Fragrances</Link>
-              <Link href="/shop?category=womens-fragrances" className={styles.navLink}>Women&apos;s Fragrances</Link>
-              <Link href="/shop?category=gift-sets" className={styles.navLink}>Gift Sets</Link>
-              <Link href="/shop?category=best-sellers" className={styles.navLink}>Best Sellers</Link>
-              <Link href="/shop?category=bundles" className={styles.navLink}>Bundles</Link>
-              <Link href="/blog" className={styles.navLink}>Blog</Link>
+              {NAV_ITEMS.map((item) =>
+                item.children ? (
+                  <div key={item.label} className={styles.navDropdownWrapper}>
+                    <Link href={item.href} className={styles.navLink}>
+                      {item.label} <ChevronDown size={13} />
+                    </Link>
+                    <div className={styles.navDropdown}>
+                      {item.children.map((child) => (
+                        <Link key={child.label} href={child.href} className={styles.navDropdownItem}>
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Link key={item.label} href={item.href} className={styles.navLink}>{item.label}</Link>
+                )
+              )}
             </nav>
-            <Link href="/track-order" className={styles.trackOrder}>
-              <Truck size={16} /> Track Order
-            </Link>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Sidebar */}
-      <div className={`${styles.mobileMenu} ${isMenuOpen ? styles.open : ''}`}>
-        <div className={styles.mobileMenuContent}>
-          <div className={styles.closeBtn} onClick={toggleMenu}>
+      {/* Mobile Sidebar */}
+      <div className={`${styles.mobileMenu} ${isMenuOpen ? styles.open : ''}`} onClick={() => setIsMenuOpen(false)}>
+        <div className={styles.mobileMenuContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.closeBtn} onClick={() => setIsMenuOpen(false)}>
             <X size={24} />
           </div>
-          <Link href="/shop?category=mens-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Men&apos;s Fragrances</Link>
-          <Link href="/shop?category=womens-fragrances" className={styles.mobileNavLink} onClick={toggleMenu}>Women&apos;s Fragrances</Link>
-          <Link href="/shop?category=gift-sets" className={styles.mobileNavLink} onClick={toggleMenu}>Gift Sets</Link>
-          <Link href="/shop?category=best-sellers" className={styles.mobileNavLink} onClick={toggleMenu}>Best Sellers</Link>
-          <Link href="/shop?category=bundles" className={styles.mobileNavLink} onClick={toggleMenu}>Bundles</Link>
-          <Link href="/blog" className={styles.mobileNavLink} onClick={toggleMenu}>Blog</Link>
+          {NAV_ITEMS.map((item) =>
+            item.children ? (
+              <div key={item.label}>
+                <div
+                  className={`${styles.mobileNavLink} ${styles.mobileNavDropdownToggle}`}
+                  onClick={() => setMobileGiftOpen(v => !v)}
+                >
+                  {item.label}
+                  <ChevronDown size={16} style={{ transform: mobileGiftOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                </div>
+                {mobileGiftOpen && (
+                  <div className={styles.mobileSubLinks}>
+                    <Link href={item.href} className={styles.mobileSubLink} onClick={() => setIsMenuOpen(false)}>All {item.label}</Link>
+                    {item.children.map((child) => (
+                      <Link key={child.label} href={child.href} className={styles.mobileSubLink} onClick={() => setIsMenuOpen(false)}>{child.label}</Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link key={item.label} href={item.href} className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
+                {item.label}
+              </Link>
+            )
+          )}
         </div>
       </div>
 
       {/* Mobile Bottom Navigation */}
       <div className={styles.mobileBottomNav}>
-        <Link href="/" className={styles.mobileNavItem}>
-          <Home size={22} strokeWidth={1.5} />
-          <span>Home</span>
-        </Link>
-        <Link href="/shop" className={styles.mobileNavItem}>
-          <Search size={22} strokeWidth={1.5} />
-          <span>Shop</span>
-        </Link>
-        <Link href="/wishlist" className={styles.mobileNavItem}>
-          <Heart size={22} strokeWidth={1.5} />
-          <span>Wishlist</span>
-        </Link>
-        <Link href="/account" className={styles.mobileNavItem}>
-          <User size={22} strokeWidth={1.5} />
-          <span>Account</span>
-        </Link>
+        <Link href="/" className={styles.mobileNavItem}><Home size={22} strokeWidth={1.5} /><span>Home</span></Link>
+        <Link href="/shop" className={styles.mobileNavItem}><Search size={22} strokeWidth={1.5} /><span>Shop</span></Link>
+        <Link href="/wishlist" className={styles.mobileNavItem}><Heart size={22} strokeWidth={1.5} /><span>Wishlist</span></Link>
+        <Link href="/account" className={styles.mobileNavItem}><User size={22} strokeWidth={1.5} /><span>Account</span></Link>
         <Link href="/cart" className={styles.mobileNavItem}>
           <span style={{ position: 'relative', display: 'inline-flex' }}>
             <ShoppingBag size={22} strokeWidth={1.5} />
-            {cartCount > 0 && (
-              <span className={styles.mobileCartBadge}>{cartCount > 99 ? '99+' : cartCount}</span>
-            )}
+            {mounted && cartCount > 0 && <span className={styles.mobileCartBadge}>{cartCount > 99 ? '99+' : cartCount}</span>}
           </span>
           <span>Cart</span>
         </Link>

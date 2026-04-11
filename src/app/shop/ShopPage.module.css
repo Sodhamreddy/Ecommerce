@@ -11,7 +11,7 @@
 
 .title {
     font-family: var(--font-serif);
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
     color: #1a1a1a;
@@ -55,11 +55,11 @@
 
 @media (max-width: 768px) {
     .container {
-        padding: 6rem 1.5rem 3rem;
+        padding: 6rem 1rem 3rem;
     }
 
     .title {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
 
     .grid {

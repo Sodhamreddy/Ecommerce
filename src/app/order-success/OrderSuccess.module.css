@@ -30,7 +30,7 @@
 
 .title {
     font-family: var(--font-serif);
-    font-size: 2.8rem;
+    font-size: 3rem;
     color: #111;
     margin-bottom: 1rem;
 }
@@ -168,4 +168,10 @@
 
 .shopBtn:hover {
     background: #333;
+}
+
+@media (max-width: 600px) {
+    .title {
+        font-size: 1.75rem;
+    }
 }

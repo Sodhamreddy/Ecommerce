@@ -1,4 +1,6 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { API_BASE_URL } from '@/lib/config';
 
 export async function GET(request: Request) {
     const url = new URL(request.url);
@@ -12,7 +14,7 @@ export async function GET(request: Request) {
 
     // Construct the backend URL, ensuring no double slashes
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    const backendUrl = new URL(`https://jerseyperfume.com/wp-json/${cleanPath}`);
+    const backendUrl = new URL(`${API_BASE_URL}/${cleanPath}`);
     
     // Forward all other query parameters
     searchParams.forEach((value, key) => {
@@ -79,34 +81,61 @@ export async function POST(request: Request) {
     const path = searchParams.get('path');
     if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
-    const body = await request.json();
-    const cookie = request.headers.get('cookie') || '';
-    const nonce = request.headers.get('Nonce') || request.headers.get('nonce') || '';
-    const finalUrl = `https://jerseyperfume.com/wp-json/${path}`;
-
-    const fetchHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Cookie': cookie
-    };
-    if (nonce) fetchHeaders['Nonce'] = nonce;
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    const finalUrl = `${API_BASE_URL}/${cleanPath}`;
+    
+    console.log(`[Proxy] POST ${request.url} -> ${finalUrl}`);
 
     try {
+        const body = await request.json();
+        const cookie = request.headers.get('cookie') || '';
+        const nonce = request.headers.get('Nonce') || request.headers.get('nonce') || '';
+
+        const fetchHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Cookie': cookie
+        };
+        if (nonce) fetchHeaders['Nonce'] = nonce;
+
         const response = await fetch(finalUrl, {
             method: 'POST',
             headers: fetchHeaders,
             body: JSON.stringify(body)
         });
 
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+        
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            console.error(`[Proxy] Non-JSON response from ${finalUrl}:`, text.substring(0, 500));
+            data = { error: 'Non-JSON response', message: `Server returned ${response.status}`, text: text.substring(0, 500) };
+        }
+
         const setCookie = response.headers.get('set-cookie');
         const resNonce = response.headers.get('Nonce') || response.headers.get('nonce');
 
         const nextResponse = NextResponse.json(data, { status: response.status });
-        if (setCookie) nextResponse.headers.set('set-cookie', setCookie);
+        if (setCookie) {
+            const sanitized = setCookie
+                .replace(/;\s*Secure/gi, '')
+                .replace(/;\s*SameSite=[^;,]*/gi, '')
+                .replace(/;\s*Domain=[^;,]*/gi, '');
+            nextResponse.headers.set('set-cookie', sanitized);
+        }
         if (resNonce) nextResponse.headers.set('Nonce', resNonce);
 
         return nextResponse;
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
+    } catch (error: any) {
+        console.error('[Proxy POST Error]:', error);
+        return NextResponse.json({ 
+            error: 'Failed to fetch', 
+            message: error.message,
+            path: path
+        }, { status: 500 });
     }
 }

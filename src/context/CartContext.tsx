@@ -9,6 +9,7 @@ import {
     getWCCart,
     applyCoupon,
     removeCoupon,
+    updateCartCustomer,
     WCCart,
     WCCartItem,
 } from '@/lib/woocommerce';
@@ -32,6 +33,7 @@ interface CartContextType {
     syncError: string | null;
     applyCouponToCart: (code: string) => Promise<{ success: boolean; message?: string }>;
     removeCouponFromCart: (code: string) => Promise<{ success: boolean; message?: string }>;
+    updateCustomerAddress: (data: { country?: string; state?: string; postcode?: string; city?: string }) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -176,6 +178,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const updateCustomerAddress = async (addr: { country?: string; state?: string; postcode?: string; city?: string }) => {
+        try {
+            const result = await updateCartCustomer({
+                billing_address: addr,
+                shipping_address: addr,
+            });
+            if (result && 'items' in result) {
+                setWcCart(result);
+            }
+        } catch {
+            // tax update is best-effort
+        }
+    };
+
     const removeCouponFromCart = async (code: string) => {
         setSyncing(true);
         try {
@@ -196,7 +212,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         <CartContext.Provider value={{
             cart, wcCart, addToCart, removeFromCart, updateQuantity,
             clearCart, cartTotal, cartCount, syncing, syncError,
-            applyCouponToCart, removeCouponFromCart
+            applyCouponToCart, removeCouponFromCart, updateCustomerAddress
         }}>
             {children}
         </CartContext.Provider>

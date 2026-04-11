@@ -515,7 +515,7 @@
 
 .relatedTitle {
     font-family: var(--font-serif);
-    font-size: 2rem;
+    font-size: 3rem;
     font-weight: 600;
     color: #111;
     text-align: center;
@@ -554,6 +554,10 @@
         gap: 3rem;
     }
 
+    .relatedTitle {
+        font-size: 2rem;
+    }
+
     .imageGallery {
         position: static;
         flex-direction: column;
@@ -570,6 +574,8 @@
 
     .container {
         padding-top: 6rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 
     .relatedGrid {

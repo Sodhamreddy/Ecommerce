@@ -1,7 +1,7 @@
 .trackingContainer {
     max-width: 800px;
     margin: 5rem auto;
-    padding: 0 1.5rem;
+    padding: 0 1rem;
     min-height: 60vh;
 }
 
@@ -11,7 +11,7 @@
 }
 
 .trackingHeader h1 {
-    font-size: 2.8rem;
+    font-size: 3rem;
     font-family: var(--font-serif);
     margin-bottom: 0.75rem;
     color: #111;
@@ -80,6 +80,12 @@
 @media (max-width: 600px) {
     .formGrid {
         grid-template-columns: 1fr;
+    }
+    .trackingHeader h1 {
+        font-size: 1.75rem;
+    }
+    .trackingCard {
+        padding: 1.5rem;
     }
 }
 

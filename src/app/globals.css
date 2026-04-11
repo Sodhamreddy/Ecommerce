@@ -69,6 +69,12 @@ h2 {
   padding: 0 1.5rem;
 }
 
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1.25rem;
+  }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

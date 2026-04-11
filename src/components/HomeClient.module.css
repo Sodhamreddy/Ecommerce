@@ -163,8 +163,8 @@
 .heroSlider {
     position: relative;
     width: 100%;
-    height: 88vh;
-    min-height: 560px;
+    height: 60vh;
+    min-height: 400px;
     background: #000;
     overflow: hidden;
 }
@@ -384,8 +384,8 @@
 /* ── Category Grid ── */
 .categoryGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 1.5rem;
 }
 
 .categoryCard {
@@ -397,7 +397,7 @@
 .catImageWrapper {
     position: relative;
     width: 100%;
-    aspect-ratio: 2/3;
+    aspect-ratio: 3/4;
     border-radius: 20px;
     overflow: hidden;
     background: #f0f0f0;
@@ -471,7 +471,7 @@
     overflow: hidden;
     display: block;
     border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .editorialRight {
@@ -485,7 +485,7 @@
     overflow: hidden;
     display: block;
     border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .editorialOverlay {
@@ -521,7 +521,7 @@
 
 .editorialHeading {
     font-family: var(--font-serif);
-    font-size: 2.8rem;
+    font-size: 3rem;
     font-weight: 600;
     line-height: 1.1;
     color: #fff;
@@ -616,11 +616,148 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* ── Watch & Shop Video Reels ── */
+/* ── Watch & Shop — Instagram Reels ── */
 .reelsSection {
-    padding: 6rem 0;
+    padding: 2.5rem 0 2rem;
     background: #0a0a0a;
     overflow: hidden;
+}
+
+.reelsHeader {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.reelsHeadingBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.reelsEyebrow {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 0.4rem;
+}
+
+
+
+.igFollowBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.6rem 1.6rem;
+    background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.82rem;
+    border-radius: 50px;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.igFollowBtn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.igGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+.reelWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.reelTitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin: 0;
+}
+
+.sectionSale {
+    padding: 7rem 0;
+    background: #000;
+    border-top: 1px solid rgba(212, 168, 83, 0.3);
+    border-bottom: 1px solid rgba(212, 168, 83, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.sectionSale::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(212, 168, 83, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.sectionEyebrowGold {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #d4a853;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px rgba(212, 168, 83, 0.5);
+}
+
+.sectionSubLight {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 3.5rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.goldBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1rem 2.5rem;
+    background: #d4a853;
+    color: #000;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    border: 2px solid #d4a853;
+}
+
+.goldBtn:hover {
+    background: transparent;
+    color: #d4a853;
+}
+
+/* Clip Instagram embeds to roughly half height */
+.igGrid>* {
+    transition: transform 0.3s ease;
+}
+
+.igGrid>*:hover {
+    transform: translateY(-5px);
 }
 
 .reelsScroll {
@@ -1031,7 +1168,7 @@
 
 .footerBannerTitle {
     font-family: var(--font-serif);
-    font-size: 3.2rem;
+    font-size: 3rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1081,7 +1218,7 @@
 /* ── Responsive ── */
 @media (max-width: 1200px) {
     .categoryGrid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 1rem;
     }
 }
@@ -1093,30 +1230,36 @@
         padding: 0 1rem;
         gap: 1rem;
     }
+
     .editorialLeft {
         height: 420px;
     }
+
     .editorialRight {
         height: auto;
         grid-template-rows: auto;
         grid-template-columns: 1fr 1fr;
     }
+
     .editorialSmall {
         height: 260px;
     }
+
     .categoryGrid {
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     }
 }
 
 @media (max-width: 900px) {
+
     .section,
     .sectionDark,
     .reviewsSection {
         padding: 4rem 0;
     }
 
-    .sectionTitle {
+    .sectionTitle,
+    .editorialHeading {
         font-size: 2rem;
     }
 
@@ -1220,6 +1363,7 @@
 }
 
 @media (max-width: 600px) {
+
     /* ── Hero Slider ── */
     .heroSlider {
         height: auto;
@@ -1259,7 +1403,8 @@
         padding: 3rem 0;
     }
 
-    .sectionTitle {
+    .sectionTitle,
+    .editorialHeading {
         font-size: 1.75rem;
     }
 
@@ -1289,7 +1434,7 @@
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         gap: 0.7rem;
-        padding: 0.5rem 1rem 0.5rem;
+        padding: 0.5rem 1rem;
         scrollbar-width: none;
         -ms-overflow-style: none;
         grid-template-columns: none;
@@ -1388,7 +1533,7 @@
     /* ── Editorial ── */
     .editorialSection {
         grid-template-columns: 1fr;
-        padding: 0 0.8rem;
+        padding: 0 1rem;
         gap: 0.7rem;
     }
 
@@ -1403,10 +1548,6 @@
 
     .editorialSmall {
         height: 160px;
-    }
-
-    .editorialHeading {
-        font-size: 1.6rem;
     }
 
     .editorialHeadingSm {
@@ -1435,213 +1576,224 @@
     .footerBannerContent {
         padding: 1.8rem 1rem;
         margin: 0 1rem;
+        width: calc(100% - 2rem);
+
+        .footerBannerTitle {
+            font-size: 1.75rem;
+        }
+
+        .footerBannerSub {
+            font-size: 0.82rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Reels / Instagram ── */
+        .reelsSection {
+            padding: 2rem 0 1.5rem;
+        }
+
+        .igGrid {
+            grid-template-columns: 1fr;
+            gap: 0.8rem;
+        }
+
+        .reelCard {
+            flex: 0 0 75vw;
+            max-width: 260px;
+        }
+
+        .reelCardInfo {
+            padding: 1rem;
+        }
+
+        /* ── Gourmand ── */
+        .gourmandCard {
+            width: 220px;
+        }
+
+        .gourmandImgBox {
+            height: 280px;
+        }
+
+        /* ── Buttons ── */
+        .outlineBtn,
+        .solidBtn {
+            padding: 0.85rem 1.5rem;
+            font-size: 0.78rem;
+        }
     }
 
-    .footerBannerTitle {
-        font-size: 1.4rem;
+    /* ── Very small phones (≤ 400px) ── */
+    @media (max-width: 400px) {
+        .heroSlider {
+            aspect-ratio: 16 / 9;
+            height: auto;
+            min-height: 180px;
+            max-height: 220px;
+        }
+
+        .categoryCard {
+            flex: 0 0 42vw;
+        }
+
+        .productsGrid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .reelCard {
+            flex: 0 0 85vw;
+            max-width: 260px;
+        }
+
+        .gourmandCard {
+            width: 190px;
+        }
+
+        .gourmandImgBox {
+            height: 240px;
+        }
+
+        .sectionTitle {
+            font-size: 1.5rem;
+        }
+
+        .trustGrid {
+            grid-template-columns: 1fr;
+        }
+
+        .editorialLeft {
+            height: 220px;
+        }
+
+        .editorialSmall {
+            height: 140px;
+        }
+
+        .footerBannerTitle {
+            font-size: 1.2rem;
+        }
     }
 
-    .footerBannerSub {
-        font-size: 0.82rem;
-        margin-bottom: 1.5rem;
+    /* ── Gourmand Section (Small Slider) ── */
+    .sectionGourmand {
+        padding: 6rem 0;
+        background: #0a0a0a;
+        /* Ultra deep dark */
+        position: relative;
+        overflow: hidden;
+        border-top: 1px solid rgba(212, 168, 83, 0.2);
+        border-bottom: 1px solid rgba(212, 168, 83, 0.2);
     }
 
-    /* ── Reels ── */
-    .reelsSection {
-        padding: 3rem 0;
+    .sectionGourmand::after {
+        content: '';
+        position: absolute;
+        bottom: -20%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(212, 168, 83, 0.05) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 1;
     }
 
-    .reelCard {
-        flex: 0 0 75vw;
-        max-width: 260px;
+    .gourmandScrollWrapper {
+        width: 100%;
+        margin-top: 2rem;
+        overflow-x: auto;
+        padding-bottom: 2rem;
+        -ms-overflow-style: none;
+        /* Hide scrollbar IE/Edge */
+        scrollbar-width: none;
+        /* Hide scrollbar Firefox */
+        position: relative;
+        z-index: 10;
     }
 
-    .reelCardInfo {
-        padding: 1rem;
+    .gourmandScrollWrapper::-webkit-scrollbar {
+        display: none;
+        /* Hide scrollbar Chrome/Safari */
     }
 
-    /* ── Gourmand ── */
+    .gourmandScroll {
+        display: flex;
+        gap: 24px;
+        width: max-content;
+        /* Ensure items don't wrap */
+        padding: 0 5%;
+    }
+
     .gourmandCard {
-        width: 220px;
+        width: 280px;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .gourmandCard:hover {
+        transform: translateY(-12px);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: #d4a853;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
 
     .gourmandImgBox {
-        height: 280px;
+        width: 100%;
+        height: 380px;
+        position: relative;
+        background: #000;
+        overflow: hidden;
     }
 
-    /* ── Buttons ── */
-    .outlineBtn,
-    .solidBtn {
-        padding: 0.85rem 1.5rem;
-        font-size: 0.78rem;
-    }
-}
-
-/* ── Very small phones (≤ 400px) ── */
-@media (max-width: 400px) {
-    .heroSlider {
-        aspect-ratio: 16 / 9;
-        height: auto;
-        min-height: 180px;
-        max-height: 220px;
+    .gourmandCard:hover .gourmandImgBox img {
+        transform: scale(1.1);
     }
 
-    .categoryCard {
-        flex: 0 0 42vw;
+    .gourmandImgBox img {
+        transition: transform 0.8s ease;
     }
 
-    .productsGrid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
+    .gourmandInfo {
+        padding: 1.5rem;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .reelCard {
-        flex: 0 0 85vw;
-        max-width: 260px;
+    .gourmandName {
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #fff;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-clamp: 2;
+        overflow: hidden;
+        line-height: 1.4;
+        height: 2.8em;
     }
 
-    .gourmandCard {
-        width: 190px;
-    }
-
-    .gourmandImgBox {
-        height: 240px;
-    }
-
-    .sectionTitle {
-        font-size: 1.5rem;
-    }
-
-    .trustGrid {
-        grid-template-columns: 1fr;
-    }
-
-    .editorialLeft {
-        height: 220px;
-    }
-
-    .editorialSmall {
-        height: 140px;
-    }
-
-    .footerBannerTitle {
+    .gourmandPrice {
         font-size: 1.2rem;
+        font-weight: 600;
+        color: #d4a853;
+        display: block;
     }
-}
 
-/* ── Gourmand Section (Small Slider) ── */
-.sectionGourmand {
-    padding: 6rem 0;
-    background: #0a0a0a; /* Ultra deep dark */
-    position: relative;
-    overflow: hidden;
-    border-top: 1px solid rgba(212, 168, 83, 0.2);
-    border-bottom: 1px solid rgba(212, 168, 83, 0.2);
-}
-
-.sectionGourmand::after {
-    content: '';
-    position: absolute;
-    bottom: -20%;
-    right: -10%;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(212, 168, 83, 0.05) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 1;
-}
-
-.gourmandScrollWrapper {
-    width: 100%;
-    margin-top: 2rem;
-    overflow-x: auto;
-    padding-bottom: 2rem;
-    -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
-    scrollbar-width: none; /* Hide scrollbar Firefox */
-    position: relative;
-    z-index: 10;
-}
-
-.gourmandScrollWrapper::-webkit-scrollbar {
-    display: none; /* Hide scrollbar Chrome/Safari */
-}
-
-.gourmandScroll {
-    display: flex;
-    gap: 24px;
-    width: max-content; /* Ensure items don't wrap */
-    padding: 0 5%;
-}
-
-.gourmandCard {
-    width: 280px;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-}
-
-.gourmandCard:hover {
-    transform: translateY(-12px);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: #d4a853;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-
-.gourmandImgBox {
-    width: 100%;
-    height: 380px;
-    position: relative;
-    background: #000;
-    overflow: hidden;
-}
-
-.gourmandCard:hover .gourmandImgBox img {
-    transform: scale(1.1);
-}
-
-.gourmandImgBox img {
-    transition: transform 0.8s ease;
-}
-
-.gourmandInfo {
-    padding: 1.5rem;
-    text-align: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.gourmandName {
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: #fff;
-    margin: 0 0 0.5rem 0;
-    text-transform: uppercase;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;
-    overflow: hidden;
-    line-height: 1.4;
-    height: 2.8em;
-}
-
-.gourmandPrice {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #d4a853;
-    display: block;
-}
-
-.sectionSub {
-    text-align: center;
-    max-width: 600px;
-    margin: 0 auto;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    .sectionSub {
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
 }

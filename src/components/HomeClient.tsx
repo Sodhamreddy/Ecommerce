@@ -3,48 +3,51 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, ChevronLeft, Play, Pause } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 import styles from "./HomeClient.module.css";
 import ProductCard from "./ProductCard";
 import { Product, Category } from "@/lib/api";
 import { SlideData } from "@/lib/woocommerce";
 import BrandLogo from "./BrandLogo";
+import InstagramEmbed from "./InstagramEmbed";
+import { SITE_DOMAIN } from "@/lib/config";
 
 interface Props {
     bestSellers: Product[];
     newArrivals: Product[];
     gourmandProducts: Product[];
+    onSaleProducts: Product[];
     blogPosts: any[];
     categories: Category[];
     slides: SlideData[];
 }
 
-// Fallback slides used when SmartSlider API is unavailable
+// Fallback slides — mirrors fetchSmartSliderSlides, used only if that function throws
 const FALLBACK_SLIDES: SlideData[] = [
     {
-        title: "EASTER\nSALE 2026",
-        subtitle: "CELEBRATE WITH OUR LATEST FRAGRANCE DEALS",
-        cta: "SHOP THE SALE",
+        title: "LUXURY\nFRAGRANCES",
+        subtitle: "UP TO 80% OFF RETAIL PRICES",
+        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-1-1.jpg`,
         href: "/shop",
-        bg: "https://jerseyperfume.com/wp-content/uploads/2026/03/JERSEY-PERFUME-BANNER-EASTER.jpg",
-        accent: "#d4a853",
+        cta: "SHOP COLLECTION",
+        accent: '#d4a853'
     },
     {
-        title: "TUMI\nEXCLUSIVE",
-        subtitle: "DIVE INTO RARE AND EXOTIC SCENTS",
+        title: "EXCLUSIVE\nDEALS",
+        subtitle: "AUTHENTIC SCENTS FOR EVERY OCCASION",
+        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-2-1.jpg`,
+        href: "/shop",
+        cta: "DISCOVER MORE",
+        accent: '#d4a853'
+    },
+    {
+        title: "NEW\nARRIVALS",
+        subtitle: "EXPLORE THE LATEST FROM TOP BRANDS",
+        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-3-1.jpg`,
+        href: "/shop",
         cta: "SHOP NOW",
-        href: "/shop",
-        bg: "https://jerseyperfume.com/wp-content/uploads/2026/01/Tumi-Product-Banner.png",
-        accent: "#ffffff",
-    },
-    {
-        title: "LUXURY\nFRAGRANCE",
-        subtitle: "AUTHENTIC DESIGNER SCENTS AT UNBEATABLE PRICES",
-        cta: "EXPLORE NOW",
-        href: "/shop",
-        bg: "https://jerseyperfume.com/wp-content/uploads/2026/01/Jersey-Banner-23-01.png",
-        accent: "#d4a853",
-    },
+        accent: '#d4a853'
+    }
 ];
 
 
@@ -86,30 +89,25 @@ function getCategoryImage(cat: Category): string {
 const brandNames = [
     "GIORGIO ARMANI", "BURBERRY", "PACO RABANNE", "GIVENCHY", "JIMMY CHOO",
     "DUMONT PARIS", "LATTAFA", "RASASI", "BVLGARI", "VERSACE", "DIOR", "CHANEL",
-    "CREED", "TOM FORD",
+    "CREED", "TOM FORD", "ARMAF", "MAISON ALHAMBRA", "AL HARAMAIN"
 ];
 
-const freeVideos = [
-    "https://assets.mixkit.co/videos/preview/mixkit-female-hand-with-a-perfume-bottle-40443-large.mp4",
-    "https://assets.mixkit.co/videos/preview/mixkit-woman-spraying-her-neck-with-perfume-4183-large.mp4",
-    "https://assets.mixkit.co/videos/preview/mixkit-pouring-perfume-from-a-bottle-on-a-marble-table-25063-large.mp4",
-    "https://assets.mixkit.co/videos/preview/mixkit-close-up-of-female-hands-applying-body-lotion-42858-large.mp4",
-];
-
-export default function HomeClient({ bestSellers, newArrivals, gourmandProducts, blogPosts, categories, slides }: Props) {
+export default function HomeClient({ bestSellers, newArrivals, gourmandProducts, onSaleProducts, blogPosts, categories, slides }: Props) {
     const activeSlides = slides.length > 0 ? slides : FALLBACK_SLIDES;
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [playingReel, setPlayingReel] = useState<number | null>(null);
-    const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+    const [brokenSlides, setBrokenSlides] = useState<Set<number>>(new Set());
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const touchStartX = useRef<number | null>(null);
     const slidesLenRef = useRef(activeSlides.length);
     slidesLenRef.current = activeSlides.length;
+    const brokenSlidesRef = useRef(brokenSlides);
+    brokenSlidesRef.current = brokenSlides;
 
     // Category scroll indicator
     const catGridRef = useRef<HTMLDivElement>(null);
     const [activeCatDot, setActiveCatDot] = useState(0);
-    const visibleCats = categories.filter(c => c.count > 0);
+    // Only show top-level categories (parent === 0) to avoid duplicates like "Men" + "Men's Fragrances"
+    const visibleCats = categories.filter(c => c.count > 0 && c.parent === 0 && c.slug !== 'uncategorized');
     const catDotCount = Math.min(visibleCats.length, 8);
 
     const handleCatScroll = () => {
@@ -122,7 +120,12 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
     const startTimer = () => {
         if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % slidesLenRef.current);
+            setCurrentSlide((prev) => {
+                let next = (prev + 1) % slidesLenRef.current;
+                let guard = slidesLenRef.current;
+                while (brokenSlidesRef.current.has(next) && guard-- > 0) next = (next + 1) % slidesLenRef.current;
+                return next;
+            });
         }, 5000);
     };
 
@@ -131,13 +134,29 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, []);
 
+    // Auto-advance past any slide whose image failed to load
+    useEffect(() => {
+        if (!brokenSlides.has(currentSlide) || brokenSlides.size >= slidesLenRef.current) return;
+        setCurrentSlide((prev) => (prev + 1) % slidesLenRef.current);
+    }, [brokenSlides, currentSlide]);
+
     const goToSlide = (i: number) => {
         setCurrentSlide(i);
         startTimer();
     };
 
-    const prevSlide = () => goToSlide((currentSlide - 1 + activeSlides.length) % activeSlides.length);
-    const nextSlide = () => goToSlide((currentSlide + 1) % activeSlides.length);
+    const prevSlide = () => {
+        let prev = (currentSlide - 1 + slidesLenRef.current) % slidesLenRef.current;
+        let guard = slidesLenRef.current;
+        while (brokenSlidesRef.current.has(prev) && guard-- > 0) prev = (prev - 1 + slidesLenRef.current) % slidesLenRef.current;
+        goToSlide(prev);
+    };
+    const nextSlide = () => {
+        let next = (currentSlide + 1) % slidesLenRef.current;
+        let guard = slidesLenRef.current;
+        while (brokenSlidesRef.current.has(next) && guard-- > 0) next = (next + 1) % slidesLenRef.current;
+        goToSlide(next);
+    };
 
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.touches[0].clientX;
@@ -147,19 +166,6 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
         const diff = touchStartX.current - e.changedTouches[0].clientX;
         if (Math.abs(diff) > 50) diff > 0 ? nextSlide() : prevSlide();
         touchStartX.current = null;
-    };
-
-    const toggleReel = (i: number) => {
-        const video = videoRefs.current[i];
-        if (!video) return;
-        if (playingReel === i) {
-            video.pause();
-            setPlayingReel(null);
-        } else {
-            videoRefs.current.forEach((v, idx) => { if (v && idx !== i) v.pause(); });
-            video.play().catch(() => { });
-            setPlayingReel(i);
-        }
     };
 
     return (
@@ -178,12 +184,20 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                         className={`${styles.slide} ${index === currentSlide ? styles.activeSlide : ""}`}
                     >
                         <Link href={slide.href} className={styles.slideLink}>
+                            {/* unoptimized: load directly from WordPress, bypassing /_next/image proxy */}
                             <Image
                                 src={slide.bg}
                                 alt={decodeHTML(slide.title ?? "")}
                                 fill
+                                unoptimized
                                 priority={index === 0}
                                 style={{ objectFit: "cover" }}
+                                onError={() => setBrokenSlides(prev => {
+                                    if (prev.has(index)) return prev;
+                                    const s = new Set(prev);
+                                    s.add(index);
+                                    return s;
+                                })}
                             />
 
                             <div className={styles.slideOverlay} />
@@ -199,7 +213,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                 </button>
 
                 <div className={styles.slideDots}>
-                    {activeSlides.map((_, i) => (
+                    {activeSlides.map((_, i) => brokenSlides.has(i) ? null : (
                         <button
                             key={i}
                             className={`${styles.slideDot} ${i === currentSlide ? styles.activeDot : ""}`}
@@ -214,7 +228,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             <section className={styles.section}>
                 <div className="container">
                     <div className={styles.sectionHeader}>
-                        <span className={styles.sectionEyebrow}>Browse</span>
+                        <span className={styles.sectionEyebrow}>Explore</span>
                         <h2 className={styles.sectionTitle}>Shop By Category</h2>
                     </div>
                     <div className={styles.catScrollWrapper}>
@@ -224,7 +238,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                             onScroll={handleCatScroll}
                         >
                             {visibleCats.map((cat) => (
-                                <Link href={`/shop?category=${cat.slug}`} key={cat.id} className={styles.categoryCard}>
+                                <Link href={`/product-category/${cat.slug}`} key={cat.id} className={styles.categoryCard}>
                                     <div className={styles.catImageWrapper}>
                                         <Image
                                             src={getCategoryImage(cat)}
@@ -252,47 +266,49 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                 </div>
             </section>
 
-            {/* EDITORIAL SPLIT BANNER */}
-            <section className={styles.editorialSection}>
-                <Link href="/shop?category=dumont" className={styles.editorialLeft}>
-                    <Image src="https://jerseyperfume.com/wp-content/uploads/2026/01/Jersey-Banner-23-01.png" alt="Dumont" fill style={{ objectFit: "cover" }} />
-                    <div className={styles.editorialOverlay} />
-                    <div className={styles.editorialContent}>
-                        <span className={styles.editorialTag}>Featured Brand</span>
-                        <h3 className={styles.editorialHeading}>DUMONT PARIS</h3>
-                        <p className={styles.editorialSub}>Best-Selling Luxury Perfumes</p>
-                        <span className={styles.editorialCta}>Explore Collection <ChevronRight size={14} /></span>
+            {/* PROMO BANNERS GRID */}
+            <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
+                <div className={styles.editorialSection}>
+                    <Link href="/shop?category=dumont" className={styles.editorialLeft}>
+                        <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Dumont Paris" fill style={{ objectFit: "cover" }} />
+                        <div className={styles.editorialOverlay} />
+                        <div className={styles.editorialContent}>
+                            <span className={styles.editorialTag}>Featured Brand</span>
+                            <h2 className={styles.editorialHeading}>DUMONT PARIS</h2>
+                            <p className={styles.editorialSub}>Best-Selling Luxury Perfumes</p>
+                            <span className={styles.editorialCta}>Explore Collection <ChevronRight size={14} /></span>
+                        </div>
+                    </Link>
+
+                    <div className={styles.editorialRight}>
+                        <Link href="/shop?category=lattafa" className={styles.editorialSmall}>
+                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`} alt="Lattafa" fill style={{ objectFit: "cover" }} />
+                            <div className={styles.editorialOverlay} />
+                            <div className={styles.editorialContent}>
+                                <span className={styles.editorialTag}>Trending Now</span>
+                                <h3 className={styles.editorialHeadingSm}>LATTAFA</h3>
+                                <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
+                            </div>
+                        </Link>
+                        
+                        <Link href="/shop?category=ahmed-al-maghribi" className={styles.editorialSmall}>
+                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
+                            <div className={styles.editorialOverlay} />
+                            <div className={styles.editorialContent}>
+                                <span className={styles.editorialTag}>Exclusive</span>
+                                <h3 className={styles.editorialHeadingSm}>AHMED AL MAGHRIBI</h3>
+                                <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
+                            </div>
+                        </Link>
                     </div>
-                </Link>
-                <div className={styles.editorialRight}>
-                    <Link href="/shop?category=lattafa" className={styles.editorialSmall}>
-                        <Image src="https://jerseyperfume.com/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png" alt="Lattafa" fill style={{ objectFit: "cover" }} />
-                        <div className={styles.editorialOverlay} />
-                        <div className={styles.editorialContent}>
-                            <span className={styles.editorialTag}>Trending Now</span>
-                            <h3 className={styles.editorialHeadingSm}>LATTAFA</h3>
-                            <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
-                        </div>
-                    </Link>
-                    <Link href="/shop?category=ahmed-al-maghribi" className={styles.editorialSmall}>
-                        <Image src="https://jerseyperfume.com/wp-content/uploads/2026/01/Tumi-Product-Banner.png" alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
-                        <div className={styles.editorialOverlay} />
-                        <div className={styles.editorialContent}>
-                            <span className={styles.editorialTag}>Exclusive</span>
-                            <h3 className={styles.editorialHeadingSm}>AHMED AL MAGHRIBI</h3>
-                            <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
-                        </div>
-                    </Link>
                 </div>
             </section>
-
 
             {/* BEST SELLERS */}
             {bestSellers.length > 0 && (
                 <section className={styles.section}>
                     <div className="container">
                         <div className={styles.sectionHeader}>
-                            <span className={styles.sectionEyebrow}>Top Picks</span>
                             <h2 className={styles.sectionTitle}>Best Sellers</h2>
                         </div>
                         <div className={styles.productsGrid}>
@@ -315,7 +331,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                             <div className={styles.trustIcon}>🚛</div>
                             <div>
                                 <div className={styles.trustTitle}>Free Shipping</div>
-                                <div className={styles.trustSub}>On orders over $59</div>
+                                <div className={styles.trustSub}>On orders over $59.99</div>
                             </div>
                         </div>
                         <div className={styles.trustDivider} />
@@ -366,60 +382,39 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                 </section>
             )}
 
-            {/* WATCH & SHOP */}
-            {newArrivals.length > 0 && (
-                <section className={styles.reelsSection}>
-                    <div className="container">
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionEyebrowLight}>Social</span>
+            {/* WATCH & SHOP — Instagram Reels */}
+            <section className={styles.reelsSection}>
+                <div className="container">
+                    <div className={styles.reelsHeader}>
+                        <div className={styles.reelsHeadingBlock}>
+                            <span className={styles.reelsEyebrow}>Social</span>
                             <h2 className={`${styles.sectionTitle} ${styles.sectionTitleLight}`}>Watch &amp; Shop</h2>
                         </div>
+                        <a
+                            href="https://www.instagram.com/jerseyperfumeusa/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.igFollowBtn}
+                        >
+                            Follow @jerseyperfumeusa on Instagram
+                        </a>
                     </div>
-                    <div className={styles.reelsScroll}>
-                        {newArrivals.slice(0, 4).map((product, i) => {
-                            const minorUnit = product.prices.currency_minor_unit ?? 2;
-                            const originalPrice = parseInt(product.prices.regular_price) / Math.pow(10, minorUnit);
-                            const currentPrice = parseInt(product.prices.price) / Math.pow(10, minorUnit);
-                            const badges = ["🔥 Trending", "⚡ New Drop", "💎 Premium", "🌟 Fan Fave"];
-                            const imgSrc = product.images?.[0]?.src || "/images/hero.png";
-                            const isPlaying = playingReel === i;
-
-                            return (
-                                <div key={`reel-${i}`} className={`${styles.reelCard} ${isPlaying ? styles.reelIsPlaying : ''}`}>
-                                    <video
-                                        ref={(el) => { videoRefs.current[i] = el; }}
-                                        src={freeVideos[i % freeVideos.length]}
-                                        poster={imgSrc}
-                                        loop
-                                        muted
-                                        playsInline
-                                        className={styles.reelVideo}
-                                    />
-                                    <div className={styles.reelCardOverlay} />
-                                    <span className={styles.reelBadge}>{badges[i % badges.length]}</span>
-                                    <button
-                                        className={styles.reelPlayBtn}
-                                        onClick={(e) => { e.stopPropagation(); toggleReel(i); }}
-                                        aria-label={isPlaying ? 'Pause' : 'Play'}
-                                    >
-                                        {isPlaying ? <Pause size={22} /> : <Play size={22} />}
-                                    </button>
-                                    <Link href={`/product/${product.slug}`} className={styles.reelCardInfo}>
-                                        <h4 className={styles.reelCardName} dangerouslySetInnerHTML={{ __html: product.name }} />
-                                        <div className={styles.reelCardPrices}>
-                                            {originalPrice > currentPrice && (
-                                                <span className={styles.reelCardOld}>${originalPrice.toFixed(2)}</span>
-                                            )}
-                                            <span className={styles.reelCardPrice}>${currentPrice.toFixed(2)}</span>
-                                        </div>
-                                        <span className={styles.reelCardBtn}>Shop Now →</span>
-                                    </Link>
-                                </div>
-                            );
-                        })}
+                    <div className={styles.igGrid}>
+                        <div className={styles.reelWrapper}>
+                            <InstagramEmbed url="https://www.instagram.com/reel/DUBZQKijZbm/" />
+                            <h3 className={styles.reelTitle}>Exclusive Collection</h3>
+                        </div>
+                        <div className={styles.reelWrapper}>
+                            <InstagramEmbed url="https://www.instagram.com/p/DNDnLzfC0-Z/" />
+                            <h3 className={styles.reelTitle}>Best Sellers 2026</h3>
+                        </div>
+                        <div className={styles.reelWrapper}>
+                            <InstagramEmbed url="https://www.instagram.com/reel/DQXk3C6k0pl/" />
+                            <h3 className={styles.reelTitle}>Top 5 Ahmed Al Maghribi</h3>
+                        </div>
                     </div>
-                </section>
-            )}
+                </div>
+            </section>
 
             {/* REVIEWS */}
             <section className={styles.reviewsSection}>
@@ -508,7 +503,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                     <span className={styles.footerBannerEyebrow}>Limited Time Offer</span>
                     <h2 className={styles.footerBannerTitle}>THE EXCLUSIVE COLLECTION</h2>
                     <p className={styles.footerBannerSub}>Dive into a world of rare and exotic scents. Uncover your signature essence today.</p>
-                    <Link href="/shop" className={styles.footerBannerBtn}>DISCOVER MORE <ChevronRight size={16} /></Link>
+                    <Link href="/product-category/hot-products" className={styles.footerBannerBtn}>DISCOVER MORE <ChevronRight size={16} /></Link>
                 </div>
             </section>
 

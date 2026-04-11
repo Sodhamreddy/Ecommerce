@@ -24,9 +24,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const page = await fetchWPPageAction(slug);
     if (!page) return { title: 'Page Not Found | Jersey Perfume' };
 
+    const yoast = page.yoast_head_json;
+    const title = yoast?.title || `${page.title.rendered} | Jersey Perfume`;
+    const description = yoast?.description
+        || page.excerpt?.rendered.replace(/<[^>]+>/g, '').substring(0, 160)
+        || page.content.rendered.replace(/<[^>]+>/g, '').substring(0, 160);
+    const featuredImage = page._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+    const ogImages = yoast?.og_image?.map((img: { url: string }) => img.url) || (featuredImage ? [featuredImage] : []);
+
     return {
-        title: `${page.title.rendered} | Jersey Perfume`,
-        description: `Read more about ${page.title.rendered} on Jersey Perfume.`,
+        title,
+        description,
+        openGraph: {
+            title: yoast?.og_title || title,
+            description: yoast?.og_description || description,
+            images: ogImages,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: yoast?.og_title || title,
+            description: yoast?.og_description || description,
+            images: ogImages,
+        },
     };
 }
 

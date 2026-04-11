@@ -1,58 +1,57 @@
+export const dynamic = 'force-static';
 import { NextResponse } from 'next/server';
+import { WC_STORE_API } from '@/lib/config';
 
-
-
-const WC_STORE_API = 'https://jerseyperfume.com/wp-json/wc/store/v1';
-
-export async function GET(request: Request) {
-    const cookie = request.headers.get('cookie') || '';
-    
-    try {
-        const response = await fetch(`${WC_STORE_API}/cart`, {
-            headers: { 'Cookie': cookie }
-        });
-        const data = await response.json();
-        
-        const setCookie = response.headers.get('set-cookie');
-        const nextResponse = NextResponse.json(data);
-        if (setCookie) nextResponse.headers.set('set-cookie', setCookie);
-        
-        return nextResponse;
-    } catch {
-        return NextResponse.json({ error: 'Failed to fetch cart' }, { status: 500 });
-    }
+// Static fallback for output: 'export' build — real cart is fetched client-side via proxy.php
+export async function GET() {
+    return NextResponse.json({ items: [], totals: { total_price: '0', currency_code: 'GBP' }, item_count: 0 });
 }
 
 export async function POST(request: Request) {
-    const body = await request.json();
-    const cookie = request.headers.get('cookie') || '';
-    const { action, ...params } = body;
-    
-    let url = `${WC_STORE_API}/cart`;
-    if (action === 'add-item') url += '/add-item';
-    else if (action === 'update-item') url += '/update-item';
-    else if (action === 'remove-item') url += '/remove-item';
-    else if (action === 'apply-coupon') url += '/apply-coupon';
-    else if (action === 'remove-coupon') url += '/remove-coupon';
-
     try {
+        const body = await request.json();
+        const cookie = request.headers.get('cookie') || '';
+        const nonce = request.headers.get('Nonce') || request.headers.get('nonce') || '';
+        const { action, ...params } = body;
+        
+        let url = `${WC_STORE_API}/cart`;
+        if (action === 'add-item') url += '/add-item';
+        else if (action === 'update-item') url += '/update-item';
+        else if (action === 'remove-item') url += '/remove-item';
+        else if (action === 'apply-coupon') url += '/apply-coupon';
+        else if (action === 'remove-coupon') url += '/remove-coupon';
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(cookie ? { 'Cookie': cookie } : {}),
+        };
+        if (nonce) headers['Nonce'] = nonce;
+
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Cookie': cookie 
-            },
+            headers,
             body: JSON.stringify(params)
         });
         
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = { error: 'Non-JSON response', text: text.substring(0, 100) };
+        }
+
         const setCookie = response.headers.get('set-cookie');
+        const resNonce = response.headers.get('Nonce') || response.headers.get('nonce');
         
         const nextResponse = NextResponse.json(data, { status: response.status });
         if (setCookie) nextResponse.headers.set('set-cookie', setCookie);
+        if (resNonce) nextResponse.headers.set('Nonce', resNonce);
         
         return nextResponse;
     } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        return NextResponse.json({ error: e.message || 'Cart operation failed' }, { status: 500 });
     }
 }

@@ -3,7 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'jerseyperfume.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'secure.gravatar.com',
+      }
+    ],
   },
   typescript: {
     ignoreBuildErrors: true,

@@ -15,6 +15,7 @@ interface ShopContentProps {
     initialTotalProducts: number;
     initialCategoryQuery?: string;
     initialSearchQuery?: string;
+    initialOnSale?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -41,7 +42,8 @@ export default function ShopContent({
     initialTotalPages,
     initialTotalProducts,
     initialCategoryQuery = '',
-    initialSearchQuery = ''
+    initialSearchQuery = '',
+    initialOnSale = false
 }: ShopContentProps) {
     const [products, setProducts] = useState(initialProducts);
     const [categories] = useState(initialCategories);
@@ -51,11 +53,13 @@ export default function ShopContent({
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState(initialSearchQuery);
     const [selectedCategory, setSelectedCategory] = useState(initialCategoryQuery);
-    const [priceMax, setPriceMax] = useState(2000);
+    const [priceMin, setPriceMin] = useState(0);
+    const [priceMax, setPriceMax] = useState(400);
     const [sortBy, setSortBy] = useState('date');
     const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSticky, setIsSticky] = useState(false);
+    const [isOnSale] = useState(initialOnSale);
     const quickTabsRef = useRef<HTMLDivElement>(null);
 
     const searchParams = useSearchParams();
@@ -84,21 +88,19 @@ export default function ShopContent({
     }, []);
 
     const runFilter = async (overrides: {
-        s?: string; cat?: string; sort?: string; pm?: number; pg?: number;
+        s?: string; cat?: string; sort?: string; pmn?: number; pmx?: number; pg?: number;
     } = {}) => {
         setLoading(true);
         const s = overrides.s ?? search;
         const catSlug = overrides.cat ?? selectedCategory;
         const sort = overrides.sort ?? sortBy;
-        const pm = overrides.pm ?? priceMax;
+        const pmn = overrides.pmn ?? priceMin;
+        const pmx = overrides.pmx ?? priceMax;
         const pg = overrides.pg ?? 1;
 
-        // Map slug to ID for WooCommerce Store API backend call
-        const catObj = categories.find(c => c.slug === catSlug);
-        const catId = catObj ? catObj.id.toString() : '';
-
+        // WC Store API accepts category slug directly
         const { products: newProducts, totalPages: newTotalPages, totalProducts: newTotal } =
-            await fetchProductsAction(pg, 24, s, catId, '0', pm.toString(), sort);
+            await fetchProductsAction(pg, 24, s, catSlug, pmn.toString(), pmx.toString(), sort, 'desc', isOnSale);
 
         setProducts(newProducts);
         setTotalPages(newTotalPages);
@@ -110,6 +112,14 @@ export default function ShopContent({
 
     // Helper to clean HTML entities like Men&#8217;s
     const decodeHTML = (html: string) => {
+        if (typeof window === 'undefined') {
+            return html.replace(/&#(\d+);/g, (m, dec) => String.fromCharCode(Number(dec)))
+                       .replace(/&amp;/g, '&')
+                       .replace(/&lt;/g, '<')
+                       .replace(/&gt;/g, '>')
+                       .replace(/&quot;/g, '"')
+                       .replace(/&#039;/g, "'");
+        }
         const txt = document.createElement("textarea");
         txt.innerHTML = html;
         return txt.value;
@@ -233,7 +243,7 @@ export default function ShopContent({
                                 <input
                                     type="range"
                                     min={0}
-                                    max={2000}
+                                    max={400}
                                     step={10}
                                     value={priceMax}
                                     onChange={(e) => setPriceMax(parseInt(e.target.value))}
@@ -241,6 +251,28 @@ export default function ShopContent({
                                 />
                                 <span className={styles.priceVal}>${priceMax}</span>
                             </div>
+                            
+                            <div className={styles.rangeChips}>
+                                {[
+                                    { label: 'Under $50', min: 0, max: 50 },
+                                    { label: '$50 - $100', min: 50, max: 100 },
+                                    { label: '$100 - $200', min: 100, max: 200 },
+                                    { label: 'Over $200', min: 200, max: 400 },
+                                ].map((range, i) => (
+                                    <button
+                                        key={i}
+                                        className={`${styles.priceChip} ${priceMin === range.min && priceMax === range.max ? styles.priceChipActive : ''}`}
+                                        onClick={() => {
+                                            setPriceMin(range.min);
+                                            setPriceMax(range.max);
+                                            runFilter({ pmn: range.min, pmx: range.max });
+                                        }}
+                                    >
+                                        {range.label}
+                                    </button>
+                                ))}
+                            </div>
+
                             <button className={styles.applyBtn} onClick={() => runFilter()}>
                                 Apply Filter
                             </button>
@@ -306,7 +338,7 @@ export default function ShopContent({
                     </div>
 
                     {/* Active filter chips */}
-                    {(selectedCategory || priceMax < 2000 || search) && (
+                    {(selectedCategory || priceMin > 0 || priceMax < 400 || search) && (
                         <div className={styles.activeFiltersRow}>
                             <span className={styles.filterRowLabel}>Active:</span>
                             {selectedCategory && (
@@ -315,10 +347,10 @@ export default function ShopContent({
                                     <button onClick={clearCategory}><X size={10} /></button>
                                 </span>
                             )}
-                            {priceMax < 2000 && (
+                            {(priceMin > 0 || priceMax < 400) && (
                                 <span className={styles.activeFilterChip}>
-                                    Max ${priceMax}
-                                    <button onClick={() => { setPriceMax(2000); runFilter({ pm: 2000 }); }}><X size={10} /></button>
+                                    ${priceMin} - ${priceMax}
+                                    <button onClick={() => { setPriceMin(0); setPriceMax(400); runFilter({ pmn: 0, pmx: 400 }); }}><X size={10} /></button>
                                 </span>
                             )}
                             {search && (
@@ -332,8 +364,9 @@ export default function ShopContent({
                                 onClick={() => {
                                     setSearch('');
                                     setSelectedCategory('');
-                                    setPriceMax(2000);
-                                    runFilter({ s: '', cat: '', pm: 2000 });
+                                    setPriceMin(0);
+                                    setPriceMax(400);
+                                    runFilter({ s: '', cat: '', pmn: 0, pmx: 400 });
                                 }}
                             >
                                 Clear all
@@ -352,7 +385,7 @@ export default function ShopContent({
                             <div className={styles.emptyIcon}>🌿</div>
                             <h3>No products found</h3>
                             <p>Try adjusting your filters or search term</p>
-                            <button className={styles.resetBtn} onClick={() => { setSearch(''); setSelectedCategory(''); setPriceMax(2000); runFilter({ s: '', cat: '', pm: 2000 }); }}>
+                            <button className={styles.resetBtn} onClick={() => { setSearch(''); setSelectedCategory(''); setPriceMin(0); setPriceMax(400); runFilter({ s: '', cat: '', pmn: 0, pmx: 400 }); }}>
                                 Reset Filters
                             </button>
                         </div>

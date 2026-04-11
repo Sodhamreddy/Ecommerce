@@ -1,5 +1,6 @@
 import { fetchProducts, fetchCategoriesWithThumbnails, Category } from "@/lib/api";
 import { fetchSmartSliderSlides, SlideData } from "@/lib/woocommerce";
+import { API_BASE_URL, SITE_DOMAIN } from "@/lib/config";
 import { Metadata } from "next";
 import HomeClient from "@/components/HomeClient";
 
@@ -19,12 +20,13 @@ export const metadata: Metadata = {
 
 async function getHomepageData() {
   try {
-    const [bestSellersRes, newArrivalsRes, gourmandRes, blogRes, categoriesRes, slidesRes] =
+    const [bestSellersRes, newArrivalsRes, gourmandRes, onSaleRes, blogRes, categoriesRes, slidesRes] =
       await Promise.allSettled([
         fetchProducts(1, 4, "", "", "", "", "popularity", "desc"),
         fetchProducts(1, 4, "", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "Give Me Gourmand", "", "", "", "date", "desc"),
-        fetch("https://jerseyperfume.com/wp-json/wp/v2/posts?per_page=3&_embed").then((r) =>
+        fetchProducts(1, 8, "", "", "", "", "date", "desc", true),
+        fetch(`${API_BASE_URL}/wp/v2/posts?per_page=3&_embed`).then((r) =>
           r.ok ? r.json() : []
         ),
         fetchCategoriesWithThumbnails(),
@@ -38,6 +40,8 @@ async function getHomepageData() {
         newArrivalsRes.status === "fulfilled" ? newArrivalsRes.value.products : [],
       gourmandProducts:
         gourmandRes.status === "fulfilled" ? gourmandRes.value.products : [],
+      onSaleProducts:
+        onSaleRes.status === "fulfilled" ? onSaleRes.value.products : [],
       blogPosts:
         blogRes.status === "fulfilled" && Array.isArray(blogRes.value)
           ? blogRes.value
@@ -52,6 +56,7 @@ async function getHomepageData() {
       bestSellers: [],
       newArrivals: [],
       gourmandProducts: [],
+      onSaleProducts: [],
       blogPosts: [],
       categories: [],
       slides: [],
@@ -60,7 +65,7 @@ async function getHomepageData() {
 }
 
 export default async function Home() {
-  const { bestSellers, newArrivals, gourmandProducts, blogPosts, categories, slides } =
+  const { bestSellers, newArrivals, gourmandProducts, onSaleProducts, blogPosts, categories, slides } =
     await getHomepageData();
 
   return (
@@ -68,6 +73,7 @@ export default async function Home() {
       bestSellers={bestSellers}
       newArrivals={newArrivals}
       gourmandProducts={gourmandProducts}
+      onSaleProducts={onSaleProducts}
       blogPosts={blogPosts}
       categories={categories}
       slides={slides}

@@ -336,6 +336,21 @@
 }
 
 /* ── Payment icons ── */
+.newsletterSection {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.colTitleSmall {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.8rem;
+}
+
 .payLabel {
     font-size: 0.7rem;
     color: #8a8a9a;

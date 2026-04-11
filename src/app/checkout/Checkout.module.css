@@ -1,8 +1,9 @@
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 6rem 2rem;
+    padding: 5rem 2rem 4rem;
     font-family: var(--font-sans);
+    box-sizing: border-box;
 }
 
 .emptyContainer {
@@ -30,26 +31,26 @@
     transition: background 0.2s;
 }
 
-.shoppingBtn:hover {
-    background: #333;
-}
+.shoppingBtn:hover { background: #333; }
 
 .checkoutHeader {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: 3rem;
 }
 
 .checkoutHeader h1 {
     font-family: var(--font-serif);
-    font-size: 2.8rem;
+    font-size: 3rem;
     color: #111;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .checkoutHeader p {
     color: #388e3c;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .errorBanner {
@@ -64,27 +65,29 @@
     text-align: center;
 }
 
+/* ── Layout ── */
 .checkoutGrid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 4rem;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 3.5rem;
     align-items: start;
 }
 
 .sectionBlock {
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
 }
 
 .sectionTitle {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #000;
+    padding-bottom: 0.9rem;
+    border-bottom: 2px solid #111;
     margin-bottom: 1.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.07em;
 }
 
+/* ── Form ── */
 .formRow {
     display: flex;
     gap: 1.5rem;
@@ -93,39 +96,58 @@
 .formGroup {
     display: flex;
     flex-direction: column;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
     flex: 1;
 }
 
 .formGroup label {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: #444;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.45rem;
 }
 
 .formGroup input {
-    height: 48px;
+    height: 46px;
     border: 1px solid #ccc;
-    padding: 0 15px;
-    font-size: 1rem;
+    padding: 0 14px;
+    font-size: 0.95rem;
     border-radius: 4px;
     background: #fdfdfd;
     transition: border-color 0.2s;
 }
 
 .formGroup input:focus {
-    border-color: #000;
+    border-color: #111;
     outline: none;
     background: #fff;
-    box-shadow: 0 0 0 1px #000;
+    box-shadow: 0 0 0 1px #111;
+}
+
+.selectInput {
+    width: 100%;
+    height: 46px;
+    border: 1px solid #ccc;
+    padding: 0 14px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.selectInput:focus {
+    border-color: #111;
+    outline: none;
+    box-shadow: 0 0 0 1px #111;
 }
 
 .textarea {
     width: 100%;
     border: 1px solid #ccc;
-    padding: 12px 15px;
-    font-size: 1rem;
+    padding: 12px 14px;
+    font-size: 0.95rem;
     border-radius: 4px;
     background: #fdfdfd;
     font-family: inherit;
@@ -134,123 +156,66 @@
 }
 
 .textarea:focus {
-    border-color: #000;
+    border-color: #111;
     outline: none;
     background: #fff;
-    box-shadow: 0 0 0 1px #000;
+    box-shadow: 0 0 0 1px #111;
 }
 
-/* Payment Section */
-.paymentMethods {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.gatewayLoader {
+.checkboxRow {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 1.5rem;
-    color: #666;
-    font-size: 0.95rem;
-}
-
-.paymentRadio {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid #e0e0e0;
-    padding: 1.2rem;
-    border-radius: 8px;
+    gap: 10px;
     cursor: pointer;
+    font-size: 0.9rem;
     font-weight: 600;
-    background: #fafafa;
-    transition: border 0.2s, background 0.2s;
+    color: #333;
 }
 
-.paymentRadio:hover {
-    border-color: #999;
-}
-
-.radioLeft {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-}
-
-.radioLeft input[type="radio"] {
-    margin-top: 3px;
-    transform: scale(1.2);
+.checkboxInput {
+    width: auto !important;
+    height: auto !important;
     accent-color: #111;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
-.gatewayTitle {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #111;
-}
-
-.gatewayDesc {
-    font-weight: 400;
-    font-size: 0.82rem;
-    color: #888;
-    margin-top: 2px;
-}
-
-.activeRadio {
-    border-color: #000;
-    background: #f8f9fc;
-    box-shadow: 0 0 0 1px #000;
-}
-
-.creditCardBox {
-    background: #fafafa;
-    border: 1px solid #eee;
-    padding: 2rem;
-    border-radius: 4px;
-}
-
-/* Right Side - Summary block */
+/* ── RIGHT SIDEBAR ── */
 .summaryBlock {
-    background: #f8f9fa;
-    padding: 2.5rem;
-    border-radius: 12px;
-    border: 1px solid #eee;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2rem;
     position: sticky;
     top: 100px;
 }
 
-.summaryTitle {
-    font-size: 1.5rem;
-    font-family: var(--font-serif);
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e0e0e0;
-}
-
+/* Items */
 .summaryItems {
-    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8e8e8;
+    margin-bottom: 1rem;
 }
 
 .summaryItem {
     display: flex;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
 }
+
+.summaryItem:last-child { margin-bottom: 0; }
 
 .itemImgWrapper {
     position: relative;
-    width: 65px;
-    height: 65px;
-    background: #fff;
-    border-radius: 8px;
+    width: 60px;
+    height: 60px;
+    background: #f8f8f8;
+    border-radius: 6px;
     border: 1px solid #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1.5rem;
+    margin-right: 1.2rem;
     flex-shrink: 0;
 }
 
@@ -258,7 +223,7 @@
     position: absolute;
     top: -8px;
     right: -8px;
-    background: #444;
+    background: #555;
     color: white;
     width: 20px;
     height: 20px;
@@ -266,7 +231,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: bold;
 }
 
@@ -275,34 +240,33 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
 
 .itemName {
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 500;
+    font-size: 0.88rem;
     color: #222;
+    line-height: 1.3;
 }
 
 .itemPrice {
-    font-weight: 500;
-    color: #444;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
     flex-shrink: 0;
-    margin-left: 12px;
 }
 
-.summaryTotalSection {
-    margin-top: 1.5rem;
-}
-
+/* Coupon */
 .couponSection {
-    border-top: 1px solid #e0e0e0;
-    padding-top: 1.5rem;
-    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8e8e8;
+    margin-bottom: 1rem;
 }
 
 .couponForm {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
 }
 
@@ -315,84 +279,80 @@
 
 .couponIcon {
     position: absolute;
-    left: 14px;
-    color: #888;
+    left: 12px;
+    color: #999;
 }
 
 .couponInput {
     width: 100%;
-    padding: 14px 14px 14px 40px;
-    border: 1px solid #ccc;
+    padding: 12px 12px 12px 38px;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 0.95rem;
-    background: #fff;
+    font-size: 0.88rem;
+    background: #fafafa;
     outline: none;
     transition: all 0.2s;
 }
 
 .couponInput:focus {
     border-color: #333;
+    background: #fff;
     box-shadow: 0 0 0 1px #333;
 }
 
 .couponBtn {
-    padding: 14px 24px;
+    padding: 12px 18px;
     background: #333;
     color: #fff;
     border: none;
     border-radius: 4px;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 48px;
-    min-width: 90px;
+    height: 44px;
+    min-width: 72px;
+    white-space: nowrap;
 }
 
-.couponBtn:hover:not(:disabled) {
-    background: #111;
-}
-
-.couponBtn:disabled {
-    background: #aaa;
-    cursor: not-allowed;
-}
+.couponBtn:hover:not(:disabled) { background: #111; }
+.couponBtn:disabled { background: #aaa; cursor: not-allowed; }
 
 .couponError {
     color: #d32f2f;
-    font-size: 0.85rem;
-    margin-top: 8px;
+    font-size: 0.82rem;
+    margin-top: 6px;
     font-weight: 500;
 }
 
 .couponSuccess {
     color: #388e3c;
-    font-size: 0.85rem;
-    margin-top: 8px;
+    font-size: 0.82rem;
+    margin-top: 6px;
     font-weight: 500;
 }
 
 .appliedCoupons {
-    margin-top: 1rem;
+    margin-top: 0.8rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .appliedCouponTag {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: #f0f0f0;
-    padding: 6px 12px;
+    gap: 5px;
+    background: #f0fdf4;
+    padding: 5px 10px;
     border-radius: 4px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: #333;
-    border: 1px dashed #aaa;
+    color: #166534;
+    border: 1px dashed #86efac;
 }
 
 .removeCouponBtn {
@@ -400,59 +360,212 @@
     border: none;
     cursor: pointer;
     color: #888;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     display: flex;
     align-items: center;
-    justify-content: center;
     padding: 0;
-    margin-left: 4px;
+    margin-left: 2px;
     transition: color 0.1s;
 }
 
-.removeCouponBtn:hover {
-    color: #d32f2f;
-}
+.removeCouponBtn:hover { color: #d32f2f; }
 
+/* Totals */
 .summaryTotals {
-    border-top: 1px solid #e0e0e0;
-    padding-top: 1.5rem;
-    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8e8e8;
+    margin-bottom: 1rem;
 }
 
 .totalRow {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 1rem;
-    font-size: 1rem;
-    color: #444;
+    margin-bottom: 0.7rem;
+    font-size: 0.95rem;
+    color: #555;
 }
 
+.totalRowBold {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #e8e8e8;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #111;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Payment Methods */
+.paymentSection {
+    margin-bottom: 1.2rem;
+}
+
+.paymentMethods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.gatewayLoader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1rem 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.paymentRadio {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #e0e0e0;
+    padding: 1rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fafafa;
+    transition: border 0.15s, background 0.15s;
+}
+
+.paymentRadio:hover { border-color: #aaa; background: #f5f5f5; }
+
+.radioLeft {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.radioLeft input[type="radio"] {
+    margin-top: 2px;
+    transform: scale(1.15);
+    accent-color: #111;
+    cursor: pointer;
+}
+
+.gatewayTitle {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #111;
+}
+
+.gatewayDesc {
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+.activeRadio {
+    border-color: #111;
+    background: #f8f9fc;
+    box-shadow: 0 0 0 1px #111;
+}
+
+.cardIcons {
+    display: flex;
+    gap: 4px;
+}
+
+.cardIcon {
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 2px 5px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: #fff;
+    color: #333;
+    letter-spacing: 0.03em;
+}
+
+/* Privacy note */
+.privacyNote {
+    font-size: 0.8rem;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.privacyLink {
+    color: #111;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.privacyLink:hover { color: #555; }
+
+/* Terms row */
+.termsRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #333;
+    line-height: 1.4;
+    margin-bottom: 1.2rem;
+}
+
+/* Buttons */
 .payBtn {
-    background: #000;
+    background: #111;
     color: white;
     width: 100%;
-    height: 60px;
+    height: 58px;
     border: none;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     text-transform: uppercase;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 6px;
     transition: background 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
+    margin-bottom: 1.2rem;
 }
 
-.payBtn:hover:not(:disabled) {
-    background: #333;
+.payBtn:hover:not(:disabled) { background: #333; }
+.payBtn:disabled { background: #999; cursor: not-allowed; }
+
+.paypalBtn {
+    background: #FFC439;
+    color: #111;
+    width: 100%;
+    height: 58px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 1.2rem;
 }
 
-.payBtn:disabled {
-    background: #999;
-    cursor: not-allowed;
+.paypalBtn:hover:not(:disabled) { background: #f0b429; transform: translateY(-1px); }
+.paypalBtn:disabled { background: #f5d994; cursor: not-allowed; }
+
+.paypalBtnInner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1rem;
+}
+
+.paypalWordmark {
+    font-family: 'Arial', sans-serif;
+    font-style: italic;
+    font-weight: 900;
+    color: #003087;
+    font-size: 1.15rem;
 }
 
 .spinIcon {
@@ -463,25 +576,38 @@
     to { transform: rotate(360deg); }
 }
 
+/* Trust signals */
 .trustSignals {
-    margin-top: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
-    font-size: 0.85rem;
-    color: #666;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: #888;
 }
 
 .trustSignals div {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
 }
 
+/* ── Responsive ── */
 @media (max-width: 968px) {
+    .container {
+        padding: 5rem 1rem 3rem;
+    }
+
     .checkoutGrid {
         grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    /* On mobile put sidebar first (above the form) */
+    .rightCol { order: -1; }
+
+    .checkoutHeader h1 {
+        font-size: 2rem;
     }
 
     .summaryBlock {

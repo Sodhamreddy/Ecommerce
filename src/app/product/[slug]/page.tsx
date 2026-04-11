@@ -153,7 +153,7 @@ export default async function ProductPage({ params }: Props) {
                         <a href="/">Home</a> /
                         <a href="/shop">Shop</a> /
                         {product.categories[0] && (
-                            <><a href={`/shop?category=${product.categories[0].slug}`}>{product.categories[0].name}</a> / </>
+                            <><a href={`/product-category/${product.categories[0].slug}`}>{product.categories[0].name}</a> / </>
                         )}
                         <span>{product.name}</span>
                     </nav>

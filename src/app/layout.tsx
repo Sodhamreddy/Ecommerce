@@ -20,6 +20,7 @@ const staatliches = Staatliches({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://darkcyan-mole-964489.hostingersite.com'),
   title: "Jersey Perfume | Luxury Fragrances",
   description: "Experience the essence of luxury with Jersey Perfume. Exquisite fragrances for the modern soul.",
 };
@@ -31,6 +32,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${mulish.variable} ${staatliches.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://jerseyperfume.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://jerseyperfume.com" />
+        <link rel="preconnect" href="https://www.instagram.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.instagram.com" />
+      </head>
       <body>
         <CartProvider>
           <Header />

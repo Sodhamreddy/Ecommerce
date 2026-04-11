@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Product } from '@/lib/api';
 import { ShoppingBag, Plus, Minus, Heart, Eye, Star, Zap, CheckCircle } from 'lucide-react';
 import styles from './ProductCard.module.css';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 
 interface ProductCardProps {
@@ -22,14 +22,15 @@ export default function ProductCard({ product, viewType = 'grid' }: ProductCardP
     const { addToCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [added, setAdded] = useState(false);
-    const [wishlisted, setWishlisted] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const wl = JSON.parse(localStorage.getItem('wishlist') || '[]');
-            return wl.includes(product.id);
-        }
-        return false;
-    });
+    const [wishlisted, setWishlisted] = useState(false);
     const [imageIdx, setImageIdx] = useState(0);
+
+    useEffect(() => {
+        const wl = JSON.parse(localStorage.getItem('wishlist') || '[]');
+        if (wl.includes(product.id)) {
+            setWishlisted(true);
+        }
+    }, [product.id]);
 
     const mainImage = product.images[imageIdx]?.src || product.images[0]?.src || '/placeholder.jpg';
     const hoverImage = product.images[1]?.src || product.images[0]?.src || '/placeholder.jpg';

@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Metadata } from 'next';
+import { API_BASE_URL } from '@/lib/config';
 import styles from './Blog.module.css';
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
     title: 'The Fragrance Blog | Jersey Perfume',
@@ -10,7 +13,7 @@ export const metadata: Metadata = {
 
 async function getPosts() {
     try {
-        const res = await fetch('https://jerseyperfume.com/wp-json/wp/v2/posts?_embed');
+        const res = await fetch(`${API_BASE_URL}/wp/v2/posts?_embed`, { next: { revalidate: 3600 } });
         if (!res.ok) throw new Error('Failed to fetch posts');
         return await res.json();
     } catch (error) {
