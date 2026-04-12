@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const cookie = request.headers.get('cookie') || '';
-        const nonce = request.headers.get('Nonce') || request.headers.get('nonce') || '';
+        const nonce = request.headers.get('X-WC-Store-Api-Nonce') || request.headers.get('Nonce') || request.headers.get('nonce') || '';
         const { action, ...params } = body;
         
         let url = `${WC_STORE_API}/cart`;
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
             'Accept': 'application/json',
             ...(cookie ? { 'Cookie': cookie } : {}),
         };
-        if (nonce) headers['Nonce'] = nonce;
+        if (nonce) headers['X-WC-Store-Api-Nonce'] = nonce;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -44,11 +44,11 @@ export async function POST(request: Request) {
         }
 
         const setCookie = response.headers.get('set-cookie');
-        const resNonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const resNonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         
         const nextResponse = NextResponse.json(data, { status: response.status });
         if (setCookie) nextResponse.headers.set('set-cookie', setCookie);
-        if (resNonce) nextResponse.headers.set('Nonce', resNonce);
+        if (resNonce) nextResponse.headers.set('X-WC-Store-Api-Nonce', resNonce);
         
         return nextResponse;
     } catch (e: any) {

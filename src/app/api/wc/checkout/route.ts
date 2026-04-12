@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const cookie = request.headers.get('cookie') || '';
-        const nonce = request.headers.get('Nonce') || request.headers.get('nonce') || '';
+        const nonce = request.headers.get('X-WC-Store-Api-Nonce') || request.headers.get('Nonce') || request.headers.get('nonce') || '';
 
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ...(cookie ? { 'Cookie': cookie } : {}),
         };
-        if (nonce) headers['Nonce'] = nonce;
+        if (nonce) headers['X-WC-Store-Api-Nonce'] = nonce;
 
         const response = await fetch(`${WC_STORE_API}/checkout`, {
             method: 'POST',

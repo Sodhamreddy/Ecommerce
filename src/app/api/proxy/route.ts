@@ -50,10 +50,10 @@ export async function GET(request: Request) {
         const headers = new Headers();
         const total = response.headers.get('X-WP-Total');
         const pages = response.headers.get('X-WP-TotalPages');
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce') || response.headers.get('X-WC-Store-API-Nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (total) headers.set('X-WP-Total', total);
         if (pages) headers.set('X-WP-TotalPages', pages);
-        if (nonce) headers.set('Nonce', nonce);
+        if (nonce) headers.set('X-WC-Store-Api-Nonce', nonce);
 
         // Forward WC session cookie back to browser so POST mutations (coupon, checkout)
         // use the same WC session. Strip Secure/Domain/SameSite so it works on localhost.
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const cookie = request.headers.get('cookie') || '';
-        const nonce = request.headers.get('Nonce') || request.headers.get('nonce') || '';
+        const nonce = request.headers.get('X-WC-Store-Api-Nonce') || request.headers.get('Nonce') || request.headers.get('nonce') || '';
 
         const fetchHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Cookie': cookie
         };
-        if (nonce) fetchHeaders['Nonce'] = nonce;
+        if (nonce) fetchHeaders['X-WC-Store-Api-Nonce'] = nonce;
 
         const response = await fetch(finalUrl, {
             method: 'POST',
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
         }
 
         const setCookie = response.headers.get('set-cookie');
-        const resNonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const resNonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
 
         const nextResponse = NextResponse.json(data, { status: response.status });
         if (setCookie) {
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
                 .replace(/;\s*Domain=[^;,]*/gi, '');
             nextResponse.headers.set('set-cookie', sanitized);
         }
-        if (resNonce) nextResponse.headers.set('Nonce', resNonce);
+        if (resNonce) nextResponse.headers.set('X-WC-Store-Api-Nonce', resNonce);
 
         return nextResponse;
     } catch (error: any) {

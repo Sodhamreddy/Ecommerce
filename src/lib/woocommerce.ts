@@ -7,7 +7,7 @@
 // WC Store API nonce — required for all cart mutation POST requests
 let _wcNonce: string | null = null;
 function setNonce(v: string | null) { if (typeof window !== 'undefined') _wcNonce = v; }
-function nonceHeaders(): Record<string, string> { return _wcNonce ? { 'Nonce': _wcNonce } : {}; }
+function nonceHeaders(): Record<string, string> { return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; }
 
 import { API_BASE_URL, SITE_DOMAIN, WC_STORE_API } from './config';
 
@@ -76,7 +76,7 @@ export async function getWCCart(): Promise<WCCart | null> {
         const url = getApiUrl('wc/store/v1/cart');
         const response = await fetch(url);
         // Capture nonce for subsequent mutation requests
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
@@ -96,7 +96,7 @@ export async function addToWCCart(productId: number, quantity: number = 1): Prom
             headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
             body: JSON.stringify({ id: productId, quantity }),
         });
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
@@ -116,7 +116,7 @@ export async function updateWCCartItem(itemKey: string, quantity: number): Promi
             headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
             body: JSON.stringify({ key: itemKey, quantity }),
         });
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
@@ -136,7 +136,7 @@ export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> 
             headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
             body: JSON.stringify({ key: itemKey }),
         });
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
@@ -166,7 +166,7 @@ export async function applyCoupon(code: string): Promise<WCCart | null> {
             headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
             body: JSON.stringify({ code }),
         });
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
@@ -193,7 +193,7 @@ export async function updateCartCustomer(data: {
             headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
             body: JSON.stringify(data),
         });
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
@@ -213,7 +213,7 @@ export async function removeCoupon(code: string): Promise<WCCart | null> {
             headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
             body: JSON.stringify({ code }),
         });
-        const nonce = response.headers.get('Nonce') || response.headers.get('nonce');
+        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
