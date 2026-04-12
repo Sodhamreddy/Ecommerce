@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Metadata } from 'next';
 import { API_BASE_URL } from '@/lib/config';
+import { fetchWithRetry, delay } from '@/lib/fetch-utils';
 import styles from './Blog.module.css';
 
 export const revalidate = 3600;
@@ -13,11 +14,14 @@ export const metadata: Metadata = {
 
 async function getPosts() {
     try {
-        const res = await fetch(`${API_BASE_URL}/wp/v2/posts?_embed`, { next: { revalidate: 3600 } });
-        if (!res.ok) throw new Error('Failed to fetch posts');
+        const res = await fetchWithRetry(`${API_BASE_URL}/wp/v2/posts?_embed`, { next: { revalidate: 3600 } }, 3, 1000, 'Blog');
+        if (!res.ok) {
+            console.warn('[Blog] Failed to fetch posts:', res.status);
+            return [];
+        }
         return await res.json();
     } catch (error) {
-        console.error(error);
+        console.error('[Blog Error]', error);
         return [];
     }
 }

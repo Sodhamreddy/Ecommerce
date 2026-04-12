@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    staticGenerationMaxConcurrency: 4,
+    staticGenerationMaxConcurrency: 1,
   },
 };
 

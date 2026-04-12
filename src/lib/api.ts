@@ -44,6 +44,7 @@ export interface Product {
 }
 
 import { API_BASE_URL } from './config';
+import { fetchWithRetry, delay } from './fetch-utils';
 
 const getApiUrl = (path: string, params: Record<string, string | number> = {}) => {
     const isServer = typeof window === 'undefined';
@@ -130,7 +131,7 @@ export async function fetchProducts(
         };
 
         const url = getApiUrl('wc/store/v1/products', params);
-        const response = await fetch(url, {
+        const response = await fetchWithRetry(url, {
             headers: COMMON_HEADERS,
             next: { revalidate: 3600 } 
         });
@@ -221,8 +222,10 @@ export async function fetchCategoriesWithThumbnails(): Promise<Category[]> {
     // Fetch one product per category in parallel to get its image
     const results = await Promise.allSettled(
         needsThumb.map(async (cat) => {
+            // Add a small jittered delay to avoid hitting the server all at once
+            await delay(Math.random() * 500);
             const url = getApiUrl('wc/store/v1/products', { category: cat.id, per_page: 1 });
-            const res = await fetch(url, {
+            const res = await fetchWithRetry(url, {
                 headers: { 'Accept': 'application/json' },
                 next: { revalidate: 3600 },
             });
@@ -257,6 +260,8 @@ export async function fetchAllProducts(): Promise<Product[]> {
         allProducts = [...allProducts, ...products];
         if (products.length < perPage) break;
         page++;
+        // Pace the requests
+        await delay(200);
     }
 
     return allProducts;
@@ -265,7 +270,7 @@ export async function fetchAllProducts(): Promise<Product[]> {
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
     try {
         const url = getApiUrl(`wc/store/v1/products?slug=${slug}`);
-        const response = await fetch(url, { 
+        const response = await fetchWithRetry(url, { 
             headers: {
                 'Accept': 'application/json',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -285,7 +290,7 @@ export async function fetchProductsByIDs(ids: number[]): Promise<Product[]> {
     if (!ids || ids.length === 0) return [];
     try {
         const url = getApiUrl(`wc/store/v1/products?include=${ids.join(',')}`);
-        const response = await fetch(url, {
+        const response = await fetchWithRetry(url, {
             headers: {
                 'Accept': 'application/json',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'

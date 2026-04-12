@@ -10,6 +10,7 @@ function setNonce(v: string | null) { if (typeof window !== 'undefined') _wcNonc
 function nonceHeaders(): Record<string, string> { return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; }
 
 import { API_BASE_URL, SITE_DOMAIN, WC_STORE_API } from './config';
+import { fetchWithRetry, delay } from './fetch-utils';
 
 const COMMON_HEADERS = {
     'Accept': 'application/json',
@@ -79,7 +80,7 @@ export interface WCCart {
 export async function getWCCart(): Promise<WCCart | null> {
     try {
         const url = getApiUrl('wc/store/v1/cart');
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         // Capture nonce for subsequent mutation requests
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -391,7 +392,7 @@ export async function fetchWPPosts(
         if (search) params.search = search;
         
         const url = getApiUrl(path, params);
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return { posts: [], totalPages: 0, total: 0 };
 
         const total = parseInt(response.headers.get('X-WP-Total') || '0');
@@ -409,7 +410,7 @@ export async function fetchWPPosts(
 export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
     try {
         const url = getApiUrl(`wp/v2/posts?slug=${slug}&_embed`);
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const posts = await response.json();
         return posts[0] || null;
@@ -424,7 +425,7 @@ export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
 export async function fetchWPPage(slug: string): Promise<WPPost | null> {
     try {
         const url = getApiUrl(`wp/v2/pages?slug=${slug}&_embed`);
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const pages = await response.json();
         return pages[0] || null;
@@ -439,7 +440,7 @@ export async function fetchWPPage(slug: string): Promise<WPPost | null> {
 export async function fetchWPCategories(): Promise<any[]> {
     try {
         const url = getApiUrl('wp/v2/categories?per_page=100');
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -453,7 +454,7 @@ export async function fetchWPCategories(): Promise<any[]> {
 export async function fetchWPTags(): Promise<any[]> {
     try {
         const url = getApiUrl('wp/v2/tags?per_page=100');
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -466,7 +467,7 @@ export async function fetchWPTags(): Promise<any[]> {
 export async function fetchWCProductCategories(): Promise<any[]> {
     try {
         const url = getApiUrl('wc/store/v1/products/categories?per_page=100');
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -477,7 +478,7 @@ export async function fetchWCProductCategories(): Promise<any[]> {
 export async function fetchWCProductTags(): Promise<any[]> {
     try {
         const url = getApiUrl('wc/store/v1/products/tags?per_page=100');
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -490,7 +491,7 @@ export async function fetchWCProductTags(): Promise<any[]> {
 export async function fetchOnSaleProducts(page = 1, perPage = 20): Promise<any> {
     try {
         const url = getApiUrl(`wc/store/v1/products?page=${page}&per_page=${perPage}&on_sale=true`);
-        const response = await fetch(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return { products: [], totalPages: 0, totalProducts: 0 };
         const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0');
         const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
@@ -511,6 +512,7 @@ export async function fetchAllWPPosts(): Promise<WPPost[]> {
         allPosts = [...allPosts, ...posts];
         if (posts.length < perPage) break;
         page++;
+        await delay(200);
     }
     return allPosts;
 }

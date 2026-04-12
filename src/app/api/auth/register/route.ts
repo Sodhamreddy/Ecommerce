@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/config';
+import { fetchWithRetry } from '@/lib/fetch-utils';
 
 export async function POST(request: Request) {
     const { email, password, first_name, last_name } = await request.json();
@@ -18,16 +19,17 @@ export async function POST(request: Request) {
 
     if (!ckKey || !ckSecret) {
         return NextResponse.json(
-            { error: 'Registration is not configured. Please contact support.' },
-            { status: 503 }
+            { error: 'Registration is temporarily unavailable (API configuration missing). Please ensure WC_CONSUMER_KEY/SECRET are set in the environment.' },
+            { status: 400 }
         );
     }
 
     // ── Check if email already exists ──
     try {
-        const checkRes = await fetch(
+        const checkRes = await fetchWithRetry(
             `${API_BASE_URL}/wc/v3/customers?email=${encodeURIComponent(email)}&consumer_key=${ckKey}&consumer_secret=${ckSecret}`,
-            { cache: 'no-store' }
+            { cache: 'no-store' },
+            3, 1000, 'RegisterCheck'
         );
         if (checkRes.ok) {
             const existing = await checkRes.json();
@@ -42,13 +44,14 @@ export async function POST(request: Request) {
 
     // ── Create new customer ──
     try {
-        const res = await fetch(
+        const res = await fetchWithRetry(
             `${API_BASE_URL}/wc/v3/customers?consumer_key=${ckKey}&consumer_secret=${ckSecret}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, first_name, last_name }),
-            }
+            },
+            3, 1000, 'RegisterCreate'
         );
 
         const data = await res.json().catch(() => ({}));
