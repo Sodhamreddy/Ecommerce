@@ -91,9 +91,9 @@ export default function CartPage() {
                         <span>${cartTotal.toFixed(2)}</span>
                     </div>
 
-                    <button className={styles.checkoutBtn}>
+                    <Link href="/checkout" className={styles.checkoutBtn}>
                         PROCEED TO CHECKOUT
-                    </button>
+                    </Link>
                 </aside>
             </div>
         </div>

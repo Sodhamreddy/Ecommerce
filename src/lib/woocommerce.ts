@@ -7,7 +7,12 @@
 // WC Store API nonce — required for all cart mutation POST requests
 let _wcNonce: string | null = null;
 function setNonce(v: string | null) { if (typeof window !== 'undefined') _wcNonce = v; }
-function nonceHeaders(): Record<string, string> { return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; }
+function nonceHeaders(): Record<string, string> { 
+    if (!_wcNonce) {
+        console.warn('[WooCommerce Store API] No Nonce available for mutation request. This may result in 401 Unauthorized errors.');
+    }
+    return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; 
+}
 
 import { API_BASE_URL, SITE_DOMAIN, WC_STORE_API } from './config';
 import { fetchWithRetry, delay } from './fetch-utils';
@@ -317,14 +322,10 @@ export interface OrderResult {
  * Submit checkout via local proxy
  */
 export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderResult> {
-    const isServer = typeof window === 'undefined';
-    const url = isServer
-        ? `${WC_STORE_API}/checkout`
-        : '/api/wc/checkout';
-
+    const url = getApiUrl('wc/store/v1/checkout');
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+        headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
         body: JSON.stringify(checkoutData),
     });
 

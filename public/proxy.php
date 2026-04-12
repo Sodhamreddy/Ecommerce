@@ -30,8 +30,15 @@ $headers = [
     'Accept: application/json',
 ];
 
-if (isset($_SERVER['HTTP_X_WC_STORE_API_NONCE'])) {
-    $headers[] = 'X-WC-Store-Api-Nonce: ' . $_SERVER['HTTP_X_WC_STORE_API_NONCE'];
+// Capture any Nonce or specialized WC headers from the incoming request (Case-Insensitive)
+foreach ($_SERVER as $name => $value) {
+    if (substr($name, 0, 5) == 'HTTP_') {
+        $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($name, 5)))));
+        $lowName = strtolower($headerName);
+        if (strpos($lowName, 'nonce') !== false || strpos($lowName, 'wc-store-api') !== false) {
+            $headers[] = "$headerName: $value";
+        }
+    }
 }
 
 if (isset($_SERVER['HTTP_COOKIE'])) {
