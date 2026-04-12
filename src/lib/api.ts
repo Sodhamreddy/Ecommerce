@@ -249,7 +249,7 @@ export async function fetchCategoriesWithThumbnails(): Promise<Category[]> {
 export async function fetchAllProducts(): Promise<Product[]> {
     let allProducts: Product[] = [];
     let page = 1;
-    const perPage = 100;
+    const perPage = 50;
 
     while (true) {
         const { products } = await fetchProducts(page, perPage);

@@ -26,7 +26,12 @@ async function getHomepageData() {
         fetchProducts(1, 4, "", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "Give Me Gourmand", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "", "", "", "", "date", "desc", true),
-        fetch(`${API_BASE_URL}/wp/v2/posts?per_page=3&_embed`).then((r) =>
+        fetch(`${API_BASE_URL}/wp/v2/posts?per_page=3&_embed`, {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        }).then((r) =>
           r.ok ? r.json() : []
         ),
         fetchCategoriesWithThumbnails(),

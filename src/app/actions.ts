@@ -17,7 +17,12 @@ export async function fetchProductsAction(
 
 export async function fetchReviewsAction(productId: number) {
     try {
-        const response = await fetch(`${API_BASE_URL}/wc/store/v1/products/${productId}/reviews`);
+        const response = await fetch(`${API_BASE_URL}/wc/store/v1/products/${productId}/reviews`, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
         if (!response.ok) {
             console.warn(`Failed to fetch reviews: ${response.statusText}`);
             return [];
@@ -31,7 +36,12 @@ export async function fetchReviewsAction(productId: number) {
 
 export async function fetchBlogPostsAction(limit = 3) {
     try {
-        const response = await fetch(`${API_BASE_URL}/wp/v2/posts?per_page=${limit}&_embed`);
+        const response = await fetch(`${API_BASE_URL}/wp/v2/posts?per_page=${limit}&_embed`, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
         if (!response.ok) {
             console.warn(`Failed to fetch blogs: ${response.statusText}`);
             return [];
@@ -45,7 +55,12 @@ export async function fetchBlogPostsAction(limit = 3) {
 
 export async function fetchWPPageAction(slug: string) {
     try {
-        const response = await fetch(`${API_BASE_URL}/wp/v2/pages?slug=${slug}`);
+        const response = await fetch(`${API_BASE_URL}/wp/v2/pages?slug=${slug}`, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
         if (!response.ok) {
             console.warn(`Failed to fetch page ${slug}: ${response.statusText}`);
             return null;

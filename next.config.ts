@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    staticGenerationMaxConcurrency: 4,
+  },
 };
 
 export default nextConfig;

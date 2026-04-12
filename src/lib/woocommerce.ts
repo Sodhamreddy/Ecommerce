@@ -11,6 +11,11 @@ function nonceHeaders(): Record<string, string> { return _wcNonce ? { 'X-WC-Stor
 
 import { API_BASE_URL, SITE_DOMAIN, WC_STORE_API } from './config';
 
+const COMMON_HEADERS = {
+    'Accept': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+};
+
 const getApiUrl = (path: string, params: Record<string, string | number> = {}) => {
     const isServer = typeof window === 'undefined';
     const isProd = process.env.NODE_ENV === 'production';
@@ -74,7 +79,7 @@ export interface WCCart {
 export async function getWCCart(): Promise<WCCart | null> {
     try {
         const url = getApiUrl('wc/store/v1/cart');
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         // Capture nonce for subsequent mutation requests
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -93,7 +98,7 @@ export async function addToWCCart(productId: number, quantity: number = 1): Prom
         const url = getApiUrl('wc/store/v1/cart/add-item');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ id: productId, quantity }),
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
@@ -113,7 +118,7 @@ export async function updateWCCartItem(itemKey: string, quantity: number): Promi
         const url = getApiUrl('wc/store/v1/cart/update-item');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ key: itemKey, quantity }),
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
@@ -133,7 +138,7 @@ export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> 
         const url = getApiUrl('wc/store/v1/cart/remove-item');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ key: itemKey }),
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
@@ -163,7 +168,7 @@ export async function applyCoupon(code: string): Promise<WCCart | null> {
         const url = getApiUrl('wc/store/v1/cart/apply-coupon');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ code }),
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
@@ -190,7 +195,7 @@ export async function updateCartCustomer(data: {
         const url = getApiUrl('wc/store/v1/cart/update-customer');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify(data),
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
@@ -210,7 +215,7 @@ export async function removeCoupon(code: string): Promise<WCCart | null> {
         const url = getApiUrl('wc/store/v1/cart/remove-coupon');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...nonceHeaders() },
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ code }),
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
@@ -241,7 +246,7 @@ export async function getPaymentGateways(): Promise<PaymentGateway[]> {
         const url = isServer
             ? `${API_BASE_URL}/wc/store/v1/checkout/payment-gateways`
             : isProd ? '/api/wc/payment-gateways' : '/api/wc/payment-gateways';
-        const response = await fetch(url, { cache: 'no-store' });
+        const response = await fetch(url, { headers: COMMON_HEADERS, cache: 'no-store' });
         if (!response.ok) return getDefaultGateways();
         const data = await response.json().catch(() => null);
         return (data && Array.isArray(data) && data.length > 0) ? data : getDefaultGateways();
@@ -386,7 +391,7 @@ export async function fetchWPPosts(
         if (search) params.search = search;
         
         const url = getApiUrl(path, params);
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return { posts: [], totalPages: 0, total: 0 };
 
         const total = parseInt(response.headers.get('X-WP-Total') || '0');
@@ -404,7 +409,7 @@ export async function fetchWPPosts(
 export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
     try {
         const url = getApiUrl(`wp/v2/posts?slug=${slug}&_embed`);
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const posts = await response.json();
         return posts[0] || null;
@@ -419,7 +424,7 @@ export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
 export async function fetchWPPage(slug: string): Promise<WPPost | null> {
     try {
         const url = getApiUrl(`wp/v2/pages?slug=${slug}&_embed`);
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const pages = await response.json();
         return pages[0] || null;
@@ -434,7 +439,7 @@ export async function fetchWPPage(slug: string): Promise<WPPost | null> {
 export async function fetchWPCategories(): Promise<any[]> {
     try {
         const url = getApiUrl('wp/v2/categories?per_page=100');
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -448,7 +453,7 @@ export async function fetchWPCategories(): Promise<any[]> {
 export async function fetchWPTags(): Promise<any[]> {
     try {
         const url = getApiUrl('wp/v2/tags?per_page=100');
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -461,7 +466,7 @@ export async function fetchWPTags(): Promise<any[]> {
 export async function fetchWCProductCategories(): Promise<any[]> {
     try {
         const url = getApiUrl('wc/store/v1/products/categories?per_page=100');
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -472,7 +477,7 @@ export async function fetchWCProductCategories(): Promise<any[]> {
 export async function fetchWCProductTags(): Promise<any[]> {
     try {
         const url = getApiUrl('wc/store/v1/products/tags?per_page=100');
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
@@ -485,7 +490,7 @@ export async function fetchWCProductTags(): Promise<any[]> {
 export async function fetchOnSaleProducts(page = 1, perPage = 20): Promise<any> {
     try {
         const url = getApiUrl(`wc/store/v1/products?page=${page}&per_page=${perPage}&on_sale=true`);
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return { products: [], totalPages: 0, totalProducts: 0 };
         const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0');
         const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
@@ -499,7 +504,7 @@ export async function fetchOnSaleProducts(page = 1, perPage = 20): Promise<any> 
 export async function fetchAllWPPosts(): Promise<WPPost[]> {
     let allPosts: WPPost[] = [];
     let page = 1;
-    const perPage = 100;
+    const perPage = 50;
     while (true) {
         const { posts } = await fetchWPPosts(page, perPage);
         if (posts.length === 0) break;
@@ -513,7 +518,7 @@ export async function fetchAllWPPosts(): Promise<WPPost[]> {
 export async function fetchAllWPPages(): Promise<WPPost[]> {
     try {
         const url = getApiUrl('wp/v2/pages', { per_page: 100 });
-        const response = await fetch(url);
+        const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
     } catch {
