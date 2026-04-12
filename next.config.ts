@@ -1,18 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  trailingSlash: true,
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'jerseyperfume.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'secure.gravatar.com',
-      }
-    ],
+    unoptimized: true,
   },
   typescript: {
     ignoreBuildErrors: true,

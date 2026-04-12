@@ -17,12 +17,12 @@ interface Order {
 }
 
 type DashView = 'dashboard' | 'orders' | 'addresses' | 'account-details';
-type AuthView = 'auth' | 'forgot';
+type AuthView = 'login' | 'register' | 'forgot';
 
 export default function AccountContent() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [dashView, setDashView] = useState<DashView>('dashboard');
-    const [authView, setAuthView] = useState<AuthView>('auth');
+    const [authView, setAuthView] = useState<AuthView>('login');
 
     const [loading, setLoading] = useState(false);
     const [regLoading, setRegLoading] = useState(false);
@@ -379,6 +379,64 @@ export default function AccountContent() {
         );
     }
 
+    // ── Register ──
+    if (authView === 'register') {
+        return (
+            <div className={styles.accountContainer}>
+                <div className={styles.accountHeader}><h1>Create Account</h1></div>
+                <div className={styles.authCard} style={{ maxWidth: '480px', margin: '0 auto' }}>
+                    <h2 className={styles.cardTitle}>Register</h2>
+                    {regError && <div className={styles.errorMsg}>{regError}</div>}
+                    {regSuccess ? (
+                        <div className={styles.successMsg}>
+                            {regSuccess}
+                            <br /><br />
+                            <span className={styles.link} onClick={() => { setAuthView('login'); setRegSuccess(''); setRegError(''); }}>← Back to Login</span>
+                        </div>
+                    ) : (
+                        <>
+                            <form onSubmit={handleRegister}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className={styles.formGroup}>
+                                        <label>First Name *</label>
+                                        <input type="text" name="first_name" required placeholder="First name" />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Last Name *</label>
+                                        <input type="text" name="last_name" required placeholder="Last name" />
+                                    </div>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Email address *</label>
+                                    <input type="email" name="reg_email" required placeholder="your@email.com" />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Password *</label>
+                                    <div className={styles.passwordWrapper}>
+                                        <input type={showRegPwd ? 'text' : 'password'} name="reg_password" required placeholder="Create a password" minLength={6} />
+                                        <button type="button" className={styles.eyeBtn} onClick={() => setShowRegPwd(v => !v)}>
+                                            {showRegPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <p className={styles.privacyNote}>
+                                    Your personal data will be used to support your experience throughout this website, to manage access to your account, and for other purposes described in our <a href="/info/privacy-policy">privacy policy</a>.
+                                </p>
+                                <button type="submit" className={styles.submitBtn} disabled={regLoading}>
+                                    {regLoading ? <Loader2 className="animate-spin" size={18} /> : 'Register'}
+                                </button>
+                            </form>
+                            <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.88rem', color: '#555' }}>
+                                Already have an account?{' '}
+                                <span className={styles.link} onClick={() => { setAuthView('login'); setRegError(''); }}>Log in here</span>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     // ── Forgot Password ──
     if (authView === 'forgot') {
         return (
@@ -417,74 +475,38 @@ export default function AccountContent() {
         );
     }
 
-    // ── Login + Register ──
+    // ── Login ──
     return (
         <div className={styles.accountContainer}>
             <div className={styles.accountHeader}><h1>My Account</h1></div>
-            <div className={styles.authGrid}>
-                {/* LOGIN */}
-                <div className={styles.authCard}>
-                    <h2 className={styles.cardTitle}>Login</h2>
-                    {loginError && <div className={styles.errorMsg}>{loginError}</div>}
-                    {regSuccess && <div className={styles.successMsg}>{regSuccess}</div>}
-                    <form onSubmit={handleLogin}>
-                        <div className={styles.formGroup}>
-                            <label>Username or email address *</label>
-                            <input type="text" name="email" required placeholder="Enter username or email" />
+            <div className={styles.authCard} style={{ maxWidth: '480px', margin: '0 auto' }}>
+                <h2 className={styles.cardTitle}>Login</h2>
+                {loginError && <div className={styles.errorMsg}>{loginError}</div>}
+                {regSuccess && <div className={styles.successMsg}>{regSuccess}</div>}
+                <form onSubmit={handleLogin}>
+                    <div className={styles.formGroup}>
+                        <label>Username or email address *</label>
+                        <input type="text" name="email" required placeholder="Enter username or email" />
+                    </div>
+                    <div className={styles.formGroup}>
+                        <label>Password *</label>
+                        <div className={styles.passwordWrapper}>
+                            <input type={showLoginPwd ? 'text' : 'password'} name="password" required placeholder="••••••••" />
+                            <button type="button" className={styles.eyeBtn} onClick={() => setShowLoginPwd(v => !v)}>
+                                {showLoginPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
-                        <div className={styles.formGroup}>
-                            <label>Password *</label>
-                            <div className={styles.passwordWrapper}>
-                                <input type={showLoginPwd ? 'text' : 'password'} name="password" required placeholder="••••••••" />
-                                <button type="button" className={styles.eyeBtn} onClick={() => setShowLoginPwd(v => !v)}>
-                                    {showLoginPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-                            <span className={styles.forgotLink} style={{ cursor: 'pointer' }} onClick={() => setAuthView('forgot')}>Lost your password?</span>
-                        </div>
-                        <button type="submit" className={styles.submitBtn} disabled={loading}>
-                            {loading ? <Loader2 className="animate-spin" size={18} /> : 'Log In'}
-                        </button>
-                    </form>
-                </div>
-
-                {/* REGISTER */}
-                <div className={styles.authCard}>
-                    <h2 className={styles.cardTitle}>Register</h2>
-                    {regError && <div className={styles.errorMsg}>{regError}</div>}
-                    <form onSubmit={handleRegister}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div className={styles.formGroup}>
-                                <label>First Name *</label>
-                                <input type="text" name="first_name" required placeholder="First name" />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label>Last Name *</label>
-                                <input type="text" name="last_name" required placeholder="Last name" />
-                            </div>
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label>Email address *</label>
-                            <input type="email" name="reg_email" required placeholder="your@email.com" />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label>Password *</label>
-                            <div className={styles.passwordWrapper}>
-                                <input type={showRegPwd ? 'text' : 'password'} name="reg_password" required placeholder="Create a password" minLength={6} />
-                                <button type="button" className={styles.eyeBtn} onClick={() => setShowRegPwd(v => !v)}>
-                                    {showRegPwd ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-                        <p className={styles.privacyNote}>
-                            Your personal data will be used to support your experience throughout this website, to manage access to your account, and for other purposes described in our <a href="/info/privacy-policy">privacy policy</a>.
-                        </p>
-                        <button type="submit" className={styles.submitBtn} disabled={regLoading}>
-                            {regLoading ? <Loader2 className="animate-spin" size={18} /> : 'Register'}
-                        </button>
-                    </form>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+                        <span className={styles.forgotLink} style={{ cursor: 'pointer' }} onClick={() => setAuthView('forgot')}>Lost your password?</span>
+                    </div>
+                    <button type="submit" className={styles.submitBtn} disabled={loading}>
+                        {loading ? <Loader2 className="animate-spin" size={18} /> : 'Log In'}
+                    </button>
+                </form>
+                <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.88rem', color: '#555' }}>
+                    Don&apos;t have an account?{' '}
+                    <span className={styles.link} onClick={() => { setAuthView('register'); setLoginError(''); }} style={{ cursor: 'pointer', fontWeight: 700 }}>Register here</span>
                 </div>
             </div>
         </div>

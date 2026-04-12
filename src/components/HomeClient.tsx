@@ -269,7 +269,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/shop?category=dumont" className={styles.editorialLeft}>
+                    <Link href="/shop?search=dumont" className={styles.editorialLeft}>
                         <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Dumont Paris" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
@@ -281,7 +281,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                     </Link>
 
                     <div className={styles.editorialRight}>
-                        <Link href="/shop?category=lattafa" className={styles.editorialSmall}>
+                        <Link href="/shop?search=lattafa" className={styles.editorialSmall}>
                             <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`} alt="Lattafa" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
@@ -291,7 +291,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                             </div>
                         </Link>
                         
-                        <Link href="/shop?category=ahmed-al-maghribi" className={styles.editorialSmall}>
+                        <Link href="/shop?search=ahmed+al+maghribi" className={styles.editorialSmall}>
                             <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
@@ -403,14 +403,17 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DUBZQKijZbm/" />
                             <h3 className={styles.reelTitle}>Exclusive Collection</h3>
+                            <Link href="/shop?search=exclusive" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/p/DNDnLzfC0-Z/" />
                             <h3 className={styles.reelTitle}>Best Sellers 2026</h3>
+                            <Link href="/shop" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DQXk3C6k0pl/" />
                             <h3 className={styles.reelTitle}>Top 5 Ahmed Al Maghribi</h3>
+                            <Link href="/shop?search=ahmed+al+maghribi" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                     </div>
                 </div>

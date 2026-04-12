@@ -691,6 +691,28 @@
     margin: 0;
 }
 
+.reelShopBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0.55rem 1.4rem;
+    background: #d4a853;
+    color: #111;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    transition: background 0.2s, transform 0.2s;
+    align-self: center;
+}
+
+.reelShopBtn:hover {
+    background: #c49540;
+    transform: translateY(-2px);
+}
+
 .sectionSale {
     padding: 7rem 0;
     background: #000;
@@ -1366,10 +1388,10 @@
 
     /* ── Hero Slider ── */
     .heroSlider {
-        height: auto;
-        aspect-ratio: 16 / 9;
-        min-height: 200px;
-        max-height: 260px;
+        height: 56vw;
+        min-height: 220px;
+        max-height: 420px;
+        aspect-ratio: unset;
     }
 
     /* Remove dark overlay on mobile — banners are designed to be seen cleanly */
@@ -1626,10 +1648,10 @@
     /* ── Very small phones (≤ 400px) ── */
     @media (max-width: 400px) {
         .heroSlider {
-            aspect-ratio: 16 / 9;
-            height: auto;
-            min-height: 180px;
-            max-height: 220px;
+            height: 56vw;
+            min-height: 200px;
+            max-height: 320px;
+            aspect-ratio: unset;
         }
 
         .categoryCard {

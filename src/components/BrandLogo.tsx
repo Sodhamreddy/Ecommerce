@@ -1,16 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface BrandLogoProps {
     brand: string;
 }
 
 const BRAND_LINKS: Record<string, string> = {
-    'DUMONT PARIS': '/product-category/dumont',
-    'LATTAFA': '/product-category/lattafa',
-    'RASASI': '/product-category/rasasi',
-    'AHMED AL MAGHRIBI': '/product-category/ahmed-al-maghribi',
+    'DUMONT PARIS': '/shop?search=dumont',
+    'LATTAFA': '/shop?search=lattafa',
+    'RASASI': '/shop?search=rasasi',
+    'AHMED AL MAGHRIBI': '/shop?search=ahmed+al+maghribi',
     'GIORGIO ARMANI': '/shop?search=armani',
     'BURBERRY': '/shop?search=burberry',
     'PACO RABANNE': '/shop?search=paco+rabanne',
@@ -38,10 +37,12 @@ const BRAND_LOGOS: Record<string, string> = {
     'DUMONT PARIS': 'https://perfumebox.com/cdn/shop/files/dumont_logo.png?v=1729252435',
     'LATTAFA': 'https://perfumebox.com/cdn/shop/files/lattafa_logo.png?v=1729252435',
     'RASASI': 'https://perfumebox.com/cdn/shop/files/rasasi_logo.png?v=1729252434',
-    'CHANEL': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Chanel_logo_interlocking_cs.svg/512px-Chanel_logo_interlocking_cs.svg.png' // Only kept one that works well, use text for rest
+    'CHANEL': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Chanel_logo_interlocking_cs.svg/512px-Chanel_logo_interlocking_cs.svg.png',
 };
 
 export default function BrandLogo({ brand }: BrandLogoProps) {
+    const [logoFailed, setLogoFailed] = useState(false);
+
     const getStyle = (name: string): React.CSSProperties => {
         switch (name.toUpperCase()) {
             case 'GIORGIO ARMANI':
@@ -77,6 +78,7 @@ export default function BrandLogo({ brand }: BrandLogoProps) {
 
     const href = BRAND_LINKS[brand.toUpperCase()] || `/shop?search=${encodeURIComponent(brand.toLowerCase())}`;
     const logoSrc = BRAND_LOGOS[brand.toUpperCase()];
+    const showLogo = logoSrc && !logoFailed;
 
     return (
         <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -92,8 +94,13 @@ export default function BrandLogo({ brand }: BrandLogoProps) {
                 cursor: 'pointer',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
             }}>
-                {logoSrc ? (
-                    <img src={logoSrc} alt={brand} style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
+                {showLogo ? (
+                    <img
+                        src={logoSrc}
+                        alt={brand}
+                        style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }}
+                        onError={() => setLogoFailed(true)}
+                    />
                 ) : (
                     <span style={{ fontSize: '1rem', textAlign: 'center', padding: '0 10px', ...getStyle(brand) }}>
                         {brand}

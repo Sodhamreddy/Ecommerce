@@ -237,9 +237,10 @@ export interface PaymentGateway {
 export async function getPaymentGateways(): Promise<PaymentGateway[]> {
     try {
         const isServer = typeof window === 'undefined';
+        const isProd = process.env.NODE_ENV === 'production';
         const url = isServer
             ? `${API_BASE_URL}/wc/store/v1/checkout/payment-gateways`
-            : '/api/wc/payment-gateways';
+            : isProd ? '/api/wc/payment-gateways' : '/api/wc/payment-gateways';
         const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) return getDefaultGateways();
         const data = await response.json().catch(() => null);
