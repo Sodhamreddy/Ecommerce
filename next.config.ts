@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     staticGenerationMaxConcurrency: 1,
+    staticGenerationRetryCount: 3,
   },
 };
 

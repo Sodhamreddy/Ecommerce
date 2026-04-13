@@ -1,10 +1,10 @@
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function fetchWithRetry(
-    url: string, 
-    options: RequestInit, 
-    retries = 3, 
-    backoff = 1000,
+    url: string,
+    options: RequestInit,
+    retries = 3,
+    backoff = typeof window === 'undefined' ? 3000 : 1000,
     source = 'API'
 ): Promise<Response> {
     for (let i = 0; i < retries; i++) {
