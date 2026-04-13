@@ -65,7 +65,7 @@ $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 $respHeaders = substr($response, 0, $headerSize);
 $body = substr($response, $headerSize);
-curl_close($ch);
+
 
 // Expose headers for browser visibility
 header('Access-Control-Expose-Headers: X-WP-Total, X-WP-TotalPages, X-WC-Store-Api-Nonce, Nonce, x-wc-store-api-nonce, nonce');
