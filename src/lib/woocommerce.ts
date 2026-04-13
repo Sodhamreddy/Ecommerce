@@ -6,7 +6,12 @@
 
 // WC Store API nonce — required for all cart mutation POST requests
 let _wcNonce: string | null = null;
-function setNonce(v: string | null) { if (typeof window !== 'undefined') _wcNonce = v; }
+function setNonce(v: string | null) { 
+    if (typeof window !== 'undefined' && v) {
+        console.log('[WooCommerce] Security Nonce captured:', v.substring(0, 5) + '...');
+        _wcNonce = v; 
+    }
+}
 function nonceHeaders(): Record<string, string> { 
     return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; 
 }
@@ -84,8 +89,19 @@ export async function getWCCart(): Promise<WCCart | null> {
     try {
         const url = getApiUrl('wc/store/v1/cart');
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
-        // Capture nonce for subsequent mutation requests
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
+        // Capture nonce for subsequent mutation requests - check common variations
+        let nonce = response.headers.get('X-WC-Store-Api-Nonce') || 
+                    response.headers.get('Nonce') || 
+                    response.headers.get('nonce') ||
+                    response.headers.get('x-wc-store-api-nonce');
+        
+        // Fallback: search all headers for something looking like a nonce
+        if (!nonce) {
+            response.headers.forEach((val, key) => {
+                if (key.toLowerCase().includes('nonce')) nonce = val;
+            });
+        }
+
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
