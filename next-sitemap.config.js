@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 
-const SITE_URL = 'https://darkcyan-mole-964489.hostingersite.com';
+const SITE_URL = 'https://chocolate-wolf-402288.hostingersite.com';
 
 async function fetchAllSlugs() {
     const paths = [];
