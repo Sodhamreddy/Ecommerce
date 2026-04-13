@@ -4,20 +4,35 @@
  * Product data is fetched directly from WC Store API (public, CORS-allowed).
  */
 
-// WC Store API nonce — required for all cart mutation POST requests
-let _wcNonce: string | null = null;
-function setNonce(v: string | null) { 
+import { API_BASE_URL, SITE_DOMAIN } from './config';
+import { fetchWithRetry, delay } from './fetch-utils';
+
+// WC Store API nonce — required for all cart mutation POST requests.
+// Restored from sessionStorage on load so page refreshes/navigations don't lose it.
+let _wcNonce: string | null =
+    typeof window !== 'undefined'
+        ? (() => { try { return sessionStorage.getItem('wc_nonce'); } catch { return null; } })()
+        : null;
+
+function setNonce(v: string | null) {
     if (typeof window !== 'undefined' && v) {
-        console.log('[WooCommerce] Security Nonce captured:', v.substring(0, 5) + '...');
-        _wcNonce = v; 
+        _wcNonce = v;
+        try { sessionStorage.setItem('wc_nonce', v); } catch {}
     }
 }
-function nonceHeaders(): Record<string, string> { 
-    return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; 
+function nonceHeaders(): Record<string, string> {
+    return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {};
 }
 
-import { API_BASE_URL, SITE_DOMAIN, WC_STORE_API } from './config';
-import { fetchWithRetry, delay } from './fetch-utils';
+/**
+ * Ensure a nonce is available before any cart mutation.
+ * If _wcNonce is missing (fresh page load, sessionStorage cleared),
+ * fetches the cart once to obtain one from WooCommerce.
+ */
+async function ensureNonce(): Promise<void> {
+    if (_wcNonce) return;
+    await getWCCart();
+}
 
 const COMMON_HEADERS = {
     'Accept': 'application/json',
@@ -187,6 +202,7 @@ function decodeHtml(str: string): string {
  * Apply coupon to WooCommerce cart
  */
 export async function applyCoupon(code: string): Promise<WCCart | null> {
+    await ensureNonce();
     try {
         const url = getApiUrl('wc/store/v1/cart/apply-coupon');
         const response = await fetch(url, {
@@ -236,6 +252,7 @@ export async function updateCartCustomer(data: {
  * Remove coupon from WooCommerce cart via proxy
  */
 export async function removeCoupon(code: string): Promise<WCCart | null> {
+    await ensureNonce();
     try {
         const url = getApiUrl('wc/store/v1/cart/remove-coupon');
         const response = await fetch(url, {
@@ -341,6 +358,7 @@ export interface OrderResult {
  * Submit checkout via local proxy
  */
 export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderResult> {
+    await ensureNonce();
     const url = getApiUrl('wc/store/v1/checkout');
     const headers = { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() };
     console.log('[WooCommerce] Submitting checkout. Headers:', Object.keys(headers));
