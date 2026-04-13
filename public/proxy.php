@@ -5,6 +5,18 @@
  * It solves CORS (Cross-Origin) issues and handles cart sessions (cookies) automatically.
  */
 
+// Allow CORS and custom headers
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
+header('Access-Control-Allow-Headers: Content-Type, X-WC-Store-Api-Nonce, Nonce, Authorization, X-Requested-With');
+header('Access-Control-Expose-Headers: X-WC-Store-Api-Nonce, Nonce, X-WP-Total, X-WP-TotalPages');
+
+// Handle preflight OPTIONS requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 $backend_base = "https://jerseyperfume.com/wp-json";
 $path = $_GET['path'] ?? '';
 
@@ -29,18 +41,33 @@ $headers = [
     'Accept: application/json',
 ];
 
-// Capture any Nonce or specialized WC headers from the incoming request (Case-Insensitive)
-foreach ($_SERVER as $name => $value) {
-    if (substr($name, 0, 5) == 'HTTP_') {
-        $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($name, 5)))));
-        $lowName = strtolower($headerName);
-
-        // Normalize ANY nonce variations to the exact casing WooCommerce expects
-        if ($lowName === 'x-wc-store-api-nonce' || $lowName === 'nonce') {
-            $headers[] = "X-WC-Store-Api-Nonce: $value";
-        } elseif (strpos($lowName, 'wc-store-api') !== false) {
-            $headers[] = "$headerName: $value";
+// Capture ALL incoming request headers
+$incomingHeaders = [];
+if (function_exists('apache_request_headers')) {
+    $incomingHeaders = apache_request_headers();
+} else {
+    foreach ($_SERVER as $name => $value) {
+        if (substr($name, 0, 5) == 'HTTP_') {
+            $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($name, 5)))));
+            $incomingHeaders[$headerName] = $value;
         }
+    }
+}
+
+// Map and normalize headers for the backend request
+foreach ($incomingHeaders as $name => $value) {
+    $lowName = strtolower($name);
+    
+    // Explicitly normalize any variation of the security nonce
+    if ($lowName === 'x-wc-store-api-nonce' || $lowName === 'nonce') {
+        $headers[] = "X-WC-Store-Api-Nonce: $value";
+    } elseif ($lowName === 'content-type') {
+        // Skip - already in $headers
+    } elseif ($lowName === 'user-agent' || $lowName === 'accept' || $lowName === 'cookie') {
+        // Skip - handled separately or already in $headers
+    } elseif (strpos($lowName, 'wc-') === 0 || strpos($lowName, 'x-wp') === 0) {
+        // Forward official WC and WP headers
+        $headers[] = "$name: $value";
     }
 }
 
@@ -74,7 +101,12 @@ header('Access-Control-Expose-Headers: X-WP-Total, X-WP-TotalPages, X-WC-Store-A
 $lines = explode("\r\n", $respHeaders);
 foreach ($lines as $h) {
     if (stripos($h, 'Set-Cookie:') === 0) {
-        header($h, false); // Allow multiple cookies
+        // Sanitize cookies: remove Domain, Secure, and SameSite restrictions 
+        // so the browser accepts them on the current domain (Hostinger).
+        $sanitized = preg_replace('/;\s*Domain=[^;]*/i', '', $h);
+        $sanitized = preg_replace('/;\s*Secure/i', '', $sanitized);
+        $sanitized = preg_replace('/;\s*SameSite=[^;]*/i', '', $sanitized);
+        header($sanitized, false); 
     } elseif (stripos($h, 'Content-Type:') === 0) {
         header($h);
     } elseif (stripos($h, 'X-WP-Total:') === 0 || stripos($h, 'X-WP-TotalPages:') === 0) {
