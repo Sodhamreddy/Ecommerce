@@ -336,9 +336,12 @@ export interface OrderResult {
  */
 export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderResult> {
     const url = getApiUrl('wc/store/v1/checkout');
+    const headers = { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() };
+    console.log('[WooCommerce] Submitting checkout. Headers:', Object.keys(headers));
+    
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
+        headers: headers,
         body: JSON.stringify(checkoutData),
     });
 

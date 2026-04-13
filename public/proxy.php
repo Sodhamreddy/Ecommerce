@@ -35,10 +35,10 @@ foreach ($_SERVER as $name => $value) {
         $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($name, 5)))));
         $lowName = strtolower($headerName);
 
-        // Map to exact casing expected by WooCommerce for consistency
-        if ($lowName === 'x-wc-store-api-nonce') {
+        // Normalize ANY nonce variations to the exact casing WooCommerce expects
+        if ($lowName === 'x-wc-store-api-nonce' || $lowName === 'nonce') {
             $headers[] = "X-WC-Store-Api-Nonce: $value";
-        } elseif (strpos($lowName, 'nonce') !== false || strpos($lowName, 'wc-store-api') !== false) {
+        } elseif (strpos($lowName, 'wc-store-api') !== false) {
             $headers[] = "$headerName: $value";
         }
     }
@@ -79,8 +79,10 @@ foreach ($lines as $h) {
         header($h);
     } elseif (stripos($h, 'X-WP-Total:') === 0 || stripos($h, 'X-WP-TotalPages:') === 0) {
         header($h);
-    } elseif (stripos($h, 'X-WC-Store-Api-Nonce:') === 0 || stripos($h, 'Nonce:') === 0) {
-        header($h);
+    } elseif (stripos($h, 'X-WC-Store-Api-Nonce:') === 0 || stripos($h, 'Nonce:') === 0 || stripos($h, 'nonce:') === 0) {
+        // Forward any nonce variation back to client as the standard X-WC-Store-Api-Nonce
+        $parts = explode(':', $h, 2);
+        header('X-WC-Store-Api-Nonce: ' . trim($parts[1]));
     }
 }
 
