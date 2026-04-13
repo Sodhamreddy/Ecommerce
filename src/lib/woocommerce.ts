@@ -26,12 +26,25 @@ function nonceHeaders(): Record<string, string> {
 
 /**
  * Ensure a nonce is available before any cart mutation.
- * If _wcNonce is missing (fresh page load, sessionStorage cleared),
- * fetches the cart once to obtain one from WooCommerce.
+ *
+ * Custom response headers (X-WC-Store-Api-Nonce) can be stripped by some
+ * hosting providers / CDNs before they reach the browser. This function calls
+ * a dedicated endpoint that returns the nonce in the JSON body instead,
+ * making delivery reliable regardless of server configuration.
  */
 async function ensureNonce(): Promise<void> {
     if (_wcNonce) return;
-    await getWCCart();
+    if (typeof window === 'undefined') return;
+    try {
+        const isProd = process.env.NODE_ENV === 'production';
+        const url = isProd ? '/api/wc/nonce.php' : '/api/wc/nonce';
+        const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
+        const data = await res.json();
+        if (data.nonce) setNonce(data.nonce);
+    } catch {
+        // Last-resort fallback: try to grab nonce from cart response headers
+        await getWCCart();
+    }
 }
 
 const COMMON_HEADERS = {
