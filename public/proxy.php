@@ -34,7 +34,7 @@ foreach ($_SERVER as $name => $value) {
     if (substr($name, 0, 5) == 'HTTP_') {
         $headerName = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($name, 5)))));
         $lowName = strtolower($headerName);
-        
+
         // Map to exact casing expected by WooCommerce for consistency
         if ($lowName === 'x-wc-store-api-nonce') {
             $headers[] = "X-WC-Store-Api-Nonce: $value";
@@ -84,5 +84,6 @@ foreach ($lines as $h) {
     }
 }
 
+// dgg
 http_response_code($status);
 echo $body;
