@@ -57,10 +57,13 @@ if (function_exists('apache_request_headers')) {
 // Map and normalize headers for the backend request
 foreach ($incomingHeaders as $name => $value) {
     $lowName = strtolower($name);
-    
+
     // Explicitly normalize any variation of the security nonce
     if ($lowName === 'x-wc-store-api-nonce' || $lowName === 'nonce') {
         $headers[] = "X-WC-Store-Api-Nonce: $value";
+    } elseif ($lowName === 'authorization') {
+        // Forward Authorization header for logged-in users
+        $headers[] = "Authorization: $value";
     } elseif ($lowName === 'content-type') {
         // Skip - already in $headers
     } elseif ($lowName === 'user-agent' || $lowName === 'accept' || $lowName === 'cookie') {
@@ -82,8 +85,12 @@ curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_HEADER, true); // We need headers to capture Nonce from response
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'POST') {
     curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
+} elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'DELETE') {
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
 }
 

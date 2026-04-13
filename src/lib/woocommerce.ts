@@ -33,8 +33,8 @@ const getApiUrl = (path: string, params: Record<string, string | number> = {}) =
     const queryString = query.toString();
     const finalAbsoluteUrl = baseUrl + (queryString ? `?${queryString}` : '');
     if (isServer) return finalAbsoluteUrl;
-    if (isProd) return `/proxy.php?path=${path}&${queryString}`;
-    return `/api/proxy?path=${path}&${queryString}`;
+    if (isProd) return queryString ? `/proxy.php?path=${path}&${queryString}` : `/proxy.php?path=${path}`;
+    return queryString ? `/api/proxy?path=${path}&${queryString}` : `/api/proxy?path=${path}`;
 };
 
 // ─── Cart Management via local API proxy ───
@@ -193,6 +193,7 @@ export async function applyCoupon(code: string): Promise<WCCart | null> {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ code }),
+            credentials: 'include',
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -241,6 +242,7 @@ export async function removeCoupon(code: string): Promise<WCCart | null> {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ code }),
+            credentials: 'include',
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -350,9 +352,12 @@ export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderR
         credentials: 'include'
     });
 
+    const freshNonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
+    if (freshNonce) setNonce(freshNonce);
+
     const contentType = response.headers.get('content-type');
     let data: any = {};
-    
+
     if (contentType && contentType.includes('application/json')) {
         data = await response.json();
     } else {
