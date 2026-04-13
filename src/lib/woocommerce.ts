@@ -88,7 +88,7 @@ export async function getWCCart(): Promise<WCCart | null> {
     if (typeof window === 'undefined') return null; // Skip during build/SSR
     try {
         const url = getApiUrl('wc/store/v1/cart');
-        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS, credentials: 'include' });
         // Capture nonce for subsequent mutation requests - check common variations
         let nonce = response.headers.get('X-WC-Store-Api-Nonce') || 
                     response.headers.get('Nonce') || 
@@ -120,6 +120,7 @@ export async function addToWCCart(productId: number, quantity: number = 1): Prom
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ id: productId, quantity }),
+            credentials: 'include'
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -140,6 +141,7 @@ export async function updateWCCartItem(itemKey: string, quantity: number): Promi
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ key: itemKey, quantity }),
+            credentials: 'include'
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -160,6 +162,7 @@ export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> 
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify({ key: itemKey }),
+            credentials: 'include'
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -217,6 +220,7 @@ export async function updateCartCustomer(data: {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
             body: JSON.stringify(data),
+            credentials: 'include'
         });
         const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
         if (nonce) setNonce(nonce);
@@ -343,6 +347,7 @@ export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderR
         method: 'POST',
         headers: headers,
         body: JSON.stringify(checkoutData),
+        credentials: 'include'
     });
 
     const contentType = response.headers.get('content-type');
