@@ -8,9 +8,6 @@
 let _wcNonce: string | null = null;
 function setNonce(v: string | null) { if (typeof window !== 'undefined') _wcNonce = v; }
 function nonceHeaders(): Record<string, string> { 
-    if (!_wcNonce) {
-        console.warn('[WooCommerce Store API] No Nonce available for mutation request. This may result in 401 Unauthorized errors.');
-    }
     return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {}; 
 }
 
@@ -83,6 +80,7 @@ export interface WCCart {
  * Get current WooCommerce cart via local proxy (avoids CORS)
  */
 export async function getWCCart(): Promise<WCCart | null> {
+    if (typeof window === 'undefined') return null; // Skip during build/SSR
     try {
         const url = getApiUrl('wc/store/v1/cart');
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
@@ -246,12 +244,11 @@ export interface PaymentGateway {
  * Get available payment gateways via server-side API route (uses WC REST API v3 with consumer keys)
  */
 export async function getPaymentGateways(): Promise<PaymentGateway[]> {
+    const isServer = typeof window === 'undefined';
+    if (isServer) return getDefaultGateways(); // Skip fetch during build/SSR to avoid nonce errors
+
     try {
-        const isServer = typeof window === 'undefined';
-        const isProd = process.env.NODE_ENV === 'production';
-        const url = isServer
-            ? `${API_BASE_URL}/wc/store/v1/checkout/payment-gateways`
-            : isProd ? '/api/wc/payment-gateways' : '/api/wc/payment-gateways';
+        const url = '/api/wc/payment-gateways'; // Always use proxy on client
         const response = await fetch(url, { headers: COMMON_HEADERS, cache: 'no-store' });
         if (!response.ok) return getDefaultGateways();
         const data = await response.json().catch(() => null);
