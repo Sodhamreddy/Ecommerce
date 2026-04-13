@@ -448,7 +448,7 @@ export default function AccountContent() {
                         <div className={styles.successMsg}>
                             Password reset link has been sent to your email. Please check your inbox.
                             <br /><br />
-                            <span className={styles.link} onClick={() => { setAuthView('auth'); setForgotMsg(''); }}>← Back to login</span>
+                            <span className={styles.link} onClick={() => { setAuthView('login'); setForgotMsg(''); }}>← Back to login</span>
                         </div>
                     ) : (
                         <>
@@ -465,7 +465,7 @@ export default function AccountContent() {
                                     {loading ? <Loader2 className="animate-spin" size={18} /> : 'Reset Password'}
                                 </button>
                                 <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                                    <span className={styles.link} onClick={() => { setAuthView('auth'); setForgotMsg(''); }}>← Back to login</span>
+                                    <span className={styles.link} onClick={() => { setAuthView('login'); setForgotMsg(''); }}>← Back to login</span>
                                 </div>
                             </form>
                         </>
