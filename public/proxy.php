@@ -75,8 +75,12 @@ foreach ($incomingHeaders as $name => $value) {
     }
 }
 
-// Add nonce header for WooCommerce (from URL query or request headers)
+// Add nonce header for WooCommerce (from URL query or request headers).
+// Send as both variants: some server-side Nginx configs strip X-* prefixed headers
+// before they reach PHP/WordPress. "Nonce" (no X- prefix) survives those rules
+// and is the header WooCommerce checks first.
 if ($nonce) {
+    $headers[] = "Nonce: $nonce";
     $headers[] = "X-WC-Store-Api-Nonce: $nonce";
 }
 
