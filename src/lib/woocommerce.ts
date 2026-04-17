@@ -20,6 +20,12 @@ function setNonce(v: string | null) {
         try { sessionStorage.setItem('wc_nonce', v); } catch {}
     }
 }
+function clearNonce() {
+    _wcNonce = null;
+    if (typeof window !== 'undefined') {
+        try { sessionStorage.removeItem('wc_nonce'); } catch {}
+    }
+}
 function nonceHeaders(): Record<string, string> {
     return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {};
 }
@@ -39,12 +45,61 @@ async function ensureNonce(): Promise<void> {
         const isProd = process.env.NODE_ENV === 'production';
         const url = isProd ? '/api/wc/nonce.php' : '/api/wc/nonce';
         const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
-        const data = await res.json();
-        if (data.nonce) setNonce(data.nonce);
-    } catch {
-        // Last-resort fallback: try to grab nonce from cart response headers
-        await getWCCart();
+        if (res.ok) {
+            const data = await res.json();
+            if (data.nonce) { setNonce(data.nonce); return; }
+        }
+    } catch { /* fall through to cart header fallback */ }
+    // Fallback: grab nonce from cart GET response headers
+    await getWCCart();
+}
+
+/**
+ * Execute a POST mutation against the WC Store API through the proxy.
+ * Ensures a nonce is present and automatically retries once if the nonce
+ * is rejected (HTTP 401) by clearing the stale nonce and fetching a fresh one.
+ */
+async function doMutation(path: string, body: object): Promise<Response> {
+    await ensureNonce();
+
+    const execute = () => {
+        const url = mutationUrl(path);
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
+            body: JSON.stringify(body),
+            credentials: 'include',
+        });
+    };
+
+    let response = await execute();
+
+    // Nonce was stale or missing — clear it, fetch a fresh one, and retry once
+    if (response.status === 401) {
+        clearNonce();
+        await ensureNonce();
+        response = await execute();
     }
+
+    // Always capture any refreshed nonce from the response
+    const freshNonce = response.headers.get('x-wc-store-api-nonce') || response.headers.get('nonce');
+    if (freshNonce) setNonce(freshNonce);
+
+    return response;
+}
+
+/**
+ * For production, append the nonce as a URL query parameter (?_nonce=xxx).
+ * Hostinger's Nginx strips custom request headers before they reach PHP,
+ * but query parameters always pass through intact.
+ * In development the Next.js API route reads the nonce from the header directly.
+ */
+function mutationUrl(path: string): string {
+    const base = getApiUrl(path);
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production' && _wcNonce) {
+        return base + (base.includes('?') ? '&' : '?') + '_nonce=' + encodeURIComponent(_wcNonce);
+    }
+    return base;
 }
 
 const COMMON_HEADERS = {
@@ -143,15 +198,7 @@ export async function getWCCart(): Promise<WCCart | null> {
  */
 export async function addToWCCart(productId: number, quantity: number = 1): Promise<WCCart | null> {
     try {
-        const url = getApiUrl('wc/store/v1/cart/add-item');
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
-            body: JSON.stringify({ id: productId, quantity }),
-            credentials: 'include'
-        });
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-        if (nonce) setNonce(nonce);
+        const response = await doMutation('wc/store/v1/cart/add-item', { id: productId, quantity });
         if (!response.ok) return null;
         return await response.json().catch(() => null);
     } catch {
@@ -164,15 +211,7 @@ export async function addToWCCart(productId: number, quantity: number = 1): Prom
  */
 export async function updateWCCartItem(itemKey: string, quantity: number): Promise<WCCart | null> {
     try {
-        const url = getApiUrl('wc/store/v1/cart/update-item');
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
-            body: JSON.stringify({ key: itemKey, quantity }),
-            credentials: 'include'
-        });
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-        if (nonce) setNonce(nonce);
+        const response = await doMutation('wc/store/v1/cart/update-item', { key: itemKey, quantity });
         if (!response.ok) return null;
         return await response.json().catch(() => null);
     } catch {
@@ -185,15 +224,7 @@ export async function updateWCCartItem(itemKey: string, quantity: number): Promi
  */
 export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> {
     try {
-        const url = getApiUrl('wc/store/v1/cart/remove-item');
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
-            body: JSON.stringify({ key: itemKey }),
-            credentials: 'include'
-        });
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-        if (nonce) setNonce(nonce);
+        const response = await doMutation('wc/store/v1/cart/remove-item', { key: itemKey });
         if (!response.ok) return null;
         return await response.json().catch(() => null);
     } catch {
@@ -215,17 +246,8 @@ function decodeHtml(str: string): string {
  * Apply coupon to WooCommerce cart
  */
 export async function applyCoupon(code: string): Promise<WCCart | null> {
-    await ensureNonce();
     try {
-        const url = getApiUrl('wc/store/v1/cart/apply-coupon');
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
-            body: JSON.stringify({ code }),
-            credentials: 'include',
-        });
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-        if (nonce) setNonce(nonce);
+        const response = await doMutation('wc/store/v1/cart/apply-coupon', { code });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             const rawMsg = err.message || err.error || 'Failed to apply coupon';
@@ -245,15 +267,7 @@ export async function updateCartCustomer(data: {
     shipping_address?: { country?: string; state?: string; postcode?: string; city?: string };
 }): Promise<WCCart | null> {
     try {
-        const url = getApiUrl('wc/store/v1/cart/update-customer');
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
-            body: JSON.stringify(data),
-            credentials: 'include'
-        });
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-        if (nonce) setNonce(nonce);
+        const response = await doMutation('wc/store/v1/cart/update-customer', data);
         if (!response.ok) return null;
         return await response.json().catch(() => null);
     } catch {
@@ -265,17 +279,8 @@ export async function updateCartCustomer(data: {
  * Remove coupon from WooCommerce cart via proxy
  */
 export async function removeCoupon(code: string): Promise<WCCart | null> {
-    await ensureNonce();
     try {
-        const url = getApiUrl('wc/store/v1/cart/remove-coupon');
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
-            body: JSON.stringify({ code }),
-            credentials: 'include',
-        });
-        const nonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-        if (nonce) setNonce(nonce);
+        const response = await doMutation('wc/store/v1/cart/remove-coupon', { code });
         if (!response.ok) return null;
         return await response.json().catch(() => null);
     } catch {
@@ -371,20 +376,7 @@ export interface OrderResult {
  * Submit checkout via local proxy
  */
 export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderResult> {
-    await ensureNonce();
-    const url = getApiUrl('wc/store/v1/checkout');
-    const headers = { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() };
-    console.log('[WooCommerce] Submitting checkout. Headers:', Object.keys(headers));
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(checkoutData),
-        credentials: 'include'
-    });
-
-    const freshNonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
-    if (freshNonce) setNonce(freshNonce);
+    const response = await doMutation('wc/store/v1/checkout', checkoutData);
 
     const contentType = response.headers.get('content-type');
     let data: any = {};
@@ -397,7 +389,6 @@ export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderR
     }
 
     if (!response.ok) {
-        // WC Store API errors usually have a 'message' field, proxy might have 'error'
         const errMsg = data.message || data.error || 'Checkout failed';
         throw new Error(decodeHtml(errMsg));
     }
