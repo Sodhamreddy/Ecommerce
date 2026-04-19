@@ -373,23 +373,34 @@ export interface OrderResult {
 }
 
 /**
- * Submit checkout via local proxy
+ * Submit checkout via local proxy.
+ * Always forces a fresh nonce before submission so the nonce + session cookie
+ * are guaranteed to match (stale nonces cause silent 401/404 failures).
  */
 export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderResult> {
+    // Force a fresh nonce — the cached nonce may be tied to an older session
+    clearNonce();
+    await ensureNonce();
+
     const response = await doMutation('wc/store/v1/checkout', checkoutData);
 
-    const contentType = response.headers.get('content-type');
+    const contentType = response.headers.get('content-type') || '';
     let data: any = {};
 
-    if (contentType && contentType.includes('application/json')) {
+    if (contentType.includes('application/json')) {
         data = await response.json();
     } else {
+        // Non-JSON (e.g. WordPress 404 HTML) — surface a friendly message
         const text = await response.text();
-        throw new Error(`Server returned non-JSON response. Status: ${response.status}. Body snippet: ${text.substring(0, 100)}`);
+        console.error('[Checkout] Non-JSON response', response.status, text.substring(0, 300));
+        if (response.status === 404) {
+            throw new Error('Checkout is temporarily unavailable. Please refresh the page and try again.');
+        }
+        throw new Error(`Checkout failed (status ${response.status}). Please try again.`);
     }
 
     if (!response.ok) {
-        const errMsg = data.message || data.error || 'Checkout failed';
+        const errMsg = data.message || data.error || 'Checkout failed. Please try again.';
         throw new Error(decodeHtml(errMsg));
     }
 

@@ -624,7 +624,11 @@
 }
 
 .reelsHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+    gap: 1rem;
     margin-bottom: 1.5rem;
 }
 
@@ -1599,50 +1603,68 @@
         padding: 1.8rem 1rem;
         margin: 0 1rem;
         width: calc(100% - 2rem);
+    }
 
-        .footerBannerTitle {
-            font-size: 1.75rem;
-        }
+    .footerBannerTitle {
+        font-size: 1.75rem;
+    }
 
-        .footerBannerSub {
-            font-size: 0.82rem;
-            margin-bottom: 1.5rem;
-        }
+    .footerBannerSub {
+        font-size: 0.82rem;
+        margin-bottom: 1.5rem;
+    }
 
-        /* ── Reels / Instagram ── */
-        .reelsSection {
-            padding: 2rem 0 1.5rem;
-        }
+    /* ── Reels / Instagram ── */
+    .reelsSection {
+        padding: 2rem 0 1.5rem;
+    }
 
-        .igGrid {
-            grid-template-columns: 1fr;
-            gap: 0.8rem;
-        }
+    .reelsHeader {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
 
-        .reelCard {
-            flex: 0 0 75vw;
-            max-width: 260px;
-        }
+    .igFollowBtn {
+        font-size: 0.75rem;
+        padding: 0.55rem 1.2rem;
+        white-space: normal;
+        text-align: center;
+    }
 
-        .reelCardInfo {
-            padding: 1rem;
-        }
+    .igGrid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
 
-        /* ── Gourmand ── */
-        .gourmandCard {
-            width: 220px;
-        }
+    .reelWrapper {
+        gap: 0.75rem;
+    }
 
-        .gourmandImgBox {
-            height: 280px;
-        }
+    .reelCard {
+        flex: 0 0 75vw;
+        max-width: 260px;
+    }
 
-        /* ── Buttons ── */
-        .outlineBtn,
-        .solidBtn {
-            padding: 0.85rem 1.5rem;
-            font-size: 0.78rem;
-        }
+    .reelCardInfo {
+        padding: 1rem;
+    }
+
+    /* ── Gourmand ── */
+    .gourmandCard {
+        width: 220px;
+    }
+
+    .gourmandImgBox {
+        height: 280px;
+    }
+
+    /* ── Buttons ── */
+    .outlineBtn,
+    .solidBtn {
+        padding: 0.85rem 1.5rem;
+        font-size: 0.78rem;
     }
 
     /* ── Very small phones (≤ 400px) ── */
