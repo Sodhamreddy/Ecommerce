@@ -142,7 +142,7 @@ export default function CheckoutPage() {
         if (res.success) {
             setCouponMsg({ text: 'Coupon removed.', type: 'success' });
         } else {
-            setCouponMsg({ text: 'Failed to remove.', type: 'error' });
+            setCouponMsg({ text: res.message || 'Failed to remove coupon. Please refresh and try again.', type: 'error' });
         }
         setCouponLoading(false);
     };
@@ -439,6 +439,9 @@ export default function CheckoutPage() {
                                         <div key={c.code} className={styles.appliedCouponTag}>
                                             <Tag size={12} />
                                             <span>{c.code.toUpperCase()}</span>
+                                            {discount === 0 && (
+                                                <span style={{ fontSize: '0.7rem', opacity: 0.65, marginLeft: 2 }}>(free shipping)</span>
+                                            )}
                                             <button type="button" onClick={() => handleRemoveCoupon(c.code)} className={styles.removeCouponBtn}>✕</button>
                                         </div>
                                     ))}

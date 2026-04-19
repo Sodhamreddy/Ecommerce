@@ -200,9 +200,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 setWcCart(result);
                 return { success: true };
             }
-            return { success: false, message: 'Failed to remove coupon' };
+            // Result was null but no exception — refresh cart to get true server state
+            const fresh = await getWCCart();
+            if (fresh) setWcCart(fresh);
+            return { success: true };
         } catch (e: any) {
-            return { success: false, message: e.message };
+            // Even on error, refresh so the UI reflects WC reality
+            try {
+                const fresh = await getWCCart();
+                if (fresh) setWcCart(fresh);
+            } catch { /* best-effort */ }
+            return { success: false, message: e.message || 'Failed to remove coupon' };
         } finally {
             setSyncing(false);
         }

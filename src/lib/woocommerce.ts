@@ -276,15 +276,26 @@ export async function updateCartCustomer(data: {
 }
 
 /**
- * Remove coupon from WooCommerce cart via proxy
+ * Remove coupon from WooCommerce cart via proxy.
+ * Forces a fresh nonce so the remove request is never rejected by a stale nonce.
+ * Throws on failure so the caller can surface a specific message.
  */
 export async function removeCoupon(code: string): Promise<WCCart | null> {
+    // Refresh nonce — stale nonce causes silent 401 → null result → "Failed to remove" UI
+    clearNonce();
+    await ensureNonce();
     try {
         const response = await doMutation('wc/store/v1/cart/remove-coupon', { code });
-        if (!response.ok) return null;
+        if (!response.ok) {
+            const ct = response.headers.get('content-type') || '';
+            const err = ct.includes('application/json')
+                ? await response.json().catch(() => ({}))
+                : {};
+            throw new Error(decodeHtml(err.message || `Failed to remove coupon (status ${response.status})`));
+        }
         return await response.json().catch(() => null);
-    } catch {
-        return null;
+    } catch (e: any) {
+        throw new Error(e.message || 'Failed to remove coupon. Please refresh and try again.');
     }
 }
 

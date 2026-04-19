@@ -1392,9 +1392,9 @@
 
     /* ── Hero Slider ── */
     .heroSlider {
-        height: 56vw;
-        min-height: 220px;
-        max-height: 420px;
+        height: 62vw;
+        min-height: 260px;
+        max-height: 480px;
         aspect-ratio: unset;
     }
 
@@ -1670,9 +1670,9 @@
     /* ── Very small phones (≤ 400px) ── */
     @media (max-width: 400px) {
         .heroSlider {
-            height: 56vw;
-            min-height: 200px;
-            max-height: 320px;
+            height: 62vw;
+            min-height: 240px;
+            max-height: 340px;
             aspect-ratio: unset;
         }
 

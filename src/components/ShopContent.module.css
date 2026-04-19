@@ -725,6 +725,11 @@
 
     .mobileFilterBtn {
         display: inline-flex;
+        margin: 0.75rem 1rem 0;
+    }
+
+    .mainContent {
+        padding-left: 0;
     }
 
     .shopContainer {
