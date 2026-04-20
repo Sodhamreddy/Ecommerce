@@ -118,8 +118,13 @@ const getApiUrl = (path: string, params: Record<string, string | number> = {}) =
     const queryString = query.toString();
 
     if (isServer) {
-        let baseUrl = `${API_BASE_URL}/${path}`;
-        return baseUrl + (queryString ? `?${queryString}` : '');
+        // Use ?rest_route= format for server-side calls as well for maximum reliability
+        // This avoids 404s caused by local rewrite/security rules blocking "pretty" URLs.
+        const cleanPath = '/' + path.replace(/^\//, '');
+        const url = new URL(`${SITE_DOMAIN}/index.php`);
+        url.searchParams.set('rest_route', cleanPath);
+        Object.entries(params).forEach(([key, val]) => url.searchParams.append(key, val.toString()));
+        return url.toString();
     }
 
     if (isProd) {

@@ -12,9 +12,11 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Missing path' }, { status: 400 });
     }
 
-    // Construct the backend URL, ensuring no double slashes
-    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    const backendUrl = new URL(`${API_BASE_URL}/${cleanPath}`);
+    // Construct the backend URL using the more reliable ?rest_route= format.
+    // This bypasses many server-side security rules/misconfigurations that block pretty /wp-json/ urls.
+    const cleanPath = '/' + path.replace(/^\//, '');
+    const backendUrl = new URL('https://jerseyperfume.com/index.php');
+    backendUrl.searchParams.set('rest_route', cleanPath);
     
     // Forward all other query parameters
     searchParams.forEach((value, key) => {
@@ -81,8 +83,8 @@ export async function POST(request: Request) {
     const path = searchParams.get('path');
     if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
-    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    const finalUrl = `${API_BASE_URL}/${cleanPath}`;
+    const cleanPath = '/' + path.replace(/^\//, '');
+    const finalUrl = `https://jerseyperfume.com/index.php?rest_route=${cleanPath}`;
     
     console.log(`[Proxy] POST ${request.url} -> ${finalUrl}`);
 

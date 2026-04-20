@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$backend_base = "https://jerseyperfume.com/wp-json";
+$backend_base_root = "https://jerseyperfume.com";
 $path = $_GET['path'] ?? '';
 
 if (!$path) {
@@ -27,12 +27,12 @@ if (!$path) {
     exit;
 }
 
-// ── Nonce: try from URL query first (reliable — Nginx never strips query params),
-//    then fall back to request headers (works on hosts that forward them).
-$nonce = $_GET['_nonce'] ?? '';
+// Ensure the path starts with a slash
+$cleanPath = '/' . ltrim($path, '/');
 
-// Reconstruct backend URL, stripping internal proxy params
-$url = "$backend_base/$path";
+// Reconstruct backend URL using ?rest_route= format.
+// This is much more reliable as it bypasses local rewrite/security rules that may block "pretty" URLs (like /wp-json/wc/store/v1/checkout).
+$url = "$backend_base_root/index.php?rest_route=$cleanPath";
 $query = $_SERVER['QUERY_STRING'];
 $query = preg_replace('/(?:^|&)(?:path|_nonce)=[^&]*/', '', $query);
 $query = ltrim($query, '&');
