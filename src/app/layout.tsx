@@ -32,6 +32,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${mulish.variable} ${staatliches.variable}`}>
       <head>
+        {/* Auto-reload on ChunkLoadError: new deployment invalidates old cached chunk URLs */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){function isCLE(m){return m&&(m.indexOf('ChunkLoadError')!==-1||m.indexOf('Loading chunk')!==-1||m.indexOf('Failed to load chunk')!==-1);}var K='__cle_ts';function reload(){var t=+(sessionStorage.getItem(K)||0);if(Date.now()-t>15000){sessionStorage.setItem(K,String(Date.now()));location.reload();}}window.addEventListener('error',function(e){if(isCLE(e.message)||(e.filename&&e.filename.indexOf('/_next/static/chunks/')!==-1)){reload();}});window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reason.message||String(e.reason));if(isCLE(m))reload();});})();` }} />
         <link rel="preconnect" href="https://jerseyperfume.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://jerseyperfume.com" />
         <link rel="preconnect" href="https://www.instagram.com" crossOrigin="anonymous" />
