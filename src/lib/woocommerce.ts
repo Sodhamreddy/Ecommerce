@@ -46,10 +46,12 @@ async function ensureNonce(): Promise<void> {
         const url = isProd ? '/api/wc/nonce.php' : '/api/wc/nonce';
         const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
         if (res.ok) {
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (data.nonce) { setNonce(data.nonce); return; }
         }
-    } catch { /* fall through to cart header fallback */ }
+    } catch (err) {
+        console.warn('[Nonce API] Failed to fetch body nonce:', err);
+    }
     // Fallback: grab nonce from cart GET response headers
     await getWCCart();
 }
@@ -110,13 +112,21 @@ const COMMON_HEADERS = {
 const getApiUrl = (path: string, params: Record<string, string | number> = {}) => {
     const isServer = typeof window === 'undefined';
     const isProd = process.env.NODE_ENV === 'production';
-    let baseUrl = `${API_BASE_URL}/${path}`;
+    
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, val]) => query.append(key, val.toString()));
     const queryString = query.toString();
-    const finalAbsoluteUrl = baseUrl + (queryString ? `?${queryString}` : '');
-    if (isServer) return finalAbsoluteUrl;
-    if (isProd) return queryString ? `/proxy.php?path=${path}&${queryString}` : `/proxy.php?path=${path}`;
+
+    if (isServer) {
+        let baseUrl = `${API_BASE_URL}/${path}`;
+        return baseUrl + (queryString ? `?${queryString}` : '');
+    }
+
+    if (isProd) {
+        // Correct path for production proxy on Hostinger
+        return queryString ? `/proxy.php?path=${path}&${queryString}` : `/proxy.php?path=${path}`;
+    }
+
     return queryString ? `/api/proxy?path=${path}&${queryString}` : `/api/proxy?path=${path}`;
 };
 
@@ -316,12 +326,17 @@ export async function getPaymentGateways(): Promise<PaymentGateway[]> {
     if (isServer) return getDefaultGateways(); // Skip fetch during build/SSR to avoid nonce errors
 
     try {
-        const url = '/api/wc/payment-gateways'; // Always use proxy on client
+        const isProd = process.env.NODE_ENV === 'production';
+        const url = isProd ? '/api/wc/payment-gateways.php' : '/api/wc/payment-gateways';
         const response = await fetch(url, { headers: COMMON_HEADERS, cache: 'no-store' });
-        if (!response.ok) return getDefaultGateways();
+        if (!response.ok) {
+            console.warn(`[Gateways] API returned status ${response.status}`);
+            return getDefaultGateways();
+        }
         const data = await response.json().catch(() => null);
         return (data && Array.isArray(data) && data.length > 0) ? data : getDefaultGateways();
-    } catch {
+    } catch (err) {
+        console.error('[Gateways] Failed to load:', err);
         return getDefaultGateways();
     }
 }
@@ -399,15 +414,19 @@ export async function submitCheckout(checkoutData: CheckoutData): Promise<OrderR
     let data: any = {};
 
     if (contentType.includes('application/json')) {
-        data = await response.json();
+        data = await response.json().catch(() => ({}));
     } else {
         // Non-JSON (e.g. WordPress 404 HTML) — surface a friendly message
         const text = await response.text();
         console.error('[Checkout] Non-JSON response', response.status, text.substring(0, 300));
+        
+        // Extract a snippet for debugging in the UI banner if the user is stuck
+        const snippet = text.substring(0, 80).replace(/<[^>]*>?/gm, '').trim();
+        
         if (response.status === 404) {
-            throw new Error('Checkout is temporarily unavailable. Please refresh the page and try again.');
+            throw new Error(`Checkout is temporarily unavailable (Status 404). ${snippet ? 'Snippet: ' + snippet : ''} Please refresh the page and try again.`);
         }
-        throw new Error(`Checkout failed (status ${response.status}). Please try again.`);
+        throw new Error(`Checkout failed (Status ${response.status}). ${snippet || 'Server returned invalid format'}. Please try again.`);
     }
 
     if (!response.ok) {

@@ -1,4 +1,4 @@
-import { fetchProductBySlug, fetchProductsByIDs, fetchProducts as apiFetchProducts, fetchAllProducts } from '@/lib/api';
+import { fetchProductBySlug, fetchProductsByIDs, fetchProducts as apiFetchProducts } from '@/lib/api';
 import { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -14,20 +14,9 @@ interface Props {
     params: Promise<{ slug: string }>;
 }
 
-// Static rendering - products are fetched during build
-export const dynamic = 'force-static';
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-    try {
-        const products = await fetchAllProducts();
-        return products.map((p) => ({
-            slug: p.slug,
-        }));
-    } catch {
-        return [];
-    }
-}
+// ISR: generate on first request, revalidate hourly — avoids bulk API calls at build time
+export const revalidate = 3600;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
