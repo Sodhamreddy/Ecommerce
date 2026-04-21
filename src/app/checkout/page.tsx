@@ -81,9 +81,9 @@ export default function CheckoutPage() {
             } catch (e) {
                 console.error('Failed to load payment gateways:', e);
                 setPaymentGateways([
-                    { id: 'paypal', title: 'PayPal', description: 'Pay via PayPal.', order: 1 }
+                    { id: 'ppcp-gateway', title: 'PayPal', description: 'Pay via PayPal.', order: 0 }
                 ]);
-                setFormData(prev => ({ ...prev, paymentMethod: 'paypal' }));
+                setFormData(prev => ({ ...prev, paymentMethod: 'ppcp-gateway' }));
             } finally {
                 setLoadingGateways(false);
             }

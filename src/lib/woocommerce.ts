@@ -348,8 +348,8 @@ export async function getPaymentGateways(): Promise<PaymentGateway[]> {
 
 function getDefaultGateways(): PaymentGateway[] {
     return [
-        { id: 'stripe', title: 'Debit & Credit Cards', description: 'Pay with your credit card.', order: 0 },
-        { id: 'paypal', title: 'PayPal', description: 'Pay securely via PayPal.', order: 1 },
+        { id: 'ppcp-gateway', title: 'PayPal', description: 'Pay securely via PayPal.', order: 0 },
+        { id: 'ppcp-credit-card-gateway', title: 'Debit & Credit Cards', description: 'Pay with your credit card.', order: 1 }
     ];
 }
 

@@ -5,6 +5,7 @@ import styles from './InfoPage.module.css';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { fetchAllWPPages } from '@/lib/woocommerce';
+import ContactForm from '@/components/ContactForm';
 
 export const dynamicParams = false;
 
@@ -57,6 +58,8 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
         return notFound();
     }
 
+    const isContactPage = slug === 'contact-us';
+
     return (
         <div className={styles.infoPageWrapper}>
             {/* Minimalist Page Header */}
@@ -71,12 +74,16 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
                 </div>
             </header>
 
-            {/* Rich Text Body Content Extracted from WordPress */}
+            {/* Content Section */}
             <section className={styles.infoPageContent}>
-                <div className="container">
-                    <div className={styles.contentBox} dangerouslySetInnerHTML={{ __html: page.content.rendered }}>
+                {isContactPage ? (
+                    <ContactForm />
+                ) : (
+                    <div className="container">
+                        <div className={styles.contentBox} dangerouslySetInnerHTML={{ __html: page.content.rendered }}>
+                        </div>
                     </div>
-                </div>
+                )}
             </section>
         </div>
     );

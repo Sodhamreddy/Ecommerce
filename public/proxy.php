@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $backend_base_root = "https://jerseyperfume.com";
 $path = $_GET['path'] ?? '';
+$nonce = $_GET['_nonce'] ?? '';
 
 if (!$path) {
     header('Content-Type: application/json');
@@ -111,7 +112,8 @@ $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 $respHeaders = substr($response, 0, $headerSize);
 $body        = substr($response, $headerSize);
 
-header('Access-Control-Expose-Headers: X-WP-Total, X-WP-TotalPages, X-WC-Store-Api-Nonce, Nonce, x-wc-store-api-nonce, nonce');
+header('Access-Control-Expose-Headers: X-Proxied-Url, X-WP-Total, X-WP-TotalPages, X-WC-Store-Api-Nonce, Nonce, x-wc-store-api-nonce, nonce');
+header('X-Proxied-Url: ' . $url);
 
 foreach (explode("\r\n", $respHeaders) as $h) {
     if (stripos($h, 'Set-Cookie:') === 0) {
@@ -130,4 +132,17 @@ foreach (explode("\r\n", $respHeaders) as $h) {
 }
 
 http_response_code($status);
+
+// Strip any trailing HTML comments (like Airlift optimizations) that break JSON parsing
+$body = preg_replace('/<!--(.|\s)*?-->\s*$/', '', $body);
+// If body looks like JSON, ensure it ends with } or ]
+if (strpos($body, '{') !== false || strpos($body, '[') !== false) {
+    $last_brace = strrpos($body, '}');
+    $last_bracket = strrpos($body, ']');
+    $end_pos = max($last_brace, $last_bracket);
+    if ($end_pos !== false) {
+        $body = substr($body, 0, $end_pos + 1);
+    }
+}
+
 echo $body;

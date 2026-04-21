@@ -46,14 +46,14 @@ export default function InstagramEmbed({ url }: Props) {
                 boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
             }}
         >
-            {/* Top mask — hides Instagram profile header and blocks clicks on it */}
+            {/* Top mask — shows Instagram profile header but blocks redirect clicks */}
             <div style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
                 height: "54px",
-                background: "#0a0a0a",
+                background: "transparent",
                 zIndex: 10,
                 pointerEvents: "all",
                 cursor: "default",

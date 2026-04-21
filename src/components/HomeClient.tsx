@@ -191,7 +191,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                                 fill
                                 unoptimized
                                 priority={index === 0}
-                                style={{ objectFit: "cover" }}
+                                className={styles.slideImg}
                                 onError={() => setBrokenSlides(prev => {
                                     if (prev.has(index)) return prev;
                                     const s = new Set(prev);

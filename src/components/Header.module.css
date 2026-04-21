@@ -230,7 +230,16 @@
     min-width: 160px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     z-index: 2000;
-    overflow: hidden;
+}
+
+/* Invisible bridge covers the 8px gap so hover stays active as mouse moves down */
+.navDropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
 }
 
 .navDropdownWrapper:hover .navDropdown {

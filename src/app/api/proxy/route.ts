@@ -43,7 +43,19 @@ export async function GET(request: Request) {
         let data;
         
         if (contentType.includes('application/json')) {
-            data = await response.json();
+            const rawBody = await response.text();
+            // Strip trailing HTML comments that break JSON.parse
+            const cleanBody = rawBody.replace(/<!--(.|\s)*?-->\s*$/, '').trim();
+            try {
+                // Find last brace/bracket to be extra safe
+                const lastBrace = cleanBody.lastIndexOf('}');
+                const lastBracket = cleanBody.lastIndexOf(']');
+                const endPos = Math.max(lastBrace, lastBracket);
+                data = JSON.parse(endPos !== -1 ? cleanBody.substring(0, endPos + 1) : cleanBody);
+            } catch (err) {
+                console.error('[Proxy JSON Error]', err, 'Raw body sample:', cleanBody.substring(0, 100));
+                data = { error: 'Invalid JSON from backend', text: cleanBody.substring(0, 500) };
+            }
         } else {
             data = { error: 'Non-JSON response', text: await response.text() };
         }
@@ -111,7 +123,17 @@ export async function POST(request: Request) {
         let data;
         
         if (contentType.includes('application/json')) {
-            data = await response.json();
+            const rawText = await response.text();
+            const cleanText = rawText.replace(/<!--(.|\s)*?-->\s*$/, '').trim();
+            try {
+                const lastBrace = cleanText.lastIndexOf('}');
+                const lastBracket = cleanText.lastIndexOf(']');
+                const endPos = Math.max(lastBrace, lastBracket);
+                data = JSON.parse(endPos !== -1 ? cleanText.substring(0, endPos + 1) : cleanText);
+            } catch (err) {
+                console.error('[Proxy POST JSON Error]', err);
+                data = { error: 'Invalid JSON from backend', text: cleanText.substring(0, 200) };
+            }
         } else {
             const text = await response.text();
             console.error(`[Proxy] Non-JSON response from ${finalUrl}:`, text.substring(0, 500));
