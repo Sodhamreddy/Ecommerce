@@ -10,7 +10,7 @@ async function fetchAllSlugs() {
         let productPage = 1;
         while (true) {
             const res = await fetch(
-                `https://jerseyperfume.com/wp-json/wc/store/v1/products?per_page=100&page=${productPage}`,
+                `https://backend.jerseyperfume.com/wp-json/wc/store/v1/products?per_page=100&page=${productPage}`,
                 { headers: { Accept: 'application/json' } }
             );
             if (!res.ok) break;
@@ -36,7 +36,7 @@ async function fetchAllSlugs() {
         let blogPage = 1;
         while (true) {
             const res = await fetch(
-                `https://jerseyperfume.com/wp-json/wp/v2/posts?per_page=100&page=${blogPage}&_fields=slug,modified`,
+                `https://backend.jerseyperfume.com/wp-json/wp/v2/posts?per_page=100&page=${blogPage}&_fields=slug,modified`,
                 { headers: { Accept: 'application/json' } }
             );
             if (!res.ok) break;
@@ -60,7 +60,7 @@ async function fetchAllSlugs() {
     try {
         // --- Info / WP Pages ---
         const res = await fetch(
-            `https://jerseyperfume.com/wp-json/wp/v2/pages?per_page=100&_fields=slug,modified`,
+            `https://backend.jerseyperfume.com/wp-json/wp/v2/pages?per_page=100&_fields=slug,modified`,
             { headers: { Accept: 'application/json' } }
         );
         if (res.ok) {

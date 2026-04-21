@@ -27,7 +27,7 @@ const FALLBACK_SLIDES: SlideData[] = [
     {
         title: "LUXURY\nFRAGRANCES",
         subtitle: "UP TO 80% OFF RETAIL PRICES",
-        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-1-1.jpg`,
+        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-1-1.jpg`,
         href: "/shop",
         cta: "SHOP COLLECTION",
         accent: '#d4a853'
@@ -35,7 +35,7 @@ const FALLBACK_SLIDES: SlideData[] = [
     {
         title: "EXCLUSIVE\nDEALS",
         subtitle: "AUTHENTIC SCENTS FOR EVERY OCCASION",
-        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-2-1.jpg`,
+        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-2-1.jpg`,
         href: "/shop",
         cta: "DISCOVER MORE",
         accent: '#d4a853'
@@ -43,7 +43,7 @@ const FALLBACK_SLIDES: SlideData[] = [
     {
         title: "NEW\nARRIVALS",
         subtitle: "EXPLORE THE LATEST FROM TOP BRANDS",
-        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-3-1.jpg`,
+        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-3-1.jpg`,
         href: "/shop",
         cta: "SHOP NOW",
         accent: '#d4a853'

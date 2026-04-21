@@ -58,9 +58,16 @@ export async function POST(request: Request) {
 
         if (!res.ok) {
             const msg = (data as any).message || '';
+            const code = (data as any).code || '';
             if (msg.toLowerCase().includes('exists') || msg.toLowerCase().includes('registered')) {
                 return NextResponse.json(
                     { error: 'An account with this email already exists. Please log in.' },
+                    { status: 400 }
+                );
+            }
+            if (code === 'rest_cannot_create' || msg.toLowerCase().includes('not allowed')) {
+                return NextResponse.json(
+                    { error: 'Registration is currently disabled. Please contact support or try logging in if you already have an account.' },
                     { status: 400 }
                 );
             }

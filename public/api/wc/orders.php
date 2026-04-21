@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 $customer = intval($_GET['customer'] ?? 0);
 if (!$customer) { echo json_encode([]); exit; }
 
-$WP = 'https://jerseyperfume.com/wp-json';
+$WP = 'https://backend.jerseyperfume.com/wp-json';
 $CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
 $CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
 

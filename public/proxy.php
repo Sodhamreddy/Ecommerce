@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$backend_base_root = "https://jerseyperfume.com";
+$backend_base_root = "https://backend.jerseyperfume.com";
 $path = $_GET['path'] ?? '';
 $nonce = $_GET['_nonce'] ?? '';
 

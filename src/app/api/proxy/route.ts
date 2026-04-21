@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     // Construct the backend URL using the more reliable ?rest_route= format.
     // This bypasses many server-side security rules/misconfigurations that block pretty /wp-json/ urls.
     const cleanPath = '/' + path.replace(/^\//, '');
-    const backendUrl = new URL('https://jerseyperfume.com/index.php');
+    const backendUrl = new URL('https://backend.jerseyperfume.com/index.php');
     backendUrl.searchParams.set('rest_route', cleanPath);
     
     // Forward all other query parameters
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
     const cleanPath = '/' + path.replace(/^\//, '');
-    const finalUrl = `https://jerseyperfume.com/index.php?rest_route=${cleanPath}`;
+    const finalUrl = `https://backend.jerseyperfume.com/index.php?rest_route=${cleanPath}`;
     
     console.log(`[Proxy] POST ${request.url} -> ${finalUrl}`);
 

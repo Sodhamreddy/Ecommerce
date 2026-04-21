@@ -1,5 +1,5 @@
 async function test() {
-    const url = "https://jerseyperfume.com/wp-json/wc/store/v1/products?page=1&per_page=4&orderby=popularity&order=desc";
+    const url = "https://backend.jerseyperfume.com/wp-json/wc/store/v1/products?page=1&per_page=4&orderby=popularity&order=desc";
     const resp = await fetch(url);
     console.log("Status:", resp.status);
     console.log("Status Text:", resp.statusText);

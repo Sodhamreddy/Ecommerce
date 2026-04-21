@@ -5,7 +5,7 @@ header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
-$WP = 'https://jerseyperfume.com/wp-json';
+$WP = 'https://backend.jerseyperfume.com/wp-json';
 $CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
 $CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
 

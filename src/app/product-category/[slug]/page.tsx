@@ -33,9 +33,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductCategoryPage({ params }: Props) {
     const { slug } = await params;
 
-    // No server-side searchParams — client-side useSearchParams() in ShopContent handles URL filters
-    const { products, totalPages, totalProducts } = await fetchProducts(1, 24, '', slug);
+    // Fetch categories first so we can resolve slug → numeric ID for WC Store API v1
     const categories = await fetchCategories();
+    const catEntry = categories.find(c => c.slug === slug);
+    const catParam = catEntry ? catEntry.id.toString() : slug;
+
+    const { products, totalPages, totalProducts } = await fetchProducts(1, 24, '', catParam);
 
     return (
         <Suspense fallback={<div className="container py-10">Loading...</div>}>

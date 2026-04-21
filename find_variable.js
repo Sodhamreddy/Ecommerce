@@ -1,5 +1,5 @@
 async function test() {
-  const res = await fetch('https://jerseyperfume.com/wp-json/wc/store/v1/products?per_page=100');
+  const res = await fetch('https://backend.jerseyperfume.com/wp-json/wc/store/v1/products?per_page=100');
   const data = await res.json();
   const variable = data.filter(p => p.type === 'variable');
   if (variable.length > 0) {

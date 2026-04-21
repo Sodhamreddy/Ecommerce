@@ -10,7 +10,7 @@ header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Cookie');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
-$WC_STORE = 'https://jerseyperfume.com/wp-json/wc/store/v1';
+$WC_STORE = 'https://backend.jerseyperfume.com/wp-json/wc/store/v1';
 $cookie   = $_SERVER['HTTP_COOKIE'] ?? '';
 
 $ch = curl_init("$WC_STORE/cart");

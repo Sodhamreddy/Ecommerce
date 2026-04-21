@@ -6,7 +6,7 @@ header('Access-Control-Allow-Headers: Content-Type, X-WC-Store-Api-Nonce, Nonce,
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); echo json_encode(['error' => 'Method not allowed']); exit; }
 
-$WC_STORE = 'https://jerseyperfume.com/wp-json/wc/store/v1';
+$WC_STORE = 'https://backend.jerseyperfume.com/wp-json/wc/store/v1';
 
 $body   = file_get_contents('php://input');
 $nonce  = $_SERVER['HTTP_X_WC_STORE_API_NONCE'] ?? $_SERVER['HTTP_NONCE'] ?? '';

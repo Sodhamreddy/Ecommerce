@@ -64,14 +64,17 @@ export default function ShopContent({
 
     const searchParams = useSearchParams();
     
-    // Initial sync with URL params
+    // Sync with URL params only when they are explicitly present
     useEffect(() => {
-        const cat = searchParams.get('category') || '';
-        const s = searchParams.get('search') || '';
-        if (cat !== selectedCategory || s !== search) {
-            if (cat) setSelectedCategory(cat);
-            if (s) setSearch(s);
-            runFilter({ cat, s });
+        const cat = searchParams.get('category');
+        const s = searchParams.get('search');
+        if (cat === null && s === null) return;
+        const catVal = cat || '';
+        const sVal = s || '';
+        if (catVal !== selectedCategory || sVal !== search) {
+            if (catVal) setSelectedCategory(catVal);
+            if (sVal) setSearch(sVal);
+            runFilter({ cat: catVal, s: sVal });
         }
     }, [searchParams]);
 
@@ -87,6 +90,13 @@ export default function ShopContent({
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Resolve a category slug to its numeric ID for reliable WC Store API filtering
+    const resolveCatParam = (slug: string): string => {
+        if (!slug) return '';
+        const found = categories.find(c => c.slug === slug);
+        return found ? found.id.toString() : slug;
+    };
+
     const runFilter = async (overrides: {
         s?: string; cat?: string; sort?: string; pmn?: number; pmx?: number; pg?: number;
     } = {}) => {
@@ -98,9 +108,10 @@ export default function ShopContent({
         const pmx = overrides.pmx ?? priceMax;
         const pg = overrides.pg ?? 1;
 
-        // WC Store API accepts category slug directly
+        // WC Store API v1 requires numeric category ID, not slug
+        const catParam = resolveCatParam(catSlug);
         const { products: newProducts, totalPages: newTotalPages, totalProducts: newTotal } =
-            await fetchProductsAction(pg, 24, s, catSlug, pmn.toString(), pmx.toString(), sort, 'desc', isOnSale);
+            await fetchProductsAction(pg, 24, s, catParam, pmn.toString(), pmx.toString(), sort, 'desc', isOnSale);
 
         setProducts(newProducts);
         setTotalPages(newTotalPages);
