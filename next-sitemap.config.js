@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 
-const SITE_URL = 'https://chocolate-wolf-402288.hostingersite.com';
+const SITE_URL = 'https://jerseyperfume.com';
 
 async function fetchAllSlugs() {
     const paths = [];

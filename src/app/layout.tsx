@@ -20,6 +20,7 @@ const staatliches = Staatliches({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://jerseyperfume.com'),
   title: "Jersey Perfume | Luxury Fragrances",
   description: "Experience the essence of luxury with Jersey Perfume. Exquisite fragrances for the modern soul.",
 };
