@@ -27,7 +27,7 @@ function clearNonce() {
     }
 }
 function nonceHeaders(): Record<string, string> {
-    return _wcNonce ? { 'X-WC-Store-Api-Nonce': _wcNonce } : {};
+    return _wcNonce ? { 'Nonce': _wcNonce } : {};
 }
 
 /**
@@ -62,13 +62,20 @@ async function ensureNonce(): Promise<void> {
  * is rejected (HTTP 401) by clearing the stale nonce and fetching a fresh one.
  */
 async function doMutation(path: string, body: object): Promise<Response> {
+    // Attempt to use existing nonce first to maintain session continuity.
+    // If it's missing, ensureNonce will fetch it. If it's stale, the 401/403 catch block will refresh it.
     await ensureNonce();
 
     const execute = () => {
         const url = mutationUrl(path);
         return fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...COMMON_HEADERS, ...nonceHeaders() },
+            headers: { 
+                'Content-Type': 'application/json', 
+                ...COMMON_HEADERS, 
+                ...nonceHeaders(),
+                'Nonce': _wcNonce || '' 
+            },
             body: JSON.stringify(body),
             credentials: 'include',
         });
@@ -77,7 +84,8 @@ async function doMutation(path: string, body: object): Promise<Response> {
     let response = await execute();
 
     // Nonce was stale or missing — clear it, fetch a fresh one, and retry once
-    if (response.status === 401) {
+    // Some configurations return 403 Forbidden for invalid nonces instead of 401.
+    if (response.status === 401 || response.status === 403) {
         clearNonce();
         await ensureNonce();
         response = await execute();
@@ -98,8 +106,8 @@ async function doMutation(path: string, body: object): Promise<Response> {
  */
 function mutationUrl(path: string): string {
     const base = getApiUrl(path);
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production' && _wcNonce) {
-        return base + (base.includes('?') ? '&' : '?') + '_nonce=' + encodeURIComponent(_wcNonce);
+    if (typeof window !== 'undefined' && _wcNonce) {
+        return base + (base.includes('?') ? '&' : '?') + '_wpnonce=' + encodeURIComponent(_wcNonce);
     }
     return base;
 }
@@ -504,7 +512,7 @@ export async function fetchWPPosts(
  */
 export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
     try {
-        const url = getApiUrl(`wp/v2/posts?slug=${slug}&_embed`);
+        const url = getApiUrl('wp/v2/posts', { slug, _embed: '1' });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const posts = await response.json();
@@ -519,7 +527,7 @@ export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
  */
 export async function fetchWPPage(slug: string): Promise<WPPost | null> {
     try {
-        const url = getApiUrl(`wp/v2/pages?slug=${slug}&_embed`);
+        const url = getApiUrl('wp/v2/pages', { slug, _embed: '1' });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const pages = await response.json();
@@ -534,7 +542,7 @@ export async function fetchWPPage(slug: string): Promise<WPPost | null> {
  */
 export async function fetchWPCategories(): Promise<any[]> {
     try {
-        const url = getApiUrl('wp/v2/categories?per_page=100');
+        const url = getApiUrl('wp/v2/categories', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
@@ -548,7 +556,7 @@ export async function fetchWPCategories(): Promise<any[]> {
  */
 export async function fetchWPTags(): Promise<any[]> {
     try {
-        const url = getApiUrl('wp/v2/tags?per_page=100');
+        const url = getApiUrl('wp/v2/tags', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
@@ -561,7 +569,7 @@ export async function fetchWPTags(): Promise<any[]> {
 
 export async function fetchWCProductCategories(): Promise<any[]> {
     try {
-        const url = getApiUrl('wc/store/v1/products/categories?per_page=100');
+        const url = getApiUrl('wc/store/v1/products/categories', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
@@ -572,7 +580,7 @@ export async function fetchWCProductCategories(): Promise<any[]> {
 
 export async function fetchWCProductTags(): Promise<any[]> {
     try {
-        const url = getApiUrl('wc/store/v1/products/tags?per_page=100');
+        const url = getApiUrl('wc/store/v1/products/tags', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
         return await response.json();
@@ -585,7 +593,7 @@ export async function fetchWCProductTags(): Promise<any[]> {
 
 export async function fetchOnSaleProducts(page = 1, perPage = 20): Promise<any> {
     try {
-        const url = getApiUrl(`wc/store/v1/products?page=${page}&per_page=${perPage}&on_sale=true`);
+        const url = getApiUrl('wc/store/v1/products', { page, per_page: perPage, on_sale: 'true' });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return { products: [], totalPages: 0, totalProducts: 0 };
         const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0');
@@ -642,12 +650,12 @@ export interface SlideData {
 export async function fetchSmartSliderSlides(_sliderId: number = 1): Promise<SlideData[]> {
     try {
         return [
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/product-category/womens-fragrances', cta: 'SHOP WOMEN\'S', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop?search=soprano+ice', cta: 'SHOP NOW', accent: '#d4a853' },
             { bg: `${SITE_DOMAIN}/wp-content/uploads/2025/11/Jersey-Banner-7.png`,         href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`,     href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`,  href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`,     href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`,     href: '/shop?search=dumont', cta: 'SHOP DUMONT', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`,  href: '/shop?search=christian+siriano', cta: 'SHOP NOW', accent: '#d4a853' },
+            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`,     href: '/shop?search=tumi', cta: 'SHOP TUMI', accent: '#d4a853' },
         ];
     } catch {
         return [];

@@ -256,7 +256,7 @@ export default async function ProductPage({ params }: Props) {
                         </div>
                         <div className={styles.shippingItem}>
                             <RotateCcw size={20} className={styles.shippingIcon} />
-                            <span><strong>14 Days Return Policy</strong><br />No questions asked.</span>
+                            <span><strong>30 Days Return Policy</strong><br />No questions asked.</span>
                         </div>
                         <div className={styles.shippingItem}>
                             <ShieldCheck size={20} className={styles.shippingIcon} />

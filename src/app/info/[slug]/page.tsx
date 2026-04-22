@@ -80,8 +80,14 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
                     <ContactForm />
                 ) : (
                     <div className="container">
-                        <div className={styles.contentBox} dangerouslySetInnerHTML={{ __html: page.content.rendered }}>
-                        </div>
+                        <div
+                            className={styles.contentBox}
+                            dangerouslySetInnerHTML={{
+                                __html: (page.content.rendered as string)
+                                    .replace(/https:\/\/backend\.jerseyperfume\.com/g, 'https://jerseyperfume.com')
+                                    .replace(/support@jerseyperfume\.com/g, 'info@jerseyperfume.com')
+                            }}
+                        />
                     </div>
                 )}
             </section>

@@ -69,15 +69,17 @@ export async function GET(request: Request) {
         if (pages) headers.set('X-WP-TotalPages', pages);
         if (nonce) headers.set('X-WC-Store-Api-Nonce', nonce);
 
-        // Forward WC session cookie back to browser so POST mutations (coupon, checkout)
-        // use the same WC session. Strip Secure/Domain/SameSite so it works on localhost.
-        const rawSetCookie = response.headers.get('set-cookie');
-        if (rawSetCookie) {
-            const sanitized = rawSetCookie
-                .replace(/;\s*Secure/gi, '')
-                .replace(/;\s*SameSite=[^;,]*/gi, '')
-                .replace(/;\s*Domain=[^;,]*/gi, '');
-            headers.set('set-cookie', sanitized);
+        // Forward ALL session cookies so the cart stays tied to the right session.
+        // Multiple cookies (session, items_in_cart, etc.) must be handled as a list.
+        const setCookieHeaders = (response.headers as any).getSetCookie?.() || [response.headers.get('set-cookie')].filter(Boolean);
+        if (setCookieHeaders && setCookieHeaders.length > 0) {
+            setCookieHeaders.forEach((cookieValue: string) => {
+                const sanitized = cookieValue
+                    .replace(/;\s*Secure/gi, '')
+                    .replace(/;\s*SameSite=[^;,]*/gi, '')
+                    .replace(/;\s*Domain=[^;,]*/gi, '');
+                headers.append('set-cookie', sanitized);
+            });
         }
 
         return NextResponse.json(data, {
@@ -96,22 +98,45 @@ export async function POST(request: Request) {
     if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
     const cleanPath = '/' + path.replace(/^\//, '');
-    const finalUrl = `https://backend.jerseyperfume.com/index.php?rest_route=${cleanPath}`;
+    let finalUrl = `https://backend.jerseyperfume.com/index.php?rest_route=${cleanPath}`;
+    
+    // Pick up the nonce for forwarding
+    const nonce = request.headers.get('X-WC-Store-Api-Nonce') || 
+                  request.headers.get('Nonce') || 
+                  request.headers.get('nonce') || 
+                  searchParams.get('_nonce') || 
+                  '';
+
+    // Hostinger/Nginx occasionally strip X- headers. Forwarding as query param (_wpnonce)
+    // is the most reliable way to reach the WooCommerce Store API.
+    if (nonce) {
+        finalUrl += `&_wpnonce=${encodeURIComponent(nonce)}`;
+    }
     
     console.log(`[Proxy] POST ${request.url} -> ${finalUrl}`);
 
     try {
         const body = await request.json();
         const cookie = request.headers.get('cookie') || '';
-        const nonce = request.headers.get('X-WC-Store-Api-Nonce') || request.headers.get('Nonce') || request.headers.get('nonce') || '';
+        const nonce = request.headers.get('X-WC-Store-Api-Nonce') || 
+                      request.headers.get('Nonce') || 
+                      request.headers.get('nonce') || 
+                      searchParams.get('_wpnonce') || 
+                      searchParams.get('_nonce') || 
+                      '';
 
         const fetchHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             ...(cookie ? { 'Cookie': cookie } : {}),
+            ...(nonce ? { 'Nonce': nonce } : {}),
         };
-        if (nonce) fetchHeaders['X-WC-Store-Api-Nonce'] = nonce;
+
+        if (nonce) {
+            if (!finalUrl.includes('?')) finalUrl += '?';
+            finalUrl += `&_wpnonce=${encodeURIComponent(nonce)}&nonce=${encodeURIComponent(nonce)}`;
+        }
 
         const response = await fetch(finalUrl, {
             method: 'POST',
@@ -140,17 +165,22 @@ export async function POST(request: Request) {
             data = { error: 'Non-JSON response', message: `Server returned ${response.status}`, text: text.substring(0, 500) };
         }
 
-        const setCookie = response.headers.get('set-cookie');
         const resNonce = response.headers.get('X-WC-Store-Api-Nonce') || response.headers.get('Nonce') || response.headers.get('nonce');
 
         const nextResponse = NextResponse.json(data, { status: response.status });
-        if (setCookie) {
-            const sanitized = setCookie
-                .replace(/;\s*Secure/gi, '')
-                .replace(/;\s*SameSite=[^;,]*/gi, '')
-                .replace(/;\s*Domain=[^;,]*/gi, '');
-            nextResponse.headers.set('set-cookie', sanitized);
+        
+        // Forward ALL session cookies so the cart stays tied to the right session.
+        const setCookieHeaders = (response.headers as any).getSetCookie?.() || [response.headers.get('set-cookie')].filter(Boolean);
+        if (setCookieHeaders && setCookieHeaders.length > 0) {
+            setCookieHeaders.forEach((cookieValue: string) => {
+                const sanitized = cookieValue
+                    .replace(/;\s*Secure/gi, '')
+                    .replace(/;\s*SameSite=[^;,]*/gi, '')
+                    .replace(/;\s*Domain=[^;,]*/gi, '');
+                nextResponse.headers.append('set-cookie', sanitized);
+            });
         }
+        
         if (resNonce) nextResponse.headers.set('X-WC-Store-Api-Nonce', resNonce);
 
         return nextResponse;

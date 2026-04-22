@@ -1,46 +1,82 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ShieldCheck, Lock, Loader2, Truck, RotateCcw, Tag } from 'lucide-react';
-import { submitCheckout, getPaymentGateways, PaymentGateway, CheckoutData } from '@/lib/woocommerce';
 import styles from './Checkout.module.css';
+
+// Dynamic PayPal Client ID fetched from API
+let PAYPAL_CLIENT_ID = ''; 
 
 export default function CheckoutPage() {
     const { cart, clearCart, cartTotal, wcCart, applyCouponToCart, removeCouponFromCart, updateCustomerAddress } = useCart();
     const router = useRouter();
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [couponCode, setCouponCode] = useState('');
-    const [couponLoading, setCouponLoading] = useState(false);
-    const [couponMsg, setCouponMsg] = useState<{text: string, type: 'error' | 'success'} | null>(null);
-    const [paymentGateways, setPaymentGateways] = useState<PaymentGateway[]>([]);
-    const [loadingGateways, setLoadingGateways] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        company: '',
-        email: '',
-        phone: '',
-        address: '',
-        address2: '',
-        city: '',
-        state: '',
-        zip: '',
-        country: 'US',
-        orderNotes: '',
-        paymentMethod: '',
+        firstName: '', lastName: '', company: '', email: '', phone: '',
+        address: '', address2: '', city: '', state: '', zip: '',
+        country: 'US', orderNotes: '',
     });
     const [createAccount, setCreateAccount] = useState(false);
     const [accountPassword, setAccountPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    // Auto-fill form from logged-in user account data
+    // UI state
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [couponCode, setCouponCode] = useState('');
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponMsg, setCouponMsg] = useState<{text: string, type: 'error' | 'success'} | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [paypalLoaded, setPaypalLoaded] = useState(false);
+    const [selectedGateway, setSelectedGateway] = useState('paypal');
+    const [gateways, setGateways] = useState<any[]>([]);
+    const [gatewaysLoading, setGatewaysLoading] = useState(true);
+    const [fetchedClientId, setFetchedClientId] = useState<string | null>(null);
+
+    // Refs for stable closures in PayPal callbacks
+    const paypalContainerRef = useRef<HTMLDivElement>(null);
+    const cardContainerRef = useRef<HTMLDivElement>(null);
+    const paypalBtnsRef = useRef<any>(null);
+    const cardBtnsRef = useRef<any>(null);
+    const formRef = useRef(formData);
+    const agreedRef = useRef(agreedToTerms);
+    const cartRef = useRef(cart);
+    const createAccountRef = useRef(createAccount);
+    const accountPasswordRef = useRef(accountPassword);
+    const totalRef = useRef(0);
+
+    // Calculate totals
+    const getVal = (str?: string) => parseInt(str || '0', 10);
+    const minorUnit = wcCart?.totals?.currency_minor_unit || 2;
+    const factor = Math.pow(10, minorUnit);
+    
+    // Only use backend totals if the item counts match exactly to avoid display desync
+    const wcSubtotal = wcCart ? getVal(wcCart.totals.total_items) / factor : 0;
+    const itemCountMatch = wcCart?.items?.length === cart.length;
+    const wcSynced = wcSubtotal > 0 && itemCountMatch;
+    
+    const subtotal = wcSynced ? wcSubtotal : cartTotal;
+    const wcShipping = wcSynced ? getVal(wcCart!.totals.total_shipping) / factor : 0;
+    const localShipping = subtotal > 59.99 ? 0 : 5.99;
+    const shipping = wcSynced ? wcShipping : localShipping;
+    const tax = wcSynced ? getVal(wcCart!.totals.total_tax) / factor : 0;
+    const discount = wcSynced && wcCart!.totals.total_discount ? getVal(wcCart!.totals.total_discount) / factor : 0;
+    const total = wcSynced ? getVal(wcCart!.totals.total_price) / factor : (subtotal + shipping - discount);
+    const appliedCoupons = wcCart?.coupons || [];
+    totalRef.current = total;
+
+    // Keep refs in sync with state
+    useEffect(() => { formRef.current = formData; }, [formData]);
+    useEffect(() => { agreedRef.current = agreedToTerms; }, [agreedToTerms]);
+    useEffect(() => { cartRef.current = cart; }, [cart]);
+    useEffect(() => { createAccountRef.current = createAccount; }, [createAccount]);
+    useEffect(() => { accountPasswordRef.current = accountPassword; }, [accountPassword]);
+
+    // Auto-fill form from logged-in user
     useEffect(() => {
         const savedUser = localStorage.getItem('jp_user');
         if (!savedUser) return;
@@ -68,29 +104,6 @@ export default function CheckoutPage() {
         } catch {}
     }, []);
 
-    // Fetch available payment gateways from WooCommerce
-    useEffect(() => {
-        const loadGateways = async () => {
-            setLoadingGateways(true);
-            try {
-                const gateways = await getPaymentGateways();
-                setPaymentGateways(gateways);
-                if (gateways.length > 0) {
-                    setFormData(prev => ({ ...prev, paymentMethod: gateways[0].id }));
-                }
-            } catch (e) {
-                console.error('Failed to load payment gateways:', e);
-                setPaymentGateways([
-                    { id: 'ppcp-gateway', title: 'PayPal', description: 'Pay via PayPal.', order: 0 }
-                ]);
-                setFormData(prev => ({ ...prev, paymentMethod: 'ppcp-gateway' }));
-            } finally {
-                setLoadingGateways(false);
-            }
-        };
-        loadGateways();
-    }, []);
-
     // Recalculate tax/shipping when address changes (debounced 800ms)
     useEffect(() => {
         const { country, state, zip, city } = formData;
@@ -103,22 +116,156 @@ export default function CheckoutPage() {
         return () => clearTimeout(timer);
     }, [formData.country, formData.state, formData.zip, formData.city]);
 
-    // Calculate totals — prefer wcCart when synced (non-zero)
-    const getVal = (str?: string) => parseInt(str || '0', 10);
-    const minorUnit = wcCart?.totals?.currency_minor_unit || 2;
-    const factor = Math.pow(10, minorUnit);
-    const wcSubtotal = wcCart ? getVal(wcCart.totals.total_items) / factor : 0;
-    const wcSynced = wcSubtotal > 0;
+    // Fetch available gateways and Client ID
+    useEffect(() => {
+        const fetchGateways = async () => {
+            try {
+                const res = await fetch('/api/wc/payment-gateways');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setGateways(data);
+                    const ppcp = data.find((g: any) => g.id === 'ppcp-gateway');
+                    if (ppcp?.clientId) {
+                        setFetchedClientId(ppcp.clientId);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch gateways:', err);
+            } finally {
+                setGatewaysLoading(false);
+            }
+        };
+        fetchGateways();
+    }, []);
 
-    const subtotal = wcSynced ? wcSubtotal : cartTotal;
-    const wcShipping = wcSynced ? getVal(wcCart!.totals.total_shipping) / factor : 0;
-    const localShipping = subtotal > 59.99 ? 0 : 5.99;
-    const shipping = wcSynced ? wcShipping : localShipping;
-    const tax = wcSynced ? getVal(wcCart!.totals.total_tax) / factor : 0;
-    const discount = wcSynced && wcCart!.totals.total_discount ? getVal(wcCart!.totals.total_discount) / factor : 0;
-    const total = wcSynced ? getVal(wcCart!.totals.total_price) / factor : (subtotal + shipping - discount);
+    // Load PayPal SDK Script
+    useEffect(() => {
+        if (!fetchedClientId || paypalLoaded) return;
+        const s = document.createElement('script');
+        s.src = `https://www.paypal.com/sdk/js?client-id=${fetchedClientId}&components=buttons,funding-eligibility`;
+        s.async = true;
+        s.onload = () => setPaypalLoaded(true);
+        s.onerror = () => {
+            console.error('PayPal SDK failed to load.');
+            setError('Failed to load PayPal. Please try again later.');
+        };
+        document.body.appendChild(s);
+    }, [fetchedClientId]);
 
-    const appliedCoupons = wcCart?.coupons || [];
+    // Render PayPal & Card Buttons
+    useEffect(() => {
+        if (!paypalLoaded) return;
+        
+        const paypal = (window as any).paypal;
+        if (!paypal?.Buttons) return;
+
+        // Cleanup existing buttons if any to ensure fresh start
+        if (paypalBtnsRef.current) { paypalBtnsRef.current.close(); paypalBtnsRef.current = null; }
+        if (cardBtnsRef.current) { cardBtnsRef.current.close(); cardBtnsRef.current = null; }
+
+        // Common config factory
+        const getConfig = (type: 'paypal' | 'card') => ({ 
+            fundingSource: type === 'paypal' ? paypal.FUNDING.PAYPAL : paypal.FUNDING.CARD,
+            style: { 
+                layout: 'vertical', 
+                color: type === 'paypal' ? 'gold' : 'black', 
+                shape: 'rect', 
+                label: 'checkout',
+                height: 48 
+            }, 
+            createOrder: async (data: any, actions: any) => {
+                setError(null);
+                const fd = formRef.current;
+                
+                // 1. Agree to Terms Check (Matches "Terms not agreed" console error)
+                if (!agreedRef.current) {
+                    const msg = 'Please check the box to agree to the terms and conditions.';
+                    setError(msg);
+                    // Return early without rejection to avoid noisy console error if desired, 
+                    // or keep rejection for PayPal SDK standard behavior.
+                    return Promise.reject(new Error(msg));
+                }
+
+                // 2. Form Validation Guard
+                if (!fd.email) {
+                    setError('Email is required.');
+                    return Promise.reject(new Error('Email required'));
+                }
+                if (!fd.firstName || !fd.lastName || !fd.address || !fd.city || !fd.zip) {
+                    setError('Please fill in all required shipping fields.');
+                    return Promise.reject(new Error('Form incomplete'));
+                }
+
+                setIsProcessing(true);
+                try {
+                    // Use client-side PayPal order creation to avoid missing server-side secret dependency
+                    return actions.order.create({
+                        purchase_units: [{
+                            description: 'Jersey Perfume Order',
+                            amount: {
+                                currency_code: 'USD',
+                                value: total.toFixed(2),
+                                breakdown: {
+                                    item_total: { currency_code: 'USD', value: subtotal.toFixed(2) },
+                                    shipping: { currency_code: 'USD', value: shipping.toFixed(2) },
+                                    tax_total: { currency_code: 'USD', value: tax.toFixed(2) },
+                                    discount: { currency_code: 'USD', value: discount.toFixed(2) }
+                                }
+                            }
+                        }]
+                    });
+                } catch (err: any) {
+                    setIsProcessing(false);
+                    setError(err.message || 'Payment initialization failed.');
+                    return Promise.reject(err);
+                }
+            },
+            onApprove: async (data: any) => {
+                try {
+                    const res = await fetch('/api/paypal/complete-order', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            orderID: data.orderID,
+                            cart: cartRef.current,
+                            billing: formRef.current,
+                            createAccount: createAccountRef.current,
+                            accountPassword: accountPasswordRef.current
+                        })
+                    });
+                    const capture = await res.json();
+                    if (capture.success) {
+                        clearCart();
+                        router.push(`/checkout/success?order_id=${capture.order_id}`);
+                    } else {
+                        throw new Error(capture.message || 'Capture failed');
+                    }
+                } catch (err: any) {
+                    setIsProcessing(false);
+                    setError(err.message || 'Payment completed but order update failed.');
+                }
+            },
+            onCancel: () => { setIsProcessing(false); },
+            onError: (err: any) => {
+                console.error('PayPal Interface Error:', err);
+                setIsProcessing(false);
+                setError('Payment error. Please check your credit card details and try again.');
+            }
+        });
+
+        // 1. PayPal Button
+        if (paypalContainerRef.current) {
+            paypalBtnsRef.current = paypal.Buttons(getConfig('paypal'));
+            paypalBtnsRef.current.render(paypalContainerRef.current).catch(() => {});
+        }
+
+        // 2. Card Button
+        if (cardContainerRef.current) {
+            cardBtnsRef.current = paypal.Buttons(getConfig('card'));
+            cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
+        }
+    }, [paypalLoaded, wcCart?.totals?.total_price, selectedGateway]);
+
+
 
     const handleApplyCoupon = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,88 +298,6 @@ export default function CheckoutPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleCheckout = async (e?: React.FormEvent | React.MouseEvent) => {
-        if (e) e.preventDefault();
-        setError(null);
-
-        if (cart.length === 0) { setError("Your cart is empty!"); return; }
-        if (!agreedToTerms) { setError("Please agree to the website terms and conditions to proceed."); return; }
-
-        setIsProcessing(true);
-
-        try {
-            // Basic field validation
-            const requiredFields: Record<string, string> = {
-                email: 'Email',
-                phone: 'Phone',
-                firstName: 'First Name',
-                lastName: 'Last Name',
-                address: 'Address',
-                city: 'City',
-                state: 'State',
-                zip: 'ZIP Code',
-                paymentMethod: 'Payment Method'
-            };
-
-            for (const [key, label] of Object.entries(requiredFields)) {
-                if (!formData[key as keyof typeof formData]) {
-                    setError(`${label} is required.`);
-                    setIsProcessing(false);
-                    return;
-                }
-            }
-
-            const checkoutData: CheckoutData = {
-                billing_address: {
-                    first_name: formData.firstName,
-                    last_name: formData.lastName,
-                    company: formData.company || "",
-                    address_1: formData.address,
-                    address_2: formData.address2,
-                    city: formData.city,
-                    state: formData.state,
-                    postcode: formData.zip,
-                    country: formData.country,
-                    email: formData.email,
-                    phone: formData.phone,
-                },
-                shipping_address: {
-                    first_name: formData.firstName,
-                    last_name: formData.lastName,
-                    company: "",
-                    address_1: formData.address,
-                    address_2: formData.address2,
-                    city: formData.city,
-                    state: formData.state,
-                    postcode: formData.zip,
-                    country: formData.country,
-                    phone: formData.phone,
-                },
-                payment_method: formData.paymentMethod,
-                customer_note: formData.orderNotes,
-                create_account: !isLoggedIn && createAccount,
-                ...(createAccount && accountPassword ? { payment_data: [{ key: 'account_password', value: accountPassword }] } : {}),
-            };
-
-            const result = await submitCheckout(checkoutData);
-
-            if (result.payment_result?.redirect_url) {
-                window.location.href = result.payment_result.redirect_url;
-                return;
-            }
-
-            clearCart();
-            router.push(`/order-success?id=${result.order_id}&key=${result.order_key}`);
-
-        } catch (err: any) {
-            console.error('Checkout error:', err);
-            // If it's the proxy error object, it might have message or error property
-            const errMsg = err.message || err.error || "Payment failed. Please try again.";
-            setError(errMsg);
-            setIsProcessing(false);
-        }
-    };
-
     if (cart.length === 0 && !isProcessing) {
         return (
             <div className={styles.emptyContainer}>
@@ -242,8 +307,6 @@ export default function CheckoutPage() {
             </div>
         );
     }
-
-    const isPayPal = formData.paymentMethod === 'paypal';
 
     return (
         <div className={styles.container}>
@@ -477,50 +540,6 @@ export default function CheckoutPage() {
                             </div>
                         </div>
 
-                        {/* Payment Methods */}
-                        <div className={styles.paymentSection}>
-                            {loadingGateways ? (
-                                <div className={styles.gatewayLoader}>
-                                    <Loader2 size={18} className={styles.spinIcon} />
-                                    Loading payment options...
-                                </div>
-                            ) : (
-                                <div className={styles.paymentMethods}>
-                                    {paymentGateways.map(gateway => (
-                                        <label
-                                            key={gateway.id}
-                                            className={`${styles.paymentRadio} ${formData.paymentMethod === gateway.id ? styles.activeRadio : ''}`}
-                                        >
-                                            <div className={styles.radioLeft}>
-                                                <input
-                                                    type="radio"
-                                                    name="paymentMethod"
-                                                    value={gateway.id}
-                                                    checked={formData.paymentMethod === gateway.id}
-                                                    onChange={handleChange}
-                                                />
-                                                <div>
-                                                    <div className={styles.gatewayTitle}>{gateway.title}</div>
-                                                    {gateway.description && (
-                                                        <div className={styles.gatewayDesc}>{gateway.description}</div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {/* Card icons for Stripe / credit card methods */}
-                                            {(gateway.id === 'stripe' || gateway.id === 'woocommerce_payments' || gateway.id === 'wc_stripe' || gateway.id.includes('card') || gateway.id.includes('credit')) && (
-                                                <div className={styles.cardIcons}>
-                                                    <span className={styles.cardIcon}>VISA</span>
-                                                    <span className={styles.cardIcon}>MC</span>
-                                                    <span className={styles.cardIcon}>AMEX</span>
-                                                    <span className={styles.cardIcon}>DISC</span>
-                                                </div>
-                                            )}
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
                         {/* Privacy note */}
                         <p className={styles.privacyNote}>
                             Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our{' '}
@@ -541,31 +560,89 @@ export default function CheckoutPage() {
                             </span>
                         </label>
 
-                        {/* Place Order Button */}
-                        <button
-                            type="button"
-                            onClick={handleCheckout}
-                            className={isPayPal ? styles.paypalBtn : styles.payBtn}
-                            disabled={isProcessing}
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <Loader2 size={20} className={styles.spinIcon} />
-                                    Processing Payment...
-                                </>
-                            ) : isPayPal ? (
-                                <span className={styles.paypalBtnInner}>
-                                    Pay with <span className={styles.paypalWordmark}>PayPal</span>
-                                </span>
+                        {/* Payment Selection UI */}
+                        <div className={styles.paymentSection}>
+                            <div className={styles.sectionTitle} style={{ borderBottom: 'none', marginBottom: '1rem', border: 'none', padding: 0 }}>Payment Method</div>
+                            
+                            {gatewaysLoading ? (
+                                <div className={styles.gatewayLoader}>
+                                    <Loader2 size={16} className={styles.spinIcon} />
+                                    <span>Fetching secure methods...</span>
+                                </div>
                             ) : (
-                                `Place Order • $${total.toFixed(2)}`
+                                <div className={styles.paymentMethods}>
+                                    {/* PayPal Option */}
+                                    <label className={`${styles.paymentRadio} ${selectedGateway === 'paypal' ? styles.activeRadio : ''}`}>
+                                        <div className={styles.radioLeft}>
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                checked={selectedGateway === 'paypal'}
+                                                onChange={() => setSelectedGateway('paypal')}
+                                            />
+                                            <div>
+                                                <div className={styles.gatewayTitle}>PayPal</div>
+                                                <div className={styles.gatewayDesc}>Pay via PayPal.</div>
+                                            </div>
+                                        </div>
+                                    </label>
+
+                                    {/* Credit Card Option — specifically handled for ppcp-gateway */}
+                                    <label className={`${styles.paymentRadio} ${selectedGateway === 'paypal-credit' ? styles.activeRadio : ''}`}>
+                                        <div className={styles.radioLeft}>
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                checked={selectedGateway === 'paypal-credit'}
+                                                onChange={() => setSelectedGateway('paypal-credit')}
+                                            />
+                                            <div>
+                                                <div className={styles.gatewayTitle}>Debit & Credit Cards</div>
+                                                <div className={styles.gatewayDesc}>Encrypted & secure.</div>
+                                            </div>
+                                        </div>
+                                        <div className={styles.cardIcons}>
+                                            <span className={styles.cardIcon}>VISA</span>
+                                            <span className={styles.cardIcon} style={{ background: '#eb001b', color: '#fff', border: 'none' }}>MC</span>
+                                            <span className={styles.cardIcon} style={{ background: '#0070d1', color: '#fff', border: 'none' }}>AMEX</span>
+                                        </div>
+                                    </label>
+                                </div>
                             )}
-                        </button>
+
+                            <div style={{ marginTop: '1.5rem' }}>
+                                {isProcessing ? (
+                                    <div className={styles.gatewayLoader}>
+                                        <Loader2 size={20} className={styles.spinIcon} />
+                                        Processing your order...
+                                    </div>
+                                ) : !paypalLoaded ? (
+                                    <div className={styles.gatewayLoader}>
+                                        <Loader2 size={18} className={styles.spinIcon} />
+                                        Finalizing...
+                                    </div>
+                                ) : null}
+                                
+                                {/* PayPal Button Container */}
+                                <div
+                                    ref={paypalContainerRef}
+                                    id="paypal-button-container"
+                                    style={{ display: (isProcessing || selectedGateway !== 'paypal') ? 'none' : 'block' }}
+                                />
+
+                                {/* Card Button Container */}
+                                <div
+                                    ref={cardContainerRef}
+                                    id="paypal-card-container"
+                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit') ? 'none' : 'block' }}
+                                />
+                            </div>
+                        </div>
 
                         <div className={styles.trustSignals}>
                             <div><ShieldCheck size={16} /> 100% Secure Transaction</div>
                             <div><Truck size={16} /> Free shipping over $59.99</div>
-                            <div><RotateCcw size={16} /> 14-day return policy</div>
+                            <div><RotateCcw size={16} /> 30-day return policy</div>
                         </div>
                     </div>
                 </div>

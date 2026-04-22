@@ -60,7 +60,7 @@ export default function ChatBot() {
             if (query.includes('shipping') || query.includes('delivery') || query.includes('track')) {
                 botReply = "We offer <strong>FREE shipping</strong> on all US orders over $59! We dispatch orders on the same day if placed before 2 PM EST. Delivery typically takes 2-4 business days.";
             } else if (query.includes('return') || query.includes('refund')) {
-                botReply = "We have a 14-day return policy. If you're not completely satisfied with your fragrance, you can return it within 14 days of receipt for a full refund (items must be unused/sealed).";
+                botReply = "We have a 30-day return policy. If you're not completely satisfied with your fragrance, you can return it within 30 days of receipt for a full refund (items must be unused/sealed).";
             } else if (query.includes('contact') || query.includes('support')) {
                 botReply = "You can reach our customer support team via email at support@jerseyperfume.com or through our <a href='/contact' style='text-decoration:underline'>Contact Us page</a>. We aim to respond to within 24 hours.";
             } else if (query.includes('authentic') || query.includes('fake') || query.includes('original')) {

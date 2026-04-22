@@ -26,6 +26,13 @@ const SORT_OPTIONS = [
     { value: 'price-desc', label: 'Price: High → Low' },
 ];
 
+const BRANDS = [
+    'ARMAF', 'AL HARAMAIN', 'AHMED AL MAGHRIBI', 'BURBERRY', 'BVLGARI',
+    'CHANEL', 'CHRISTIAN SIRIANO', 'CREED', 'DIOR', 'DUMONT PARIS',
+    'GIVENCHY', 'GIORGIO ARMANI', 'JIMMY CHOO', 'LATTAFA', 'MAISON ALHAMBRA',
+    'PACO RABANNE', 'RASASI', 'TOM FORD', 'TUMI', 'VERSACE',
+];
+
 // Quick-access trending category tabs with icons
 const QUICK_CATS = [
     { slug: '', label: 'All', icon: <Sparkles size={14} /> },
@@ -52,6 +59,7 @@ export default function ShopContent({
     const [totalProducts, setTotalProducts] = useState(initialTotalProducts);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState(initialSearchQuery);
+    const [selectedBrand, setSelectedBrand] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(initialCategoryQuery);
     const [priceMin, setPriceMin] = useState(0);
     const [priceMax, setPriceMax] = useState(400);
@@ -142,6 +150,19 @@ export default function ShopContent({
         setSidebarOpen(false);
     };
 
+    const selectBrand = (brand: string) => {
+        setSelectedBrand(brand);
+        setSearch(brand);
+        runFilter({ s: brand });
+        setSidebarOpen(false);
+    };
+
+    const clearBrand = () => {
+        setSelectedBrand('');
+        setSearch('');
+        runFilter({ s: '' });
+    };
+
     const handleSort = (v: string) => {
         setSortBy(v);
         runFilter({ sort: v });
@@ -222,6 +243,24 @@ export default function ShopContent({
                                 <button className={styles.searchBtn} onClick={handleSearch} aria-label="Search">
                                     <Search size={16} />
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Brand */}
+                        <div className={styles.filterBlock}>
+                            <div className={styles.filterLabel}>Brand</div>
+                            <div className={styles.chipList}>
+                                <button
+                                    className={`${styles.chip} ${selectedBrand === '' ? styles.chipActive : ''}`}
+                                    onClick={clearBrand}
+                                >All</button>
+                                {BRANDS.map(brand => (
+                                    <button
+                                        key={brand}
+                                        className={`${styles.chip} ${selectedBrand === brand ? styles.chipActive : ''}`}
+                                        onClick={() => selectBrand(brand)}
+                                    >{brand}</button>
+                                ))}
                             </div>
                         </div>
 
@@ -349,9 +388,15 @@ export default function ShopContent({
                     </div>
 
                     {/* Active filter chips */}
-                    {(selectedCategory || priceMin > 0 || priceMax < 400 || search) && (
+                    {(selectedCategory || selectedBrand || priceMin > 0 || priceMax < 400 || search) && (
                         <div className={styles.activeFiltersRow}>
                             <span className={styles.filterRowLabel}>Active:</span>
+                            {selectedBrand && (
+                                <span className={styles.activeFilterChip}>
+                                    {selectedBrand}
+                                    <button onClick={clearBrand}><X size={10} /></button>
+                                </span>
+                            )}
                             {selectedCategory && (
                                 <span className={styles.activeFilterChip}>
                                     {decodeHTML(selectedCat?.name || selectedCategory)}
@@ -364,7 +409,7 @@ export default function ShopContent({
                                     <button onClick={() => { setPriceMin(0); setPriceMax(400); runFilter({ pmn: 0, pmx: 400 }); }}><X size={10} /></button>
                                 </span>
                             )}
-                            {search && (
+                            {search && !selectedBrand && (
                                 <span className={styles.activeFilterChip}>
                                     &ldquo;{search}&rdquo;
                                     <button onClick={() => { setSearch(''); runFilter({ s: '' }); }}><X size={10} /></button>
@@ -374,6 +419,7 @@ export default function ShopContent({
                                 className={styles.clearAllBtn}
                                 onClick={() => {
                                     setSearch('');
+                                    setSelectedBrand('');
                                     setSelectedCategory('');
                                     setPriceMin(0);
                                     setPriceMax(400);

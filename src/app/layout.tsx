@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://jerseyperfume.com'),
   title: "Jersey Perfume | Luxury Fragrances",
   description: "Experience the essence of luxury with Jersey Perfume. Exquisite fragrances for the modern soul.",
+  icons: {
+    icon: 'https://backend.jerseyperfume.com/wp-content/uploads/2025/07/jersey-perfume-logo-mail.jpg',
+    apple: 'https://backend.jerseyperfume.com/wp-content/uploads/2025/07/jersey-perfume-logo-mail.jpg',
+    shortcut: 'https://backend.jerseyperfume.com/wp-content/uploads/2025/07/jersey-perfume-logo-mail.jpg',
+  },
 };
 
 export default function RootLayout({

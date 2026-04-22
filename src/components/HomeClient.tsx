@@ -269,34 +269,36 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/shop?search=dumont" className={styles.editorialLeft}>
-                        <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Dumont Paris" fill style={{ objectFit: "cover" }} />
+                    <Link href="/shop?search=ahmed+al+maghribi" className={styles.editorialLeft}>
+                        <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
                             <span className={styles.editorialTag}>Featured Brand</span>
-                            <h2 className={styles.editorialHeading}>DUMONT PARIS</h2>
-                            <p className={styles.editorialSub}>Best-Selling Luxury Perfumes</p>
+                            <h2 className={styles.editorialHeading}>THE LUXURY COLLECTION</h2>
+                            <p className={styles.editorialSub}>Featured: Ahmed Al Maghribi</p>
                             <span className={styles.editorialCta}>Explore Collection <ChevronRight size={14} /></span>
                         </div>
                     </Link>
 
                     <div className={styles.editorialRight}>
-                        <Link href="/shop?search=lattafa" className={styles.editorialSmall}>
-                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`} alt="Lattafa" fill style={{ objectFit: "cover" }} />
+                        <Link href="/shop?search=christian+siriano" className={styles.editorialSmall}>
+                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`} alt="Christian Siriano" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
                                 <span className={styles.editorialTag}>Trending Now</span>
-                                <h3 className={styles.editorialHeadingSm}>LATTAFA</h3>
+                                <h3 className={styles.editorialHeadingSm}>SILHOUETTE AU NATUREL</h3>
+                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>By Christian Siriano</p>
                                 <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                             </div>
                         </Link>
-                        
-                        <Link href="/shop?search=ahmed+al+maghribi" className={styles.editorialSmall}>
-                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
+
+                        <Link href="/shop?search=tumi" className={styles.editorialSmall}>
+                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`} alt="TUMI" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
                                 <span className={styles.editorialTag}>Exclusive</span>
-                                <h3 className={styles.editorialHeadingSm}>AHMED AL MAGHRIBI</h3>
+                                <h3 className={styles.editorialHeadingSm}>TUMI SIGNATURE</h3>
+                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>Luxury Travel Scents</p>
                                 <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                             </div>
                         </Link>
@@ -347,7 +349,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                             <div className={styles.trustIcon}>🔄</div>
                             <div>
                                 <div className={styles.trustTitle}>Easy Returns</div>
-                                <div className={styles.trustSub}>14-day return policy</div>
+                                <div className={styles.trustSub}>30-day return policy</div>
                             </div>
                         </div>
                         <div className={styles.trustDivider} />
@@ -407,8 +409,8 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/p/DNDnLzfC0-Z/" />
-                            <h3 className={styles.reelTitle}>Best Sellers 2026</h3>
-                            <Link href="/shop" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
+                            <h3 className={styles.reelTitle}>Best Sellers</h3>
+                            <Link href="/product-category/best-sellers" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DQXk3C6k0pl/" />

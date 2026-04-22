@@ -56,19 +56,14 @@ export default function ContactForm() {
         <div className="container">
             <div className={styles.infoCards}>
                 <div className={styles.infoCard}>
-                    <span className={styles.infoIcon}>📍</span>
-                    <h3 className={styles.infoTitle}>Our Headquarters</h3>
-                    <p className={styles.infoText}>440 US HIGHWAY 130 S, SUITE 11 #1008<br/>EAST WINDSOR, NJ 08520</p>
-                </div>
-                <div className={styles.infoCard}>
                     <span className={styles.infoIcon}>✉️</span>
                     <h3 className={styles.infoTitle}>Email Us</h3>
-                    <p className={styles.infoText}>support@jerseyperfume.com<br/>24/7 Response Rate</p>
+                    <p className={styles.infoText}>info@jerseyperfume.com<br/>24/7 Response Rate</p>
                 </div>
                 <div className={styles.infoCard}>
                     <span className={styles.infoIcon}>📞</span>
                     <h3 className={styles.infoTitle}>Call Support</h3>
-                    <p className={styles.infoText}>+1 (888) 123-4567<br/>Mon - Fri, 9am - 6pm EST</p>
+                    <p className={styles.infoText}>+1 (732) 361-4489<br/>Mon - Fri, 9am - 6pm EST</p>
                 </div>
             </div>
 

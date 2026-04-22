@@ -37,7 +37,11 @@ const BRAND_LOGOS: Record<string, string> = {
     'DUMONT PARIS': 'https://perfumebox.com/cdn/shop/files/dumont_logo.png?v=1729252435',
     'LATTAFA': 'https://perfumebox.com/cdn/shop/files/lattafa_logo.png?v=1729252435',
     'RASASI': 'https://perfumebox.com/cdn/shop/files/rasasi_logo.png?v=1729252434',
-    'CHANEL': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Chanel_logo_interlocking_cs.svg/512px-Chanel_logo_interlocking_cs.svg.png',
+    'CHANEL': 'https://perfumebox.com/cdn/shop/files/chanel_logo.png?v=1729252435',
+    'DIOR': 'https://perfumebox.com/cdn/shop/files/dior_logo.png?v=1729252435',
+    'ARMAF': 'https://perfumebox.com/cdn/shop/files/armaf_logo.png?v=1729252435',
+    'TOM FORD': 'https://perfumebox.com/cdn/shop/files/Tom-Ford-logo.webp?v=1729066736',
+    'CREED': 'https://perfumebox.com/cdn/shop/files/Creed-logo.webp?v=1729066736',
 };
 
 export default function BrandLogo({ brand }: BrandLogoProps) {
