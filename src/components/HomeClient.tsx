@@ -53,9 +53,13 @@ const FALLBACK_SLIDES: SlideData[] = [
 
 // Fallback images keyed by slug fragment if the API has no image
 const categoryFallbacks: Record<string, string> = {
-    "mens": "/images/cat_men.png",
+    "womens-fragrances": "/cat-womens-fragrances.jpg",
+    "mens-fragrances": "/images/cat_men.png",
+    "best-sellers": "/cat-best-sellers.jpg",
     "womens": "/images/cat_women.png",
+    "mens": "/images/cat_men.png",
     "women": "/images/cat_women.png",
+    "men": "/images/cat_men.png",
     "dumont": "/images/p1.png",
     "lattafa": "/images/white1.png",
     "ahmed": "/images/white2.png",
@@ -78,11 +82,21 @@ function decodeHTML(html: string) {
 
 
 function getCategoryImage(cat: Category): string {
-    if (cat.image?.src) return cat.image.src;
     const slug = cat.slug.toLowerCase();
+    
+    // Hardcoded overrides for key homepage categories
+    if (slug.includes('best-sellers')) return "/cat-best-sellers.jpg";
+    if (slug.includes('womens-fragrances') || slug === 'womens') return "/cat-womens-fragrances.jpg";
+    if (slug.includes('mens-fragrances') || slug === 'mens') return "https://backend.jerseyperfume.com/wp-content/uploads/2026/04/91laFHfKyL._SL1500_.jpg";
+
+    // Default to API image if available
+    if (cat.image?.src) return cat.image.src;
+    
+    // Traditional fallbacks
     for (const key of Object.keys(categoryFallbacks)) {
         if (slug.includes(key)) return categoryFallbacks[key];
     }
+    
     return "/images/cat_men.png";
 }
 
@@ -107,7 +121,13 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
     const catGridRef = useRef<HTMLDivElement>(null);
     const [activeCatDot, setActiveCatDot] = useState(0);
     // Only show top-level categories (parent === 0) to avoid duplicates like "Men" + "Men's Fragrances"
-    const visibleCats = categories.filter(c => c.count > 0 && c.parent === 0 && c.slug !== 'uncategorized');
+    const visibleCats = categories.filter(c => 
+        c.count > 0 && 
+        c.parent === 0 && 
+        c.slug !== 'uncategorized' &&
+        c.slug !== 'men' &&
+        c.slug !== 'women'
+    );
     const catDotCount = Math.min(visibleCats.length, 8);
 
     const handleCatScroll = () => {
@@ -269,26 +289,26 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/shop?search=ahmed+al+maghribi" className={styles.editorialLeft}>
-                        <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
+                    <Link href="/shop?search=lattafa+angham" className={styles.editorialLeft}>
+                        <Image src="/editorial-woman.jpg" alt="Angham by Lattafa" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
-                            <span className={styles.editorialTag}>Featured Brand</span>
-                            <h2 className={styles.editorialHeading}>THE LUXURY COLLECTION</h2>
-                            <p className={styles.editorialSub}>Featured: Ahmed Al Maghribi</p>
-                            <span className={styles.editorialCta}>Explore Collection <ChevronRight size={14} /></span>
+                            <span className={styles.editorialTag}>Trending Now</span>
+                            <h2 className={styles.editorialHeading}>ANGHAM</h2>
+                            <p className={styles.editorialSub}>by Lattafa</p>
+                            <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                         </div>
                     </Link>
 
                     <div className={styles.editorialRight}>
-                        <Link href="/shop?search=christian+siriano" className={styles.editorialSmall}>
-                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`} alt="Christian Siriano" fill style={{ objectFit: "cover" }} />
+                        <Link href="/shop?search=ahmed+al+maghribi" className={styles.editorialSmall}>
+                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
-                                <span className={styles.editorialTag}>Trending Now</span>
-                                <h3 className={styles.editorialHeadingSm}>SILHOUETTE AU NATUREL</h3>
-                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>By Christian Siriano</p>
-                                <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
+                                <span className={styles.editorialTag}>Featured Brand</span>
+                                <h3 className={styles.editorialHeadingSm}>THE LUXURY COLLECTION</h3>
+                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>Ahmed Al Maghribi</p>
+                                <span className={styles.editorialCta}>Explore Collection <ChevronRight size={14} /></span>
                             </div>
                         </Link>
 
@@ -404,17 +424,17 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                     <div className={styles.igGrid}>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DUBZQKijZbm/" />
-                            <h3 className={styles.reelTitle}>Exclusive Collection</h3>
-                            <Link href="/shop?search=exclusive" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
+                            <h3 className={styles.reelTitle}>Lattafa Angham</h3>
+                            <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/p/DNDnLzfC0-Z/" />
-                            <h3 className={styles.reelTitle}>Best Sellers</h3>
-                            <Link href="/product-category/best-sellers" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
+                            <h3 className={styles.reelTitle}>Jean Lowe Vibe</h3>
+                            <Link href="/product/jean-lowe-vibe-perfume-by-maison-alhambra-100-ml-edp-unisex-3-4-fl-oz/" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DQXk3C6k0pl/" />
-                            <h3 className={styles.reelTitle}>Top 5 Ahmed Al Maghribi</h3>
+                            <h3 className={styles.reelTitle}>Ahmed Al Maghribi</h3>
                             <Link href="/shop?search=ahmed+al+maghribi" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                     </div>

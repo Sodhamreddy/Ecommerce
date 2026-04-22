@@ -53,7 +53,16 @@ export default function ShopContent({
     initialOnSale = false
 }: ShopContentProps) {
     const [products, setProducts] = useState(initialProducts);
-    const [categories] = useState(initialCategories);
+    const [categories] = useState(initialCategories.filter(cat => {
+        const s = cat.slug.toLowerCase();
+        const n = cat.name.toLowerCase();
+        return (
+            s !== 'men' && s !== 'mens' && s !== 'man' &&
+            s !== 'women' && s !== 'womens' && s !== 'woman' &&
+            s !== 'uncategorized' &&
+            n !== 'man' && n !== 'men' && n !== 'women' && n !== 'woman'
+        );
+    }));
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
     const [totalProducts, setTotalProducts] = useState(initialTotalProducts);
@@ -150,25 +159,31 @@ export default function ShopContent({
         setSidebarOpen(false);
     };
 
+    const selectedCat = categories.find(c => c.slug === selectedCategory);
+
+    const clearCategory = () => {
+        setSelectedCategory('');
+        runFilter({ cat: '' });
+    };
+
     const selectBrand = (brand: string) => {
         setSelectedBrand(brand);
-        setSearch(brand);
         runFilter({ s: brand });
         setSidebarOpen(false);
     };
 
     const clearBrand = () => {
         setSelectedBrand('');
-        setSearch('');
         runFilter({ s: '' });
     };
 
-    const handleSort = (v: string) => {
-        setSortBy(v);
-        runFilter({ sort: v });
+    const handleSort = (option: string) => {
+        setSortBy(option);
+        runFilter({ sort: option });
     };
 
-    const handleSearch = () => {
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
         runFilter({ s: search });
     };
 
@@ -178,17 +193,8 @@ export default function ShopContent({
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const clearCategory = () => {
-        setSelectedCategory('');
-        runFilter({ cat: '' });
-    };
-
-    const selectedCat = categories.find(c => c.slug === selectedCategory);
-    const activeQuickCat = QUICK_CATS.find(c => c.slug === selectedCategory) || QUICK_CATS[0];
-
     return (
-        <div className={styles.shopWrapper}>
-
+        <div className="container py-8">
             {/* ── Quick Category Tabs (Trending) ── */}
             <div ref={quickTabsRef} className={`${styles.quickTabsWrap} ${isSticky ? styles.quickTabsSticky : ''}`}>
                 <div className="container">
@@ -220,8 +226,8 @@ export default function ShopContent({
             <div className={styles.shopLayout}>
                 {/* ─────────── SIDEBAR ─────────── */}
                 <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
-                    <div className={styles.sidebarInner}>
-                        <div className={styles.sidebarHead}>
+                    <div className={styles.sidebarContent}>
+                        <div className={styles.sidebarHeader}>
                             <h2 className={styles.sidebarTitle}>Filters</h2>
                             <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
                                 <X size={20} />
@@ -230,20 +236,18 @@ export default function ShopContent({
 
                         {/* Search */}
                         <div className={styles.filterBlock}>
-                            <div className={styles.filterLabel}>Search</div>
-                            <div className={styles.searchRow}>
+                            <form className={styles.searchForm} onSubmit={handleSearch}>
                                 <input
                                     type="text"
-                                    placeholder="Find a fragrance..."
+                                    placeholder="Search specific item..."
                                     value={search}
-                                    className={styles.searchInput}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                    className={styles.searchInput}
                                 />
-                                <button className={styles.searchBtn} onClick={handleSearch} aria-label="Search">
-                                    <Search size={16} />
+                                <button type="submit" className={styles.searchBtn}>
+                                    <Search size={18} />
                                 </button>
-                            </div>
+                            </form>
                         </div>
 
                         {/* Brand */}
