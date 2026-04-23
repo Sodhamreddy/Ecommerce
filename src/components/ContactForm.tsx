@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './ContactForm.module.css';
-import { API_BASE_URL } from '@/lib/config';
+import { submitContactFormAction } from '@/app/actions';
 
 export default function ContactForm() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -23,20 +23,9 @@ export default function ContactForm() {
         setStatus('loading');
 
         try {
-            const body = new FormData();
-            Object.entries(formData).forEach(([key, value]) => {
-                body.append(key, value);
-            });
-
-            // Using standard CF7 REST API endpoint
-            // Jersey Perfume Form ID is 54
-            const res = await fetch(`${API_BASE_URL}/contact-form-7/v1/contact-forms/54/feedback`, {
-                method: 'POST',
-                body: body,
-            });
-
-            const data = await res.json();
-
+            // Using Next.js Server Action to avoid CORS and handle SMTP safely on the backend
+            const data = await submitContactFormAction(formData);
+            
             if (data.status === 'mail_sent') {
                 setStatus('success');
                 setResponseMsg(data.message || 'Thank you for your message. It has been sent.');

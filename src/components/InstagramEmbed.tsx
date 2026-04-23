@@ -42,11 +42,11 @@ export default function InstagramEmbed({ url }: Props) {
                 width: "100%",
                 aspectRatio: "9/16",
                 borderRadius: "16px",
-                background: "#0a0a0a",
+                background: "#000",
                 boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
             }}
         >
-            {/* Top mask — shows Instagram profile header but blocks redirect clicks */}
+            {/* Top mask — keeps profile clean but doesn't block play clicks */}
             <div style={{
                 position: "absolute",
                 top: 0,
@@ -55,15 +55,14 @@ export default function InstagramEmbed({ url }: Props) {
                 height: "54px",
                 background: "transparent",
                 zIndex: 10,
-                pointerEvents: "all",
-                cursor: "default",
+                pointerEvents: "none",
             }} />
 
             <iframe
                 key={iframeKey}
                 ref={iframeRef}
-                src={`${embedUrl}?hidecaption=true`}
-                allow="encrypted-media; autoplay"
+                src={`${embedUrl}?hidecaption=true&autoplay=1&muted=1`}
+                allow="autoplay; encrypted-media"
                 style={{
                     position: "absolute",
                     top: 0,
@@ -76,17 +75,16 @@ export default function InstagramEmbed({ url }: Props) {
                 }}
             />
 
-            {/* Bottom mask — hides likes, comments, share buttons and blocks clicks on them */}
+            {/* Bottom mask — hides clutter but doesn't block interactions in the center */}
             <div style={{
                 position: "absolute",
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: "110px",
-                background: "#0a0a0a",
+                height: "90px",
+                background: "#000",
                 zIndex: 10,
-                pointerEvents: "all",
-                cursor: "default",
+                pointerEvents: "none",
             }} />
         </div>
     );

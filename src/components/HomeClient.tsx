@@ -289,7 +289,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/shop?search=lattafa+angham" className={styles.editorialLeft}>
+                    <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.editorialLeft}>
                         <Image src="/editorial-woman.jpg" alt="Angham by Lattafa" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>

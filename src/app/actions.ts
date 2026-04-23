@@ -69,3 +69,37 @@ export async function fetchWPPageAction(slug: string) {
         return null;
     }
 }
+
+/**
+ * Server Action for Contact Form submissions.
+ * Moves logic to server to avoid CORS and allows using server-side env vars if needed.
+ */
+export async function submitContactFormAction(formData: Record<string, string>) {
+    try {
+        const body = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+            body.append(key, value);
+        });
+
+        const res = await fetch(`${API_BASE_URL}/contact-form-7/v1/contact-forms/54/feedback`, {
+            method: 'POST',
+            body: body,
+            headers: {
+                'User-Agent': COMMON_HEADERS['User-Agent'],
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.warn('CF7 API Error:', errorText);
+            throw new Error('Backend failed to process contact form');
+        }
+
+        return await res.json();
+    } catch (err) {
+        console.error('Submit contact form error:', err);
+        return { status: 'error', message: 'Something went wrong. Please try again later.' };
+    }
+}
+
