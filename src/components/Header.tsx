@@ -8,7 +8,10 @@ import AutoSuggestSearch from './AutoSuggestSearch';
 import { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 
-const NAV_ITEMS = [
+type NavChild = { label: string; href: string };
+type NavItem = { label: string; href: string; children?: NavChild[]; mega?: boolean };
+
+const NAV_ITEMS: NavItem[] = [
   { label: 'Men', href: '/product-category/mens-fragrances' },
   { label: 'Women', href: '/product-category/womens-fragrances' },
   { label: 'Unisex', href: '/product-category/unisex-fragrances' },
@@ -23,12 +26,37 @@ const NAV_ITEMS = [
   { label: 'Bundle', href: '/product-category/bundles' },
   { label: 'Best Seller', href: '/product-category/best-sellers' },
   { label: 'Hot Products', href: '/product-category/hot-products' },
+  {
+    label: 'Brands',
+    href: '/shop',
+    mega: true,
+    children: [
+      { label: 'GIORGIO ARMANI', href: '/shop?search=armani' },
+      { label: 'BURBERRY', href: '/shop?search=burberry' },
+      { label: 'PACO RABANNE', href: '/shop?search=paco+rabanne' },
+      { label: 'GIVENCHY', href: '/shop?search=givenchy' },
+      { label: 'JIMMY CHOO', href: '/shop?search=jimmy+choo' },
+      { label: 'DIOR', href: '/shop?search=dior' },
+      { label: 'CHANEL', href: '/shop?search=chanel' },
+      { label: 'VERSACE', href: '/shop?search=versace' },
+      { label: 'BVLGARI', href: '/shop?search=bvlgari' },
+      { label: 'CREED', href: '/shop?search=creed' },
+      { label: 'TOM FORD', href: '/shop?search=tom+ford' },
+      { label: 'DUMONT PARIS', href: '/shop?search=dumont' },
+      { label: 'LATTAFA', href: '/shop?search=lattafa' },
+      { label: 'RASASI', href: '/shop?search=rasasi' },
+      { label: 'ARMAF', href: '/shop?search=armaf' },
+      { label: 'MAISON ALHAMBRA', href: '/shop?search=maison+alhambra' },
+      { label: 'AL HARAMAIN', href: '/shop?search=al+haramain' },
+      { label: 'AHMED AL MAGHRIBI', href: '/shop?search=ahmed+al+maghribi' },
+    ],
+  },
   { label: 'Blog', href: '/blog' },
 ];
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [mobileGiftOpen, setMobileGiftOpen] = useState(false);
+  const [mobileOpenMenu, setMobileOpenMenu] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const { cart } = useCart();
 
@@ -129,13 +157,23 @@ export default function Header() {
                     <Link href={item.href} className={styles.navLink}>
                       {item.label} <ChevronDown size={13} />
                     </Link>
-                    <div className={styles.navDropdown}>
-                      {item.children.map((child) => (
-                        <Link key={child.label} href={child.href} className={styles.navDropdownItem}>
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
+                    {item.mega ? (
+                      <div className={styles.navMegaMenu}>
+                        {item.children.map((child) => (
+                          <Link key={child.label} href={child.href} className={styles.navMegaItem}>
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.navDropdown}>
+                        {item.children.map((child) => (
+                          <Link key={child.label} href={child.href} className={styles.navDropdownItem}>
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <Link key={item.label} href={item.href} className={styles.navLink}>{item.label}</Link>
@@ -157,13 +195,13 @@ export default function Header() {
               <div key={item.label}>
                 <div
                   className={`${styles.mobileNavLink} ${styles.mobileNavDropdownToggle}`}
-                  onClick={() => setMobileGiftOpen(v => !v)}
+                  onClick={() => setMobileOpenMenu(prev => prev === item.label ? null : item.label)}
                 >
                   {item.label}
-                  <ChevronDown size={16} style={{ transform: mobileGiftOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                  <ChevronDown size={16} style={{ transform: mobileOpenMenu === item.label ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                 </div>
-                {mobileGiftOpen && (
-                  <div className={styles.mobileSubLinks}>
+                {mobileOpenMenu === item.label && (
+                  <div className={`${styles.mobileSubLinks} ${item.mega ? styles.mobileSubLinksMega : ''}`}>
                     <Link href={item.href} className={styles.mobileSubLink} onClick={() => setIsMenuOpen(false)}>All {item.label}</Link>
                     {item.children.map((child) => (
                       <Link key={child.label} href={child.href} className={styles.mobileSubLink} onClick={() => setIsMenuOpen(false)}>{child.label}</Link>

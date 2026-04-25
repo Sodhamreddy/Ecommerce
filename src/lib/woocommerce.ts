@@ -643,21 +643,74 @@ export interface SlideData {
 }
 
 /**
- * Returns the homepage hero slider images.
- * URLs are sourced directly from the WordPress media library.
- * Update this list whenever the SmartSlider is updated on WordPress.
+ * Fetches ONLY the published/active slides from SmartSlider 3 (slider ID 2)
+ * via a custom WordPress REST endpoint.
+ *
+ * ─── ONE-TIME WORDPRESS SETUP ───────────────────────────────────────────────
+ * In WordPress admin go to:  Snippets → Add New  (Code Snippets plugin)
+ * Paste the PHP below, set it to run "everywhere", then Save & Activate:
+ *
+ * add_action('rest_api_init', function () {
+ *   register_rest_route('jersey/v1', '/slides', [
+ *     'methods'             => 'GET',
+ *     'permission_callback' => '__return_true',
+ *     'callback'            => function ($req) {
+ *       global $wpdb;
+ *       $id     = intval($req->get_param('id') ?: 2);
+ *       $slides = $wpdb->get_results($wpdb->prepare(
+ *         "SELECT thumbnail, params FROM {$wpdb->prefix}nextend2_smartslider3_slides
+ *          WHERE slider = %d AND published = 1 ORDER BY ordering ASC", $id
+ *       ));
+ *       $out = [];
+ *       foreach ($slides as $s) {
+ *         $bg = $s->thumbnail ?? '';
+ *         $p  = json_decode($s->params ?? '{}', true);
+ *         if (!empty($p['background']['backgroundImage'])) $bg = $p['background']['backgroundImage'];
+ *         if (!$bg) continue;
+ *         if (!str_starts_with($bg, 'http')) $bg = get_site_url() . '/' . ltrim($bg, '/');
+ *         $out[] = ['bg' => $bg, 'href' => $p['link']['href'] ?? '/shop', 'cta' => $p['link']['text'] ?? 'SHOP NOW'];
+ *       }
+ *       return rest_ensure_response($out);
+ *     },
+ *   ]);
+ * });
+ *
+ * After activating, the endpoint is live at:
+ *   GET https://backend.jerseyperfume.com/wp-json/jersey/v1/slides?id=2
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * Falls back to hardcoded slides if the endpoint is not yet set up.
  */
-export async function fetchSmartSliderSlides(_sliderId: number = 1): Promise<SlideData[]> {
+export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<SlideData[]> {
+    const fallback: SlideData[] = [
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-11.png`,       href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-10.png`,       href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/product-category/womens-fragrances', cta: "SHOP WOMEN'S", accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/03/Easter-banner.png`,          href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-9-1.png`,      href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+    ];
+
     try {
-        return [
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/product-category/womens-fragrances', cta: 'SHOP WOMEN\'S', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop?search=soprano+ice', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2025/11/Jersey-Banner-7.png`,         href: '/shop', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`,     href: '/shop?search=dumont', cta: 'SHOP DUMONT', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-banner-23-01-03.png`,  href: '/shop?search=christian+siriano', cta: 'SHOP NOW', accent: '#d4a853' },
-            { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`,     href: '/shop?search=tumi', cta: 'SHOP TUMI', accent: '#d4a853' },
-        ];
+        const res = await fetchWithRetry(
+            `${API_BASE_URL}/jersey/v1/slides?id=${sliderId}`,
+            { next: { revalidate: 3600 } },
+            2, 800, 'Slides'
+        );
+
+        if (!res.ok) return fallback;
+
+        const slides: any[] = await res.json();
+        if (!Array.isArray(slides) || slides.length === 0) return fallback;
+
+        return slides.map((s: any): SlideData => ({
+            // SmartSlider stores paths as "$upload$/year/file.png" — replace with real WP path
+            bg:     (s.bg || '').replace('$upload$', 'wp-content/uploads'),
+            href:   s.href   || '/shop',
+            cta:    s.cta    || 'SHOP NOW',
+            accent: '#d4a853',
+        })).filter(s => s.bg);
     } catch {
-        return [];
+        return fallback;
     }
 }

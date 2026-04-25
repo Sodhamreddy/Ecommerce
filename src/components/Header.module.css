@@ -264,6 +264,62 @@
     color: #fff;
 }
 
+/* Brands Mega Menu */
+.navMegaMenu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #151c39;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    width: 540px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    z-index: 2000;
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 0.5rem;
+    gap: 2px;
+}
+
+.navMegaMenu::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+}
+
+.navDropdownWrapper:hover .navMegaMenu {
+    display: grid;
+}
+
+.navMegaItem {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    color: #e0e0e0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.navMegaItem:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+/* Mobile brands scrollable list */
+.mobileSubLinksMega {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
 /* Mobile dropdown */
 .mobileNavDropdownToggle {
     display: flex;

@@ -4,8 +4,8 @@ import { API_BASE_URL } from "@/lib/config";
 import { Metadata } from "next";
 import HomeClient from "@/components/HomeClient";
 
-// Data is fetched at build time for static export
-export const dynamic = 'force-static';
+// Revalidate homepage data every hour (blog posts, sliders, products)
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Jersey Perfume | Luxury Fragrances Up to 80% Off",
