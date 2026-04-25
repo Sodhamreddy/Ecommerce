@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import HomeClient from "@/components/HomeClient";
 
 // Revalidate homepage data every hour (blog posts, sliders, products)
-export const revalidate = 3600;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Jersey Perfume | Luxury Fragrances Up to 80% Off",

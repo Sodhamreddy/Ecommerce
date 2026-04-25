@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { fetchWithRetry, delay } from '@/lib/fetch-utils';
 import styles from './Blog.module.css';
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
     title: 'The Fragrance Blog | Jersey Perfume',
