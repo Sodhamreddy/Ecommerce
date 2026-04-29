@@ -668,7 +668,36 @@ export interface SlideData {
  *         if (!empty($p['background']['backgroundImage'])) $bg = $p['background']['backgroundImage'];
  *         if (!$bg) continue;
  *         if (!str_starts_with($bg, 'http')) $bg = get_site_url() . '/' . ltrim($bg, '/');
- *         $out[] = ['bg' => $bg, 'href' => $p['link']['href'] ?? '/shop', 'cta' => $p['link']['text'] ?? 'SHOP NOW'];
+ *
+ *         $raw_link = $p['link'] ?? $p['background']['link'] ?? '';
+ *         
+ *         // Fallback: If the link is on a Button or Image Layer instead of the background
+ *         if (empty($raw_link) && !empty($s->slide)) {
+ *             $layer_data = json_decode($s->slide, true);
+ *             if (is_array($layer_data)) {
+ *                 array_walk_recursive($layer_data, function($value, $key) use (&$raw_link) {
+ *                     if (($key === 'href' || $key === 'url' || $key === 'link') && is_string($value) && strlen($value) > 3) {
+ *                         if (empty($raw_link) && $value !== '#' && $value !== '/shop') {
+ *                             $raw_link = $value;
+ *                         }
+ *                     }
+ *                 });
+ *             }
+ *         }
+ *
+ *         $href = '/shop';
+ *         if (is_string($raw_link) && strpos($raw_link, '|*|') !== false) {
+ *             $href = explode('|*|', $raw_link)[0];
+ *         } elseif (is_string($raw_link) && !empty($raw_link)) {
+ *             $href = $raw_link;
+ *         } elseif (is_array($raw_link) && isset($raw_link['href'])) {
+ *             $href = $raw_link['href'];
+ *         }
+ *         
+ *         // Clean up SmartSlider internal path references
+ *         if (str_starts_with($href, 'article')) $href = '/shop';
+ *         
+ *         $out[] = ['bg' => $bg, 'href' => $href, 'cta' => 'SHOP NOW'];
  *       }
  *       return rest_ensure_response($out);
  *     },
@@ -683,9 +712,10 @@ export interface SlideData {
  */
 export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<SlideData[]> {
     const fallback: SlideData[] = [
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-11.png`,       href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-10.png`,       href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-11.png`,       href: '/product/kaaf-noir-by-ahmed-al-maghribi-extrait-de-parfum-3-4-oz/', cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-10.png`,       href: '/product/nitro-gold-by-dumont-extrait-de-parfum-3-4-oz-for-men/', cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/product-category/womens-fragrances', cta: "SHOP WOMEN'S", accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`,    href: '/product/19-degree-extrait-de-parfum-3-4-oz-for-men-by-tumi/', cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/03/Easter-banner.png`,          href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-9-1.png`,      href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
@@ -694,7 +724,7 @@ export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<Slid
     try {
         const res = await fetchWithRetry(
             `${API_BASE_URL}/jersey/v1/slides?id=${sliderId}`,
-            { next: { revalidate: 3600 } },
+            { next: { revalidate: 60 } },
             2, 800, 'Slides'
         );
 
@@ -703,13 +733,17 @@ export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<Slid
         const slides: any[] = await res.json();
         if (!Array.isArray(slides) || slides.length === 0) return fallback;
 
-        return slides.map((s: any): SlideData => ({
-            // SmartSlider stores paths as "$upload$/year/file.png" — replace with real WP path
-            bg:     (s.bg || '').replace('$upload$', 'wp-content/uploads'),
-            href:   s.href   || '/shop',
-            cta:    s.cta    || 'SHOP NOW',
-            accent: '#d4a853',
-        })).filter(s => s.bg);
+        return slides.map((s: any): SlideData => {
+            const bg = (s.bg || '').replace('$upload$', 'wp-content/uploads');
+            const fallbackSlide = fallback.find(f => bg.includes(f.bg.split('/').pop() || '!!!'));
+            const href = s.href && s.href !== '/shop' ? s.href : (fallbackSlide?.href || '/shop');
+            return {
+                bg,
+                href,
+                cta:    s.cta    || 'SHOP NOW',
+                accent: '#d4a853',
+            };
+        }).filter(s => s.bg);
     } catch {
         return fallback;
     }

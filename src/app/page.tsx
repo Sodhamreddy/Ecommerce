@@ -22,8 +22,8 @@ async function getHomepageData() {
   try {
     const [bestSellersRes, newArrivalsRes, gourmandRes, onSaleRes, blogRes, categoriesRes, slidesRes] =
       await Promise.allSettled([
-        fetchProducts(1, 4, "", "", "", "", "popularity", "desc"),
-        fetchProducts(1, 4, "", "", "", "", "date", "desc"),
+        fetchProducts(1, 8, "", "", "", "", "popularity", "desc"),
+        fetchProducts(1, 8, "", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "Give Me Gourmand", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "", "", "", "", "date", "desc", true),
         fetch(`${API_BASE_URL}/wp/v2/posts?per_page=3&_embed`, {

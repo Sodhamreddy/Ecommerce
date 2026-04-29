@@ -289,12 +289,12 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.editorialLeft}>
-                        <Image src="/editorial-woman.jpg" alt="Angham by Lattafa" fill style={{ objectFit: "cover" }} />
+                    <Link href="/product-category/lattafa" className={styles.editorialLeft}>
+                        <Image src="/images/lattafa.jpeg" alt="Angham Second Song by Lattafa" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
                             <span className={styles.editorialTag}>Trending Now</span>
-                            <h2 className={styles.editorialHeading}>ANGHAM</h2>
+                            <h2 className={styles.editorialHeading}>ANGHAM SECOND SONG</h2>
                             <p className={styles.editorialSub}>by Lattafa</p>
                             <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                         </div>
@@ -423,19 +423,19 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                     </div>
                     <div className={styles.igGrid}>
                         <div className={styles.reelWrapper}>
-                            <InstagramEmbed url="https://www.instagram.com/reel/DUBZQKijZbm/" />
-                            <h3 className={styles.reelTitle}>Lattafa Angham</h3>
-                            <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
+                            <InstagramEmbed url="https://www.instagram.com/reel/DUOGFMrDU3Q/" />
+                            <h3 className={styles.reelTitle}>Lattafa Angham Second Song</h3>
+                            <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/p/DNDnLzfC0-Z/" />
                             <h3 className={styles.reelTitle}>Jean Lowe Vibe</h3>
-                            <Link href="/product/jean-lowe-vibe-perfume-by-maison-alhambra-100-ml-edp-unisex-3-4-fl-oz/" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
+                            <Link href="/product/jean-lowe-vibe-perfume-by-maison-alhambra-100-ml-edp-unisex-3-4-fl-oz/" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DQXk3C6k0pl/" />
                             <h3 className={styles.reelTitle}>Ahmed Al Maghribi</h3>
-                            <Link href="/shop?search=ahmed+al+maghribi" className={styles.reelShopBtn}>Shop Now <ChevronRight size={14} /></Link>
+                            <Link href="/shop?search=ahmed+al+maghribi" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                     </div>
                 </div>

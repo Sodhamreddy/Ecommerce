@@ -229,6 +229,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 export function useCart() {
     const context = useContext(CartContext);
-    if (!context) throw new Error('useCart must be used within a CartProvider');
+    if (!context) {
+        console.warn('useCart must be used within a CartProvider - returning default dummy context');
+        return {
+            cart: [],
+            wcCart: null,
+            addToCart: () => {},
+            removeFromCart: () => {},
+            updateQuantity: () => {},
+            clearCart: () => {},
+            cartTotal: 0,
+            cartCount: 0,
+            syncing: false,
+            syncError: null,
+            applyCouponToCart: async () => ({ success: false }),
+            removeCouponFromCart: async () => ({ success: false }),
+            updateCustomerAddress: async () => {}
+        };
+    }
     return context;
 }
