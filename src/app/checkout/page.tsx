@@ -61,7 +61,14 @@ export default function CheckoutPage() {
     const discountRef = useRef(0);
 
     // Calculate totals
-    const getVal = (str?: string) => parseInt(str || '0', 10);
+    const getVal = (str?: string) => {
+        if (!str) return 0;
+        const normalized = str.replace(/[^0-9.]/g, '');
+        const val = parseFloat(normalized || '0');
+        // If the string already contains a decimal point, assume it's NOT in minor units
+        if (normalized.includes('.')) return val * factor;
+        return val;
+    };
     const minorUnit = wcCart?.totals?.currency_minor_unit || 2;
     const factor = Math.pow(10, minorUnit);
     
@@ -97,26 +104,30 @@ export default function CheckoutPage() {
         if (!savedUser) return;
         try {
             const user = JSON.parse(savedUser);
-            setIsLoggedIn(true);
-            const b = user.billing;
-            if (b) {
-                setFormData(prev => ({
-                    ...prev,
-                    firstName: b.first_name || prev.firstName,
-                    lastName: b.last_name || prev.lastName,
-                    email: b.email || user.user_email || prev.email,
-                    phone: b.phone || prev.phone,
-                    address: b.address_1 || prev.address,
-                    address2: b.address_2 || prev.address2,
-                    city: b.city || prev.city,
-                    state: b.state || prev.state,
-                    zip: b.postcode || prev.zip,
-                    country: b.country || prev.country,
-                }));
-            } else if (user.user_email) {
-                setFormData(prev => ({ ...prev, email: user.user_email }));
+            if (user && typeof user === 'object') {
+                setIsLoggedIn(true);
+                const b = user.billing;
+                if (b) {
+                    setFormData(prev => ({
+                        ...prev,
+                        firstName: b.first_name || prev.firstName,
+                        lastName: b.last_name || prev.lastName,
+                        email: b.email || user.user_email || prev.email,
+                        phone: b.phone || prev.phone,
+                        address: b.address_1 || prev.address,
+                        address2: b.address_2 || prev.address2,
+                        city: b.city || prev.city,
+                        state: b.state || prev.state,
+                        zip: b.postcode || prev.zip,
+                        country: b.country || prev.country,
+                    }));
+                } else if (user.user_email) {
+                    setFormData(prev => ({ ...prev, email: user.user_email }));
+                }
             }
-        } catch {}
+        } catch (e) {
+            console.error('Failed to parse saved user:', e);
+        }
     }, []);
 
     // Recalculate tax/shipping when address changes (debounced 800ms)
@@ -150,7 +161,10 @@ export default function CheckoutPage() {
         }
 
         if (!agreedToTerms) {
-            setError('Please check the box to agree to the terms and conditions.');
+            const termsMsg = 'Please check the box to agree to the website terms and conditions.';
+            setError(termsMsg);
+            setFieldErrors(prev => ({ ...prev, terms: 'required' }));
+            alert(termsMsg); // Explicit alert as requested
             return false;
         }
 
@@ -344,11 +358,17 @@ export default function CheckoutPage() {
                     }
                     startProcessing();
                     try {
+                        // Simplified order creation to avoid breakdown mismatches
+                        const totalStr = totalRef.current.toFixed(2);
+                        if (isNaN(parseFloat(totalStr)) || parseFloat(totalStr) <= 0) {
+                            throw new Error('Invalid total amount');
+                        }
+                        
                         return await actions.order.create({
                             purchase_units: [{
                                 amount: {
                                     currency_code: 'USD',
-                                    value: totalRef.current.toFixed(2),
+                                    value: totalStr,
                                 }
                             }]
                         });
@@ -399,7 +419,16 @@ export default function CheckoutPage() {
                 cardFieldsInstanceRef.current = cardFields;
                 
                 const style = {
-                    'input': { 'font-size': '16px', 'font-family': 'inherit', 'color': '#111' },
+                    'input': { 
+                        'font-size': '15px', 
+                        'color': '#111',
+                        'font-family': 'sans-serif',
+                        'appearance': 'none',
+                        'border': 'none',
+                        'outline': 'none',
+                        'padding': '0 12px',
+                    },
+                    '.invalid': { 'color': '#d32f2f' },
                     ':focus': { 'color': '#111' }
                 };
 
@@ -409,7 +438,7 @@ export default function CheckoutPage() {
                 const numberField = cardFields.NumberField({ placeholder: 'Card Number', style });
                 numberField.render('#card-number-field-container').catch(() => {});
                 
-                const expiryField = cardFields.ExpiryField({ placeholder: 'MM/YY', style });
+                const expiryField = cardFields.ExpiryField({ placeholder: 'MM / YY', style });
                 expiryField.render('#card-expiry-field-container').catch(() => {});
                 
                 const cvvField = cardFields.CVVField({ placeholder: 'CVV', style });
@@ -439,9 +468,24 @@ export default function CheckoutPage() {
         if (!validateForm()) return;
 
         try {
+            const state = await cardFieldsInstanceRef.current.getState();
+            if (!state.isFormValid) {
+                setError('Please check your credit card details. Some fields are missing or invalid.');
+                // Highlight containers that are invalid
+                const fields = ['NameField', 'NumberField', 'ExpiryField', 'CVVField'];
+                fields.forEach(f => {
+                    const fieldState = (state.fields as any)[f];
+                    if (!fieldState?.isValid) {
+                        // Visual feedback could be added here if needed
+                    }
+                });
+                return;
+            }
+            
             await cardFieldsInstanceRef.current.submit();
         } catch (err: any) {
             console.error('Submit error:', err);
+            setError('Payment submission failed. Please check your details.');
         }
     };
 

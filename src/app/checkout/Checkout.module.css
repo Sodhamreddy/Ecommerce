@@ -631,13 +631,14 @@
 }
 
 .cardFieldContainer {
-    height: 46px;
+    height: 46px !important;
     border: 1px solid #e2e8f0;
-    padding: 0 12px;
+    padding: 0;
     border-radius: 6px;
     background: #fff;
-    display: flex;
-    align-items: center;
+    display: block;
+    position: relative;
+    overflow: hidden;
     transition: all 0.2s ease;
 }
 
@@ -648,6 +649,13 @@
 .cardFieldContainerFocused {
     border-color: #111 !important;
     box-shadow: 0 0 0 1px #111;
+}
+
+/* Ensure PayPal iframes take full width and height of our container */
+.cardFieldContainer iframe {
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
 }
 
 .cardFieldContainer :global(.paypal-card-field-focused) {
