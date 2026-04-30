@@ -632,12 +632,22 @@
 
 .cardFieldContainer {
     height: 46px;
-    border: 1px solid #ccc;
-    padding: 0 14px;
-    border-radius: 4px;
-    background: #fdfdfd;
+    border: 1px solid #e2e8f0;
+    padding: 0 12px;
+    border-radius: 6px;
+    background: #fff;
     display: flex;
     align-items: center;
+    transition: all 0.2s ease;
+}
+
+.cardFieldContainer:hover {
+    border-color: #cbd5e1;
+}
+
+.cardFieldContainerFocused {
+    border-color: #111 !important;
+    box-shadow: 0 0 0 1px #111;
 }
 
 .cardFieldContainer :global(.paypal-card-field-focused) {

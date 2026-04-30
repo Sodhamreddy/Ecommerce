@@ -211,6 +211,18 @@ export default function CheckoutPage() {
             cardBtnsRef.current = null; 
         }
 
+        // Explicitly clear field containers to prevent duplicate injections
+        const containers = [
+            'card-name-field-container',
+            'card-number-field-container',
+            'card-expiry-field-container',
+            'card-cvv-field-container'
+        ];
+        containers.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
+
         const startProcessing = () => {
             setIsProcessing(true);
             // Safety timeout: if still processing after 45s, reset it
@@ -386,16 +398,21 @@ export default function CheckoutPage() {
             if (cardFields.isEligible()) {
                 cardFieldsInstanceRef.current = cardFields;
                 
-                const nameField = cardFields.NameField();
+                const style = {
+                    'input': { 'font-size': '16px', 'font-family': 'inherit', 'color': '#111' },
+                    ':focus': { 'color': '#111' }
+                };
+
+                const nameField = cardFields.NameField({ placeholder: 'Full Name', style });
                 nameField.render('#card-name-field-container').catch(() => {});
                 
-                const numberField = cardFields.NumberField();
+                const numberField = cardFields.NumberField({ placeholder: 'Card Number', style });
                 numberField.render('#card-number-field-container').catch(() => {});
                 
-                const expiryField = cardFields.ExpiryField();
+                const expiryField = cardFields.ExpiryField({ placeholder: 'MM/YY', style });
                 expiryField.render('#card-expiry-field-container').catch(() => {});
                 
-                const cvvField = cardFields.CVVField();
+                const cvvField = cardFields.CVVField({ placeholder: 'CVV', style });
                 cvvField.render('#card-cvv-field-container').catch(() => {});
             } else {
                 // Fallback to standard button if advanced fields not eligible
