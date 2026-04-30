@@ -1,36 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
     url: string;
 }
 
 export default function InstagramEmbed({ url }: Props) {
-    const embedUrl = url.endsWith('/') ? `${url}embed/` : `${url}/embed/`;
-    const iframeRef = useRef<HTMLIFrameElement>(null);
+    // Ensure the URL ends with /embed/ for reliable loading
+    const embedUrl = url.split('?')[0].replace(/\/+$/, '') + '/embed/';
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const [iframeKey, setIframeKey] = useState(0);
 
-    // Pause video when scrolled out of view by resetting the iframe src
     useEffect(() => {
-        const wrapper = wrapperRef.current;
-        if (!wrapper || typeof IntersectionObserver === 'undefined') return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) {
-                        // Reset iframe to stop video playback
-                        setIframeKey((k) => k + 1);
-                    }
-                });
-            },
-            { threshold: 0.1 }
-        );
-
-        observer.observe(wrapper);
-        return () => observer.disconnect();
+        // Load Instagram's embed script if not already present
+        if (!(window as any).instgrm) {
+            const script = document.createElement("script");
+            script.src = "https://www.instagram.com/embed.js";
+            script.async = true;
+            document.body.appendChild(script);
+        } else {
+            // If already present, process the embeds
+            try {
+                (window as any).instgrm.Embeds.process();
+            } catch (e) {}
+        }
     }, []);
 
     return (
@@ -38,31 +31,23 @@ export default function InstagramEmbed({ url }: Props) {
             ref={wrapperRef}
             style={{
                 position: "relative",
-                overflow: "hidden",
                 width: "100%",
-                aspectRatio: "9/16",
+                // Padding-bottom hack for 9:16 aspect ratio (16 / 9 * 100 = 177.77%)
+                paddingBottom: "177.77%", 
                 borderRadius: "16px",
-                background: "#000",
+                background: "#111",
+                overflow: "hidden",
                 boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
             }}
         >
-            {/* Top mask — keeps profile clean but doesn't block play clicks */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: "54px",
-                background: "transparent",
-                zIndex: 10,
-                pointerEvents: "none",
-            }} />
-
             <iframe
-                key={iframeKey}
-                ref={iframeRef}
-                src={`${embedUrl}?hidecaption=true&autoplay=1&muted=1`}
-                allow="autoplay; encrypted-media"
+                src={`${embedUrl}?hidecaption=true`}
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                allowFullScreen
+                title="Instagram Reel"
+                scrolling="no"
+                frameBorder="0"
+                loading="lazy"
                 style={{
                     position: "absolute",
                     top: 0,
@@ -70,20 +55,52 @@ export default function InstagramEmbed({ url }: Props) {
                     width: "100%",
                     height: "100%",
                     border: "none",
-                    overflow: "hidden",
-                    pointerEvents: "auto",
+                    zIndex: 1,
                 }}
             />
 
-            {/* Bottom mask — hides clutter but doesn't block interactions in the center */}
+            {/* View on IG fallback link — only visible if iframe is blocked or fails */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 0,
+                color: "rgba(255,255,255,0.3)",
+                fontSize: "0.8rem",
+                textAlign: "center",
+                padding: "20px"
+            }}>
+                <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>
+                    View Reel on Instagram
+                </a>
+            </div>
+
+            {/* Subtle top overlay to clean up the embed UI */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: "40px",
+                background: "linear-gradient(to bottom, rgba(0,0,0,0.3), transparent)",
+                zIndex: 2,
+                pointerEvents: "none",
+            }} />
+
+            {/* Subtle bottom overlay — gradient instead of solid block */}
             <div style={{
                 position: "absolute",
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: "90px",
-                background: "#000",
-                zIndex: 10,
+                height: "60px",
+                background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)",
+                zIndex: 2,
                 pointerEvents: "none",
             }} />
         </div>

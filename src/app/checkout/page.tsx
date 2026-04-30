@@ -29,10 +29,12 @@ export default function CheckoutPage() {
 
     // UI state
     const [isProcessing, setIsProcessing] = useState(false);
+    const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
     const [couponCode, setCouponCode] = useState('');
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponMsg, setCouponMsg] = useState<{text: string, type: 'error' | 'success'} | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [paypalLoaded, setPaypalLoaded] = useState(false);
     const [selectedGateway, setSelectedGateway] = useState('paypal');
@@ -45,6 +47,8 @@ export default function CheckoutPage() {
     const cardContainerRef = useRef<HTMLDivElement>(null);
     const paypalBtnsRef = useRef<any>(null);
     const cardBtnsRef = useRef<any>(null);
+    const cardFieldsRef = useRef<any>(null);
+    const cardFieldsInstanceRef = useRef<any>(null);
     const formRef = useRef(formData);
     const agreedRef = useRef(agreedToTerms);
     const cartRef = useRef(cart);
@@ -120,12 +124,39 @@ export default function CheckoutPage() {
         const { country, state, zip, city } = formData;
         if (!country) return;
         const timer = setTimeout(() => {
-            if (zip.length >= 5 || state) {
+            if (zip.length >= 5 || state || city) {
                 updateCustomerAddress({ country, state, postcode: zip, city });
             }
-        }, 800);
+        }, 1000);
         return () => clearTimeout(timer);
     }, [formData.country, formData.state, formData.zip, formData.city]);
+
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+        if (!formData.email) newErrors.email = 'Email is required';
+        if (!formData.phone) newErrors.phone = 'Phone number is required';
+        if (!formData.firstName) newErrors.firstName = 'First name is required';
+        if (!formData.lastName) newErrors.lastName = 'Last name is required';
+        if (!formData.address) newErrors.address = 'Street address is required';
+        if (!formData.city) newErrors.city = 'Town / City is required';
+        if (!formData.state) newErrors.state = 'State is required';
+        if (!formData.zip) newErrors.zip = 'ZIP code is required';
+        
+        setFieldErrors(newErrors);
+
+        if (Object.keys(newErrors).length > 0) {
+            setError('Please fill in all required fields highlighted below.');
+            return false;
+        }
+
+        if (!agreedToTerms) {
+            setError('Please check the box to agree to the terms and conditions.');
+            return false;
+        }
+
+        setError(null);
+        return true;
+    };
 
     // Fetch available gateways and Client ID
     useEffect(() => {
@@ -153,7 +184,7 @@ export default function CheckoutPage() {
     useEffect(() => {
         if (!fetchedClientId || paypalLoaded) return;
         const s = document.createElement('script');
-        s.src = `https://www.paypal.com/sdk/js?client-id=${fetchedClientId}&components=buttons,funding-eligibility`;
+        s.src = `https://www.paypal.com/sdk/js?client-id=${fetchedClientId}&components=buttons,funding-eligibility,card-fields`;
         s.async = true;
         s.onload = () => setPaypalLoaded(true);
         s.onerror = () => {
@@ -171,8 +202,32 @@ export default function CheckoutPage() {
         if (!paypal?.Buttons) return;
 
         // Cleanup existing buttons if any to ensure fresh start
-        if (paypalBtnsRef.current) { paypalBtnsRef.current.close(); paypalBtnsRef.current = null; }
-        if (cardBtnsRef.current) { cardBtnsRef.current.close(); cardBtnsRef.current = null; }
+        if (paypalBtnsRef.current) { 
+            try { paypalBtnsRef.current.close(); } catch(e) {} 
+            paypalBtnsRef.current = null; 
+        }
+        if (cardBtnsRef.current) { 
+            try { cardBtnsRef.current.close(); } catch(e) {} 
+            cardBtnsRef.current = null; 
+        }
+
+        const startProcessing = () => {
+            setIsProcessing(true);
+            // Safety timeout: if still processing after 45s, reset it
+            const timer = setTimeout(() => {
+                setIsProcessing(false);
+                setError('Payment is taking longer than expected. Please check your connection or try a different method.');
+            }, 45000);
+            setProcessingTimeout(timer);
+        };
+
+        const stopProcessing = () => {
+            setIsProcessing(false);
+            if (processingTimeout) {
+                clearTimeout(processingTimeout);
+                setProcessingTimeout(null);
+            }
+        };
 
         // Common config factory
         const getConfig = (type: 'paypal' | 'card') => ({ 
@@ -184,32 +239,23 @@ export default function CheckoutPage() {
                 label: 'checkout',
                 height: 48 
             }, 
+            onClick: (data: any, actions: any) => {
+                // Validate before opening the PayPal/Card popup
+                if (validateForm()) {
+                    return actions.resolve();
+                } else {
+                    return actions.reject();
+                }
+            },
             createOrder: async (data: any, actions: any) => {
                 setError(null);
-                const fd = formRef.current;
                 
-                // 1. Agree to Terms Check
-                if (!agreedRef.current) {
-                    const msg = 'Please check the box to agree to the terms and conditions.';
-                    setError(msg);
-                    // Do not return Promise.reject here if we want to avoid onError overwriting the message,
-                    // but the PayPal SDK expects a return. We'll handle this in onError.
+                if (!validateForm()) {
                     return actions.reject();
                 }
 
-                // 2. Form Validation Guard
-                if (!fd.email) {
-                    setError('Email is required.');
-                    return Promise.reject(new Error('Email required'));
-                }
-                if (!fd.firstName || !fd.lastName || !fd.address || !fd.city || !fd.zip) {
-                    setError('Please fill in all required shipping fields.');
-                    return Promise.reject(new Error('Form incomplete'));
-                }
-
-                setIsProcessing(true);
+                startProcessing();
                 try {
-                    // Use client-side PayPal order creation to avoid missing server-side secret dependency
                     return actions.order.create({
                         purchase_units: [{
                             description: 'Jersey Perfume Order',
@@ -226,7 +272,7 @@ export default function CheckoutPage() {
                         }]
                     });
                 } catch (err: any) {
-                    setIsProcessing(false);
+                    stopProcessing();
                     setError(err.message || 'Payment initialization failed.');
                     return Promise.reject(err);
                 }
@@ -254,17 +300,17 @@ export default function CheckoutPage() {
                     }
                 } catch (err: any) {
                     console.error('Order completion error:', err);
-                    setIsProcessing(false);
+                    stopProcessing();
                     setError(err.message || 'Payment completed but order update failed.');
                 }
             },
-            onCancel: () => { setIsProcessing(false); },
+            onCancel: () => { stopProcessing(); },
             onError: (err: any) => {
                 console.error('PayPal Interface Error:', err);
-                setIsProcessing(false);
+                stopProcessing();
                 // If there's already a specific validation error (like terms), don't overwrite it
                 setError(prev => {
-                    if (prev && (prev.includes('terms') || prev.includes('required'))) return prev;
+                    if (prev && (prev.includes('terms') || prev.includes('required') || prev.includes('highlighted'))) return prev;
                     return 'Payment error. Please check your credit card details and try again.';
                 });
             }
@@ -276,12 +322,111 @@ export default function CheckoutPage() {
             paypalBtnsRef.current.render(paypalContainerRef.current).catch(() => {});
         }
 
-        // 2. Card Button
-        if (cardContainerRef.current) {
-            cardBtnsRef.current = paypal.Buttons(getConfig('card'));
-            cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
+        // 2. Card Fields (Advanced)
+        if (paypal.CardFields && selectedGateway === 'paypal-credit') {
+            const cardFields = paypal.CardFields({
+                createOrder: async (data: any, actions: any) => {
+                    setError(null);
+                    if (!validateForm()) {
+                        return actions.reject();
+                    }
+                    startProcessing();
+                    try {
+                        return await actions.order.create({
+                            purchase_units: [{
+                                amount: {
+                                    currency_code: 'USD',
+                                    value: totalRef.current.toFixed(2),
+                                }
+                            }]
+                        });
+                    } catch (err: any) {
+                        stopProcessing();
+                        setError(err.message || 'Payment initialization failed.');
+                        throw err;
+                    }
+                },
+                onApprove: async (data: any) => {
+                    try {
+                        const res = await fetch('/api/paypal/complete-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                paypalOrderId: data.orderID,
+                                cartItems: cartRef.current,
+                                formData: formRef.current,
+                                createAccount: createAccountRef.current,
+                                accountPassword: accountPasswordRef.current
+                            })
+                        });
+                        const result = await res.json();
+                        if (res.ok && (result.success || result.orderId)) {
+                            clearCart();
+                            router.push(`/checkout/success?order_id=${result.orderId || result.order_id}`);
+                        } else {
+                            throw new Error(result.error || result.message || 'Order creation failed');
+                        }
+                    } catch (err: any) {
+                        console.error('Order completion error:', err);
+                        stopProcessing();
+                        setError(err.message || 'Payment completed but order update failed.');
+                    }
+                },
+                onError: (err: any) => {
+                    console.error('Card Fields Error:', err);
+                    stopProcessing();
+                    // Don't overwrite validation errors
+                    setError(prev => {
+                        if (prev && (prev.includes('required') || prev.includes('terms') || prev.includes('fill in') || prev.includes('highlighted'))) return prev;
+                        return 'Payment error. Please check your card details and try again.';
+                    });
+                }
+            });
+
+            if (cardFields.isEligible()) {
+                cardFieldsInstanceRef.current = cardFields;
+                
+                const nameField = cardFields.NameField();
+                nameField.render('#card-name-field-container').catch(() => {});
+                
+                const numberField = cardFields.NumberField();
+                numberField.render('#card-number-field-container').catch(() => {});
+                
+                const expiryField = cardFields.ExpiryField();
+                expiryField.render('#card-expiry-field-container').catch(() => {});
+                
+                const cvvField = cardFields.CVVField();
+                cvvField.render('#card-cvv-field-container').catch(() => {});
+            } else {
+                // Fallback to standard button if advanced fields not eligible
+                if (cardContainerRef.current) {
+                    cardBtnsRef.current = paypal.Buttons(getConfig('card'));
+                    cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
+                }
+            }
+        } else if (cardContainerRef.current && selectedGateway === 'paypal-credit') {
+             // Fallback/Legacy Card Button if needed
+             cardBtnsRef.current = paypal.Buttons(getConfig('card'));
+             cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
         }
-    }, [paypalLoaded, wcCart?.totals?.total_price, selectedGateway]);
+        
+        return () => {
+            if (paypalBtnsRef.current) { try { paypalBtnsRef.current.close(); } catch(e) {} }
+            if (cardBtnsRef.current) { try { cardBtnsRef.current.close(); } catch(e) {} }
+        };
+    }, [paypalLoaded, selectedGateway, fetchedClientId]);
+
+
+    const handlePlaceOrder = async () => {
+        if (!cardFieldsInstanceRef.current) return;
+        if (!validateForm()) return;
+
+        try {
+            await cardFieldsInstanceRef.current.submit();
+        } catch (err: any) {
+            console.error('Submit error:', err);
+        }
+    };
 
 
 
@@ -313,7 +458,16 @@ export default function CheckoutPage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        // Clear field error when user starts typing
+        if (fieldErrors[name]) {
+            setFieldErrors(prev => {
+                const next = { ...prev };
+                delete next[name];
+                return next;
+            });
+        }
     };
 
     if (cart.length === 0 && !isProcessing) {
@@ -344,11 +498,13 @@ export default function CheckoutPage() {
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label>Email Address *</label>
-                                <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email for order tracking" />
+                                <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email for order tracking" className={fieldErrors.email ? styles.errorInput : ''} />
+                                {fieldErrors.email && <span className={styles.errorText}>{fieldErrors.email}</span>}
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Phone Number *</label>
-                                <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Mobile number" />
+                                <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Mobile number" className={fieldErrors.phone ? styles.errorInput : ''} />
+                                {fieldErrors.phone && <span className={styles.errorText}>{fieldErrors.phone}</span>}
                             </div>
                         </div>
                     </div>
@@ -358,11 +514,13 @@ export default function CheckoutPage() {
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label>First Name *</label>
-                                <input required type="text" name="firstName" value={formData.firstName} onChange={handleChange} />
+                                <input required type="text" name="firstName" value={formData.firstName} onChange={handleChange} className={fieldErrors.firstName ? styles.errorInput : ''} />
+                                {fieldErrors.firstName && <span className={styles.errorText}>{fieldErrors.firstName}</span>}
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Last Name *</label>
-                                <input required type="text" name="lastName" value={formData.lastName} onChange={handleChange} />
+                                <input required type="text" name="lastName" value={formData.lastName} onChange={handleChange} className={fieldErrors.lastName ? styles.errorInput : ''} />
+                                {fieldErrors.lastName && <span className={styles.errorText}>{fieldErrors.lastName}</span>}
                             </div>
                         </div>
                         <div className={styles.formGroup}>
@@ -401,7 +559,8 @@ export default function CheckoutPage() {
                         </div>
                         <div className={styles.formGroup}>
                             <label>Street Address *</label>
-                            <input required type="text" name="address" value={formData.address} onChange={handleChange} placeholder="House number and street name" />
+                            <input required type="text" name="address" value={formData.address} onChange={handleChange} placeholder="House number and street name" className={fieldErrors.address ? styles.errorInput : ''} />
+                            {fieldErrors.address && <span className={styles.errorText}>{fieldErrors.address}</span>}
                         </div>
                         <div className={styles.formGroup}>
                             <input type="text" name="address2" value={formData.address2} onChange={handleChange} placeholder="Apartment, suite, unit, etc. (optional)" />
@@ -409,15 +568,18 @@ export default function CheckoutPage() {
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label>Town / City *</label>
-                                <input required type="text" name="city" value={formData.city} onChange={handleChange} />
+                                <input required type="text" name="city" value={formData.city} onChange={handleChange} className={fieldErrors.city ? styles.errorInput : ''} />
+                                {fieldErrors.city && <span className={styles.errorText}>{fieldErrors.city}</span>}
                             </div>
                             <div className={styles.formGroup} style={{ flex: '0 0 120px' }}>
                                 <label>State *</label>
-                                <input required type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" />
+                                <input required type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" className={fieldErrors.state ? styles.errorInput : ''} />
+                                {fieldErrors.state && <span className={styles.errorText}>{fieldErrors.state}</span>}
                             </div>
                             <div className={styles.formGroup} style={{ flex: '0 0 140px' }}>
                                 <label>ZIP Code *</label>
-                                <input required type="text" name="zip" value={formData.zip} onChange={handleChange} />
+                                <input required type="text" name="zip" value={formData.zip} onChange={handleChange} className={fieldErrors.zip ? styles.errorInput : ''} />
+                                {fieldErrors.zip && <span className={styles.errorText}>{fieldErrors.zip}</span>}
                             </div>
                         </div>
                         <div className={styles.formGroup}>
@@ -623,8 +785,38 @@ export default function CheckoutPage() {
                                             <span className={styles.cardIcon}>VISA</span>
                                             <span className={styles.cardIcon} style={{ background: '#eb001b', color: '#fff', border: 'none' }}>MC</span>
                                             <span className={styles.cardIcon} style={{ background: '#0070d1', color: '#fff', border: 'none' }}>AMEX</span>
+                                            <span className={styles.cardIcon} style={{ background: '#f68121', color: '#fff', border: 'none' }}>DISC</span>
                                         </div>
                                     </label>
+
+                                    {/* Card Form — only visible when credit selected */}
+                                    {selectedGateway === 'paypal-credit' && (
+                                        <div className={styles.cardForm}>
+                                            <div className={styles.formGroup}>
+                                                <label>Cardholder Name</label>
+                                                <div id="card-name-field-container" className={styles.cardFieldContainer}></div>
+                                            </div>
+                                            <div className={styles.formGroup}>
+                                                <label>Card number *</label>
+                                                <div id="card-number-field-container" className={styles.cardFieldContainer}></div>
+                                            </div>
+                                            <div className={styles.formRow}>
+                                                <div className={styles.formGroup}>
+                                                    <label>Expiry (MM/YY) *</label>
+                                                    <div id="card-expiry-field-container" className={styles.cardFieldContainer}></div>
+                                                </div>
+                                                <div className={styles.formGroup}>
+                                                    <label>CVV *</label>
+                                                    <div id="card-cvv-field-container" className={styles.cardFieldContainer}></div>
+                                                </div>
+                                            </div>
+
+                                            <label className={styles.checkboxRow} style={{ marginTop: '1rem', fontSize: '0.8rem', opacity: 0.8 }}>
+                                                <input type="checkbox" className={styles.checkboxInput} />
+                                                Save to account
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -648,12 +840,23 @@ export default function CheckoutPage() {
                                     style={{ display: (isProcessing || selectedGateway !== 'paypal') ? 'none' : 'block' }}
                                 />
 
-                                {/* Card Button Container */}
+                                {/* Card Button Container (Fallback) */}
                                 <div
                                     ref={cardContainerRef}
                                     id="paypal-card-container"
-                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit') ? 'none' : 'block' }}
+                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit' || cardFieldsInstanceRef.current) ? 'none' : 'block' }}
                                 />
+
+                                {/* Custom Place Order button for Card Fields */}
+                                {selectedGateway === 'paypal-credit' && cardFieldsInstanceRef.current && (
+                                    <button 
+                                        className={styles.placeOrderBtn}
+                                        onClick={handlePlaceOrder}
+                                        disabled={isProcessing}
+                                    >
+                                        {isProcessing ? <Loader2 size={18} className={styles.spinIcon} /> : 'PLACE ORDER'}
+                                    </button>
+                                )}
                             </div>
                         </div>
 
