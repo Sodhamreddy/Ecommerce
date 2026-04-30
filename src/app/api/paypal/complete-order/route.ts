@@ -78,7 +78,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: order.message || 'Order creation failed' }, { status: 400 });
         }
 
-        return NextResponse.json({ orderId: order.id, orderKey: order.order_key });
+        return NextResponse.json({ success: true, orderId: order.id, orderKey: order.order_key });
     } catch (e: any) {
         console.error('[PayPal Complete Order] Exception:', e);
         return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });

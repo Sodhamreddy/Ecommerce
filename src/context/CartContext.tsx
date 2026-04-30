@@ -14,13 +14,13 @@ import {
     WCCartItem,
 } from '@/lib/woocommerce';
 
-interface CartItem {
+export interface CartItem {
     product: Product;
     quantity: number;
     wcKey?: string; // WooCommerce cart item key for sync
 }
 
-interface CartContextType {
+export interface CartContextType {
     cart: CartItem[];
     wcCart: WCCart | null;
     addToCart: (product: Product, quantity: number) => void;
@@ -31,8 +31,8 @@ interface CartContextType {
     cartCount: number;
     syncing: boolean;
     syncError: string | null;
-    applyCouponToCart: (code: string) => Promise<{ success: boolean; message?: string }>;
-    removeCouponFromCart: (code: string) => Promise<{ success: boolean; message?: string }>;
+    applyCouponToCart: (code: string) => Promise<{ success: boolean; message: string }>;
+    removeCouponFromCart: (code: string) => Promise<{ success: boolean; message: string }>;
     updateCustomerAddress: (data: { country?: string; state?: string; postcode?: string; city?: string }) => Promise<void>;
 }
 
@@ -162,13 +162,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
-    const applyCouponToCart = async (code: string) => {
+    const applyCouponToCart = async (code: string): Promise<{ success: boolean; message: string }> => {
         setSyncing(true);
         try {
             const result = await applyCoupon(code);
             if (result && 'items' in result) {
                 setWcCart(result);
-                return { success: true };
+                return { success: true, message: 'Coupon applied successfully' };
             }
             return { success: false, message: 'Invalid or expired coupon' };
         } catch (e: any) {
@@ -192,18 +192,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const removeCouponFromCart = async (code: string) => {
+    const removeCouponFromCart = async (code: string): Promise<{ success: boolean; message: string }> => {
         setSyncing(true);
         try {
             const result = await removeCoupon(code);
             if (result && 'items' in result) {
                 setWcCart(result);
-                return { success: true };
+                return { success: true, message: 'Coupon removed' };
             }
             // Result was null but no exception — refresh cart to get true server state
             const fresh = await getWCCart();
             if (fresh) setWcCart(fresh);
-            return { success: true };
+            return { success: true, message: 'Coupon removed' };
         } catch (e: any) {
             // Even on error, refresh so the UI reflects WC reality
             try {
@@ -227,7 +227,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
-export function useCart() {
+export function useCart(): CartContextType {
     const context = useContext(CartContext);
     if (!context) {
         console.warn('useCart must be used within a CartProvider - returning default dummy context');
@@ -242,8 +242,8 @@ export function useCart() {
             cartCount: 0,
             syncing: false,
             syncError: null,
-            applyCouponToCart: async () => ({ success: false }),
-            removeCouponFromCart: async () => ({ success: false }),
+            applyCouponToCart: async (code: string) => ({ success: false, message: '' }),
+            removeCouponFromCart: async (code: string) => ({ success: false, message: '' }),
             updateCustomerAddress: async () => {}
         };
     }

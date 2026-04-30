@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useCart } from '@/context/CartContext';
+import { useCart, CartContextType, CartItem } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ShieldCheck, Lock, Loader2, Truck, RotateCcw, Tag } from 'lucide-react';
@@ -11,7 +11,10 @@ import styles from './Checkout.module.css';
 let PAYPAL_CLIENT_ID = ''; 
 
 export default function CheckoutPage() {
-    const { cart, clearCart, cartTotal, wcCart, applyCouponToCart, removeCouponFromCart, updateCustomerAddress } = useCart();
+    const { 
+        cart, clearCart, cartTotal, wcCart, 
+        applyCouponToCart, removeCouponFromCart, updateCustomerAddress 
+    } = useCart() as CartContextType;
     const router = useRouter();
 
     // Form state
@@ -48,6 +51,10 @@ export default function CheckoutPage() {
     const createAccountRef = useRef(createAccount);
     const accountPasswordRef = useRef(accountPassword);
     const totalRef = useRef(0);
+    const subtotalRef = useRef(0);
+    const shippingRef = useRef(0);
+    const taxRef = useRef(0);
+    const discountRef = useRef(0);
 
     // Calculate totals
     const getVal = (str?: string) => parseInt(str || '0', 10);
@@ -68,6 +75,10 @@ export default function CheckoutPage() {
     const total = wcSynced ? getVal(wcCart!.totals.total_price) / factor : (subtotal + shipping - discount);
     const appliedCoupons = wcCart?.coupons || [];
     totalRef.current = total;
+    subtotalRef.current = subtotal;
+    shippingRef.current = shipping;
+    taxRef.current = tax;
+    discountRef.current = discount;
 
     // Keep refs in sync with state
     useEffect(() => { formRef.current = formData; }, [formData]);
@@ -177,13 +188,13 @@ export default function CheckoutPage() {
                 setError(null);
                 const fd = formRef.current;
                 
-                // 1. Agree to Terms Check (Matches "Terms not agreed" console error)
+                // 1. Agree to Terms Check
                 if (!agreedRef.current) {
                     const msg = 'Please check the box to agree to the terms and conditions.';
                     setError(msg);
-                    // Return early without rejection to avoid noisy console error if desired, 
-                    // or keep rejection for PayPal SDK standard behavior.
-                    return Promise.reject(new Error(msg));
+                    // Do not return Promise.reject here if we want to avoid onError overwriting the message,
+                    // but the PayPal SDK expects a return. We'll handle this in onError.
+                    return actions.reject();
                 }
 
                 // 2. Form Validation Guard
@@ -204,12 +215,12 @@ export default function CheckoutPage() {
                             description: 'Jersey Perfume Order',
                             amount: {
                                 currency_code: 'USD',
-                                value: total.toFixed(2),
+                                value: totalRef.current.toFixed(2),
                                 breakdown: {
-                                    item_total: { currency_code: 'USD', value: subtotal.toFixed(2) },
-                                    shipping: { currency_code: 'USD', value: shipping.toFixed(2) },
-                                    tax_total: { currency_code: 'USD', value: tax.toFixed(2) },
-                                    discount: { currency_code: 'USD', value: discount.toFixed(2) }
+                                    item_total: { currency_code: 'USD', value: subtotalRef.current.toFixed(2) },
+                                    shipping: { currency_code: 'USD', value: shippingRef.current.toFixed(2) },
+                                    tax_total: { currency_code: 'USD', value: taxRef.current.toFixed(2) },
+                                    discount: { currency_code: 'USD', value: discountRef.current.toFixed(2) }
                                 }
                             }
                         }]
@@ -224,22 +235,25 @@ export default function CheckoutPage() {
                 try {
                     const res = await fetch('/api/paypal/complete-order', {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            orderID: data.orderID,
-                            cart: cartRef.current,
-                            billing: formRef.current,
+                            paypalOrderId: data.orderID,
+                            paypalTransactionId: data.facilitatorAccessToken || '', // Some SDK versions provide this
+                            cartItems: cartRef.current,
+                            formData: formRef.current,
                             createAccount: createAccountRef.current,
                             accountPassword: accountPasswordRef.current
                         })
                     });
-                    const capture = await res.json();
-                    if (capture.success) {
+                    const result = await res.json();
+                    if (res.ok && (result.success || result.orderId)) {
                         clearCart();
-                        router.push(`/checkout/success?order_id=${capture.order_id}`);
+                        router.push(`/checkout/success?order_id=${result.orderId || result.order_id}`);
                     } else {
-                        throw new Error(capture.message || 'Capture failed');
+                        throw new Error(result.error || result.message || 'Order creation failed');
                     }
                 } catch (err: any) {
+                    console.error('Order completion error:', err);
                     setIsProcessing(false);
                     setError(err.message || 'Payment completed but order update failed.');
                 }
@@ -248,7 +262,11 @@ export default function CheckoutPage() {
             onError: (err: any) => {
                 console.error('PayPal Interface Error:', err);
                 setIsProcessing(false);
-                setError('Payment error. Please check your credit card details and try again.');
+                // If there's already a specific validation error (like terms), don't overwrite it
+                setError(prev => {
+                    if (prev && (prev.includes('terms') || prev.includes('required'))) return prev;
+                    return 'Payment error. Please check your credit card details and try again.';
+                });
             }
         });
 
@@ -450,7 +468,7 @@ export default function CheckoutPage() {
 
                         {/* Items */}
                         <div className={styles.summaryItems}>
-                            {cart.map((item) => (
+                            {cart.map((item: CartItem) => (
                                 <div key={item.product.id} className={styles.summaryItem}>
                                     <div className={styles.itemImgWrapper}>
                                         {item.product.images?.[0]?.src && (

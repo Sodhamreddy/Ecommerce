@@ -43,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'CREED', href: '/shop?search=creed' },
       { label: 'TOM FORD', href: '/shop?search=tom+ford' },
       { label: 'DUMONT PARIS', href: '/shop?search=dumont' },
-      { label: 'LATTAFA', href: '/shop?search=lattafa' },
+      { label: 'LATTAFA', href: '/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/' },
       { label: 'RASASI', href: '/shop?search=rasasi' },
       { label: 'ARMAF', href: '/shop?search=armaf' },
       { label: 'MAISON ALHAMBRA', href: '/shop?search=maison+alhambra' },
