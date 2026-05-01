@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { fetchWPPosts, fetchWPTags } from '@/lib/woocommerce';
+import { fetchWPPosts, fetchWPTagBySlug, fetchAllWPTags } from '@/lib/woocommerce';
 import styles from '@/app/blog/Blog.module.css';
 
 interface Props {
@@ -14,8 +14,8 @@ export const revalidate = 3600;
 
 export async function generateStaticParams() {
     try {
-        const tags = await fetchWPTags();
-        return tags.map((t: { slug: string }) => ({ slug: t.slug }));
+        const tags = await fetchAllWPTags();
+        return tags.map(t => ({ slug: t.slug }));
     } catch {
         return [];
     }
@@ -23,10 +23,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const name = slug
-        .split('-')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
+    const tag = await fetchWPTagBySlug(slug);
+    const name = tag?.name || slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     return {
         title: `${name} | Jersey Perfume Blog`,
         description: `Browse all fragrance articles tagged "${name}" on the Jersey Perfume blog.`,
@@ -42,13 +40,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TagPage({ params }: Props) {
     const { slug } = await params;
 
-    const tags = await fetchWPTags();
-    const tag = tags.find((t: { slug: string }) => t.slug === slug);
-
+    // Direct slug lookup — works for any tag regardless of total count
+    const tag = await fetchWPTagBySlug(slug);
     if (!tag) notFound();
 
     const { posts } = await fetchWPPosts(1, 20, undefined, tag.id);
-    const tagName = tag.name || slug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const tagName = tag.name;
 
     return (
         <div className={styles.container}>

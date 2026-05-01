@@ -552,7 +552,7 @@ export async function fetchWPCategories(): Promise<any[]> {
 }
 
 /**
- * Fetch WordPress tags
+ * Fetch WordPress tags (first page only — use fetchAllWPTags for complete list)
  */
 export async function fetchWPTags(): Promise<any[]> {
     try {
@@ -563,6 +563,45 @@ export async function fetchWPTags(): Promise<any[]> {
     } catch {
         return [];
     }
+}
+
+/**
+ * Fetch a single WordPress tag by slug — direct lookup, no pagination limit
+ */
+export async function fetchWPTagBySlug(slug: string): Promise<{ id: number; name: string; slug: string } | null> {
+    try {
+        const url = getApiUrl('wp/v2/tags', { slug, per_page: 1 });
+        const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
+        if (!response.ok) return null;
+        const tags = await response.json();
+        return tags[0] || null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Fetch ALL WordPress tags with pagination
+ */
+export async function fetchAllWPTags(): Promise<{ id: number; name: string; slug: string }[]> {
+    const allTags: { id: number; name: string; slug: string }[] = [];
+    let page = 1;
+    while (true) {
+        try {
+            const url = getApiUrl('wp/v2/tags', { per_page: 100, page });
+            const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
+            if (!response.ok) break;
+            const tags = await response.json();
+            if (!Array.isArray(tags) || tags.length === 0) break;
+            allTags.push(...tags);
+            if (tags.length < 100) break;
+            page++;
+            await delay(200);
+        } catch {
+            break;
+        }
+    }
+    return allTags;
 }
 
 // ─── WooCommerce Product Categories/Tags (public API) ───
