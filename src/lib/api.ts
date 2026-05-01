@@ -85,7 +85,8 @@ export async function fetchProducts(
     maxPrice = '',
     orderby = 'date',
     order = 'desc',
-    onSale = false
+    onSale = false,
+    tag = ''
 ): Promise<{ products: Product[], totalPages: number, totalProducts: number }> {
     try {
         let finalOrderby = orderby;
@@ -115,6 +116,10 @@ export async function fetchProducts(
             // WC Store API v1 accepts category slug directly (e.g. "mens-fragrances")
             // Numeric IDs also work — pass as-is either way
             params.category = category;
+        }
+
+        if (tag) {
+            params.tag = tag;
         }
 
         // Only add price filters if values are provided and non-zero/non-default
@@ -247,6 +252,35 @@ export async function fetchCategoriesWithThumbnails(): Promise<Category[]> {
         ...cat,
         image: cat.image?.src ? cat.image : (thumbMap.get(cat.id) ?? cat.image),
     }));
+}
+
+export interface ProductTag {
+    id: number;
+    name: string;
+    slug: string;
+    count: number;
+}
+
+export async function fetchTags(): Promise<ProductTag[]> {
+    try {
+        const ckKey = process.env.WC_CONSUMER_KEY;
+        const ckSecret = process.env.WC_CONSUMER_SECRET;
+        if (ckKey && ckSecret) {
+            const res = await fetch(
+                `${API_BASE_URL}/wc/v3/products/tags?per_page=100&consumer_key=${ckKey}&consumer_secret=${ckSecret}`,
+                { next: { revalidate: 3600 } }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                return data.map((t: { id: number; name: string; slug: string; count: number }) => ({
+                    id: t.id, name: t.name, slug: t.slug, count: t.count,
+                }));
+            }
+        }
+        return [];
+    } catch {
+        return [];
+    }
 }
 
 export async function fetchAllProducts(): Promise<Product[]> {

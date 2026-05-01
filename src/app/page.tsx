@@ -11,10 +11,19 @@ export const metadata: Metadata = {
   title: "Jersey Perfume | Luxury Fragrances Up to 80% Off",
   description:
     "Discover 100% authentic designer and niche fragrances at incredible prices. Free shipping on orders over $59. Shop Armani, Lattafa, Dumont, and more.",
+  alternates: { canonical: "https://jerseyperfume.com/" },
   openGraph: {
     title: "Jersey Perfume | Luxury Fragrances Up to 80% Off",
     description: "100% authentic perfumes at unbeatable prices. Free shipping over $59.",
-    images: ["/images/hero.png"],
+    url: "https://jerseyperfume.com/",
+    type: "website",
+    images: [{ url: "https://jerseyperfume.com/images/hero.png", width: 1200, height: 630, alt: "Jersey Perfume" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Jersey Perfume | Luxury Fragrances Up to 80% Off",
+    description: "100% authentic perfumes at unbeatable prices. Free shipping over $59.",
+    images: ["https://jerseyperfume.com/images/hero.png"],
   },
 };
 
@@ -69,19 +78,64 @@ async function getHomepageData() {
   }
 }
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://jerseyperfume.com/#organization",
+      name: "Jersey Perfume",
+      url: "https://jerseyperfume.com/",
+      logo: { "@type": "ImageObject", url: "https://jerseyperfume.com/jersey-logo.png" },
+      sameAs: [
+        "https://www.facebook.com/profile.php?id=61576907750503",
+        "https://www.instagram.com/jerseyperfumeusa/",
+        "https://www.youtube.com/@jerseyperfume",
+        "https://x.com/JerseyPerfume",
+        "https://www.pinterest.com/jerseyperfumeofficial/",
+      ],
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: "+1-732-361-4489",
+        contactType: "customer service",
+        areaServed: "US",
+        availableLanguage: "English",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://jerseyperfume.com/#website",
+      url: "https://jerseyperfume.com/",
+      name: "Jersey Perfume",
+      publisher: { "@id": "https://jerseyperfume.com/#organization" },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: "https://jerseyperfume.com/shop/?search={search_term_string}" },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 export default async function Home() {
   const { bestSellers, newArrivals, gourmandProducts, onSaleProducts, blogPosts, categories, slides } =
     await getHomepageData();
 
   return (
-    <HomeClient
-      bestSellers={bestSellers}
-      newArrivals={newArrivals}
-      gourmandProducts={gourmandProducts}
-      onSaleProducts={onSaleProducts}
-      blogPosts={blogPosts}
-      categories={categories}
-      slides={slides}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <HomeClient
+        bestSellers={bestSellers}
+        newArrivals={newArrivals}
+        gourmandProducts={gourmandProducts}
+        onSaleProducts={onSaleProducts}
+        blogPosts={blogPosts}
+        categories={categories}
+        slides={slides}
+      />
+    </>
   );
 }

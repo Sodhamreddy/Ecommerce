@@ -37,9 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        alternates: { canonical: `https://jerseyperfume.com/blog/${slug}/` },
         openGraph: {
             title: yoast?.og_title || title,
             description: yoast?.og_description || description,
+            url: `https://jerseyperfume.com/blog/${slug}/`,
+            type: 'article',
             images: ogImages,
         },
         twitter: {

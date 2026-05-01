@@ -1,6 +1,9 @@
 Options -MultiViews
 RewriteEngine On
 
+# 301: Strip WordPress-style index.php from URLs
+RewriteRule ^index\.php/(.*)$ /$1 [R=301,L]
+
 # Serve PHP API files without .php extension
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

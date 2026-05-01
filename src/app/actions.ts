@@ -11,9 +11,10 @@ export async function fetchProductsAction(
     maxPrice = '',
     orderby = 'date',
     order = 'desc',
-    onSale = false
+    onSale = false,
+    tag = ''
 ) {
-    return apiFetchProducts(page, perPage, search, category, minPrice, maxPrice, orderby, order, onSale);
+    return apiFetchProducts(page, perPage, search, category, minPrice, maxPrice, orderby, order, onSale, tag);
 }
 
 const COMMON_HEADERS = {

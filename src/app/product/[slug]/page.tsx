@@ -26,13 +26,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         return { title: 'Product Not Found' };
     }
 
+    const minorUnit = product.prices.currency_minor_unit ?? 2;
+    const price = (parseInt(product.prices.price) / Math.pow(10, minorUnit)).toFixed(minorUnit);
+    const description = product.short_description
+        ? product.short_description.replace(/<[^>]*>/g, '').substring(0, 160)
+        : product.description.replace(/<[^>]*>/g, '').substring(0, 160);
+
     return {
         title: `${product.name} | Jersey Perfume`,
-        description: product.short_description || product.description.replace(/<[^>]*>/g, '').substring(0, 160),
+        description,
+        alternates: { canonical: `https://jerseyperfume.com/product/${slug}/` },
         openGraph: {
             title: product.name,
-            description: product.short_description,
-            images: product.images.map(img => img.src),
+            description,
+            url: `https://jerseyperfume.com/product/${slug}/`,
+            type: 'website',
+            images: product.images.map(img => ({ url: img.src, alt: product.name })),
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: product.name,
+            description,
+            images: product.images[0]?.src ? [product.images[0].src] : [],
+        },
+        other: {
+            'product:price:amount': price,
+            'product:price:currency': product.prices.currency_code || 'USD',
         },
     };
 }
@@ -93,7 +112,32 @@ export default async function ProductPage({ params }: Props) {
     const rating = (((product.id * 7) % 10) / 10) + 4;
     const reviewCount = (product.id % 90) + 10;
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        image: product.images.map(img => img.src),
+        description: product.short_description.replace(/<[^>]*>/g, '') || product.description.replace(/<[^>]*>/g, ''),
+        sku: String(product.id),
+        brand: { '@type': 'Brand', name: 'Jersey Perfume' },
+        offers: {
+            '@type': 'Offer',
+            url: `https://jerseyperfume.com/product/${slug}/`,
+            priceCurrency: product.prices.currency_code || 'USD',
+            price: salePrice,
+            availability: product.is_in_stock
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            seller: { '@type': 'Organization', name: 'Jersey Perfume' },
+        },
+    };
+
     return (
+        <>
+        <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <div className={styles.container}>
             <div className={styles.productLayout}>
                 {/* ── Image Gallery ── */}
@@ -283,5 +327,6 @@ export default async function ProductPage({ params }: Props) {
                 </div>
             )}
         </div>
+        </>
     );
 }

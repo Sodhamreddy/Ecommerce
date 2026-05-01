@@ -1,15 +1,15 @@
-import { fetchProducts, fetchCategories } from '@/lib/api';
-import { API_BASE_URL } from '@/lib/config';
+import { fetchProducts, fetchCategories, fetchTags } from '@/lib/api';
+import { fetchAllWPPosts } from '@/lib/woocommerce';
 import { MetadataRoute } from 'next';
+
+export const revalidate = 3600;
 
 const SITE_URL = 'https://jerseyperfume.com';
 
 async function fetchBlogSlugs(): Promise<string[]> {
     try {
-        const res = await fetch(`${API_BASE_URL}/wp/v2/posts?per_page=100&_fields=slug`, { next: { revalidate: 3600 } });
-        if (!res.ok) return [];
-        const posts = await res.json();
-        return posts.map((p: { slug: string }) => p.slug);
+        const posts = await fetchAllWPPosts();
+        return posts.map(p => p.slug);
     } catch {
         return [];
     }
@@ -28,8 +28,9 @@ async function fetchAllProductSlugs(): Promise<string[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const [categories, productSlugs, blogSlugs] = await Promise.all([
+    const [categories, tags, productSlugs, blogSlugs] = await Promise.all([
         fetchCategories(),
+        fetchTags(),
         fetchAllProductSlugs(),
         fetchBlogSlugs(),
     ]);
@@ -68,5 +69,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
     }));
 
-    return [...staticPages, ...categoryPages, ...productPages, ...blogPages];
+    const tagPages: MetadataRoute.Sitemap = tags
+        .filter(t => t.count > 0)
+        .map(t => ({
+            url: `${siteUrl}/product-tag/${t.slug}/`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: 0.6,
+        }));
+
+    return [...staticPages, ...categoryPages, ...tagPages, ...productPages, ...blogPages];
 }

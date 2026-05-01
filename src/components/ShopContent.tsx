@@ -16,6 +16,7 @@ interface ShopContentProps {
     initialCategoryQuery?: string;
     initialSearchQuery?: string;
     initialOnSale?: boolean;
+    initialTagQuery?: string;
 }
 
 const SORT_OPTIONS = [
@@ -50,7 +51,8 @@ export default function ShopContent({
     initialTotalProducts,
     initialCategoryQuery = '',
     initialSearchQuery = '',
-    initialOnSale = false
+    initialOnSale = false,
+    initialTagQuery = '',
 }: ShopContentProps) {
     const [products, setProducts] = useState(initialProducts);
     const [categories] = useState(initialCategories.filter(cat => {
@@ -77,6 +79,7 @@ export default function ShopContent({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSticky, setIsSticky] = useState(false);
     const [isOnSale] = useState(initialOnSale);
+    const lockedTag = useRef(initialTagQuery);
     const quickTabsRef = useRef<HTMLDivElement>(null);
 
     const searchParams = useSearchParams();
@@ -128,7 +131,7 @@ export default function ShopContent({
         // WC Store API v1 requires numeric category ID, not slug
         const catParam = resolveCatParam(catSlug);
         const { products: newProducts, totalPages: newTotalPages, totalProducts: newTotal } =
-            await fetchProductsAction(pg, 24, s, catParam, pmn.toString(), pmx.toString(), sort, 'desc', isOnSale);
+            await fetchProductsAction(pg, 24, s, catParam, pmn.toString(), pmx.toString(), sort, 'desc', isOnSale, lockedTag.current);
 
         setProducts(newProducts);
         setTotalPages(newTotalPages);

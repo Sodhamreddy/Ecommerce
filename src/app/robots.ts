@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: ['/api/', '/wishlist/', '/account/', '/checkout/'],
+            disallow: ['/api/', '/wishlist/', '/account/', '/checkout/', '/cart/'],
         },
         sitemap: 'https://jerseyperfume.com/sitemap.xml',
     };
