@@ -31,6 +31,7 @@ export interface CartContextType {
     cartCount: number;
     syncing: boolean;
     syncError: string | null;
+    cartInitialized: boolean;
     applyCouponToCart: (code: string) => Promise<{ success: boolean; message: string }>;
     removeCouponFromCart: (code: string) => Promise<{ success: boolean; message: string }>;
     updateCustomerAddress: (data: { country?: string; state?: string; postcode?: string; city?: string }) => Promise<void>;
@@ -43,6 +44,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const [wcCart, setWcCart] = useState<WCCart | null>(null);
     const [syncing, setSyncing] = useState(false);
     const [syncError, setSyncError] = useState<string | null>(null);
+    const [cartLoaded, setCartLoaded] = useState(false);
 
     // Load cart from localStorage on mount
     useEffect(() => {
@@ -54,12 +56,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 setCart([]);
             }
         }
+        setCartLoaded(true);
     }, []);
 
-    // Save cart to localStorage whenever it changes
+    // Save cart to localStorage — but not on the initial mount before we've loaded.
+    // Without this guard the save effect runs with cart=[] and overwrites the stored cart.
     useEffect(() => {
+        if (!cartLoaded) return;
         localStorage.setItem('cart', JSON.stringify(cart));
-    }, [cart]);
+    }, [cart, cartLoaded]);
 
     // Try to sync with WooCommerce cart on mount
     useEffect(() => {
@@ -156,7 +161,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const cartTotal = cart.reduce((total, item) => {
-        const price = parseInt(item.product.prices.price) / Math.pow(10, item.product.prices.currency_minor_unit || 2);
+        const prices = item.product?.prices;
+        if (!prices?.price) return total;
+        const price = parseInt(prices.price) / Math.pow(10, prices.currency_minor_unit || 2);
         return total + price * item.quantity;
     }, 0);
 
@@ -168,6 +175,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             const result = await applyCoupon(code);
             if (result && 'items' in result) {
                 setWcCart(result);
+                // Sync WC cart item keys back into local cart so future mutations work
+                setCart(prev => prev.map(item => {
+                    const wcItem = (result.items as WCCartItem[]).find(wi => wi.id === item.product.id);
+                    return wcItem ? { ...item, wcKey: wcItem.key } : item;
+                }));
                 return { success: true, message: 'Coupon applied successfully' };
             }
             return { success: false, message: 'Invalid or expired coupon' };
@@ -220,6 +232,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         <CartContext.Provider value={{
             cart, wcCart, addToCart, removeFromCart, updateQuantity,
             clearCart, cartTotal, cartCount, syncing, syncError,
+            cartInitialized: cartLoaded,
             applyCouponToCart, removeCouponFromCart, updateCustomerAddress
         }}>
             {children}
@@ -242,8 +255,9 @@ export function useCart(): CartContextType {
             cartCount: 0,
             syncing: false,
             syncError: null,
-            applyCouponToCart: async (code: string) => ({ success: false, message: '' }),
-            removeCouponFromCart: async (code: string) => ({ success: false, message: '' }),
+            cartInitialized: false,
+            applyCouponToCart: async (_code: string) => ({ success: false, message: '' }),
+            removeCouponFromCart: async (_code: string) => ({ success: false, message: '' }),
             updateCustomerAddress: async () => {}
         };
     }

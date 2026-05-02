@@ -125,7 +125,7 @@ export default function Header() {
                           </div>
                           <div className={styles.cartDropdownItemInfo}>
                             <h4>{item.product.name}</h4>
-                            <p>{item.quantity} × <span dangerouslySetInnerHTML={{ __html: item.product.prices.currency_symbol || '$' }}></span>{(parseInt(item.product.prices.price) / Math.pow(10, item.product.prices.currency_minor_unit || 2)).toFixed(2)}</p>
+                            <p>{item.quantity} × <span dangerouslySetInnerHTML={{ __html: item.product.prices?.currency_symbol || '$' }}></span>{(parseInt(item.product.prices?.price || '0') / Math.pow(10, item.product.prices?.currency_minor_unit || 2)).toFixed(2)}</p>
                           </div>
                         </div>
                       ))}
@@ -133,7 +133,7 @@ export default function Header() {
                     <div className={styles.cartDropdownFooter}>
                       <div className={styles.cartDropdownTotal}>
                         <span>Subtotal:</span>
-                        <span>${cart.reduce((total, item) => total + (parseInt(item.product.prices.price) / Math.pow(10, item.product.prices.currency_minor_unit || 2)) * item.quantity, 0).toFixed(2)}</span>
+                        <span>${cart.reduce((total, item) => total + (parseInt(item.product.prices?.price || '0') / Math.pow(10, item.product.prices?.currency_minor_unit || 2)) * item.quantity, 0).toFixed(2)}</span>
                       </div>
                       <div className={styles.cartDropdownActions}>
                         <Link href="/cart" className={styles.viewCartBtn}>View Cart</Link>

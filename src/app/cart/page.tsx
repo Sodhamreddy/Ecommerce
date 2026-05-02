@@ -3,11 +3,22 @@
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowLeft, Loader2 } from 'lucide-react';
 import styles from './CartPage.module.css';
 
 export default function CartPage() {
-    const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
+    const { cart, removeFromCart, updateQuantity, cartTotal, wcCart, cartInitialized } = useCart();
+
+    // During SSR / hydration, cart hasn't loaded from localStorage yet — show a loader
+    // instead of the "empty cart" page so the user doesn't see a false empty state.
+    if (!cartInitialized) {
+        return (
+            <div className={styles.emptyCart} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                <span>Loading your bag...</span>
+            </div>
+        );
+    }
 
     if (cart.length === 0) {
         return (
@@ -21,15 +32,28 @@ export default function CartPage() {
         );
     }
 
+    // Compute discount from WC cart if a coupon is applied
+    const minorUnit = wcCart?.totals?.currency_minor_unit || 2;
+    const factor = Math.pow(10, minorUnit);
+    const getVal = (str?: string) => {
+        if (!str) return 0;
+        const n = str.replace(/[^0-9.]/g, '');
+        const v = parseFloat(n || '0');
+        return n.includes('.') ? v * factor : v;
+    };
+    const discount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
+    const appliedCoupons = wcCart?.coupons || [];
+    const displayTotal = discount > 0 ? Math.max(0, cartTotal - discount) : cartTotal;
+
     return (
         <div className={styles.container}>
             <h1 className={styles.title}>Your Shopping Bag</h1>
 
             <div className={styles.layout}>
                 <div className={styles.items}>
-                    {cart.map((item) => {
-                        const minorUnit = item.product.prices.currency_minor_unit || 2;
-                        const price = parseInt(item.product.prices.price) / Math.pow(10, minorUnit);
+                    {cart.filter(item => item.product?.prices?.price).map((item) => {
+                        const mu = item.product.prices.currency_minor_unit || 2;
+                        const price = parseInt(item.product.prices.price) / Math.pow(10, mu);
 
                         return (
                             <div key={item.product.id} className={styles.item}>
@@ -82,13 +106,26 @@ export default function CartPage() {
                         <span>Subtotal</span>
                         <span>${cartTotal.toFixed(2)}</span>
                     </div>
+                    {discount > 0 && (
+                        <div className={styles.summaryRow} style={{ color: '#d32f2f' }}>
+                            <span>
+                                Discount
+                                {appliedCoupons.length > 0 && (
+                                    <span style={{ fontSize: '0.75rem', marginLeft: '0.4rem', opacity: 0.75 }}>
+                                        ({appliedCoupons.map((c: any) => c.code?.toUpperCase()).join(', ')})
+                                    </span>
+                                )}
+                            </span>
+                            <span>-${discount.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className={styles.summaryRow}>
                         <span>Shipping</span>
                         <span>Calculated at checkout</span>
                     </div>
                     <div className={`${styles.summaryRow} ${styles.total}`}>
                         <span>Total</span>
-                        <span>${cartTotal.toFixed(2)}</span>
+                        <span>${displayTotal.toFixed(2)}</span>
                     </div>
 
                     <Link href="/checkout" className={styles.checkoutBtn}>

@@ -11,9 +11,9 @@ import styles from './Checkout.module.css';
 let PAYPAL_CLIENT_ID = ''; 
 
 export default function CheckoutPage() {
-    const { 
-        cart, clearCart, cartTotal, wcCart, 
-        applyCouponToCart, removeCouponFromCart, updateCustomerAddress 
+    const {
+        cart, clearCart, cartTotal, wcCart, cartInitialized,
+        applyCouponToCart, removeCouponFromCart, updateCustomerAddress
     } = useCart() as CartContextType;
     const router = useRouter();
 
@@ -41,6 +41,7 @@ export default function CheckoutPage() {
     const [gateways, setGateways] = useState<any[]>([]);
     const [gatewaysLoading, setGatewaysLoading] = useState(true);
     const [fetchedClientId, setFetchedClientId] = useState<string | null>(null);
+    const [cardFieldsReady, setCardFieldsReady] = useState(false);
 
     // Refs for stable closures in PayPal callbacks
     const paypalContainerRef = useRef<HTMLDivElement>(null);
@@ -72,10 +73,11 @@ export default function CheckoutPage() {
     const minorUnit = wcCart?.totals?.currency_minor_unit || 2;
     const factor = Math.pow(10, minorUnit);
     
-    // Only use backend totals if the item counts match exactly to avoid display desync
+    // Use backend totals when item counts match, OR when a coupon is applied (WC owns the authoritative discount total)
     const wcSubtotal = wcCart ? getVal(wcCart.totals.total_items) / factor : 0;
     const itemCountMatch = wcCart?.items?.length === cart.length;
-    const wcSynced = wcSubtotal > 0 && itemCountMatch;
+    const hasCoupon = (wcCart?.coupons?.length ?? 0) > 0;
+    const wcSynced = wcSubtotal > 0 && (itemCountMatch || hasCoupon);
     
     const subtotal = wcSynced ? wcSubtotal : cartTotal;
     const wcShipping = wcSynced ? getVal(wcCart!.totals.total_shipping) / factor : 0;
@@ -373,27 +375,28 @@ export default function CheckoutPage() {
         // 2. Card Fields (Advanced)
         if (paypal.CardFields && selectedGateway === 'paypal-credit') {
             const cardFields = paypal.CardFields({
-                createOrder: async (data: any, actions: any) => {
+                createOrder: async () => {
                     setError(null);
                     if (!validateForm()) {
-                        return actions.reject();
+                        throw new Error('Please fill in all required fields.');
                     }
                     startProcessing();
                     try {
-                        // Simplified order creation to avoid breakdown mismatches
                         const totalStr = totalRef.current.toFixed(2);
                         if (isNaN(parseFloat(totalStr)) || parseFloat(totalStr) <= 0) {
                             throw new Error('Invalid total amount');
                         }
-                        
-                        return await actions.order.create({
-                            purchase_units: [{
-                                amount: {
-                                    currency_code: 'USD',
-                                    value: totalStr,
-                                }
-                            }]
+                        // PayPal CardFields requires server-side order creation (actions.order is not available)
+                        const res = await fetch('/api/paypal/create-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount: totalStr }),
                         });
+                        const data = await res.json();
+                        if (!res.ok || !data.id) {
+                            throw new Error(data.error || 'Failed to initialize payment. Please try again.');
+                        }
+                        return data.id;
                     } catch (err: any) {
                         stopProcessing();
                         setError(err.message || 'Payment initialization failed.');
@@ -443,6 +446,7 @@ export default function CheckoutPage() {
 
             if (cardFields.isEligible()) {
                 cardFieldsInstanceRef.current = cardFields;
+                setCardFieldsReady(true);
                 
                 const style = {
                     'input': { 
@@ -486,6 +490,7 @@ export default function CheckoutPage() {
             if (paypalBtnsRef.current) { try { paypalBtnsRef.current.close(); } catch(e) {} }
             if (cardBtnsRef.current) { try { cardBtnsRef.current.close(); } catch(e) {} }
             cardFieldsInstanceRef.current = null;
+            setCardFieldsReady(false);
         };
     }, [paypalLoaded, selectedGateway, fetchedClientId]);
 
@@ -558,6 +563,15 @@ export default function CheckoutPage() {
             });
         }
     };
+
+    if (!cartInitialized) {
+        return (
+            <div className={styles.emptyContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                <Loader2 size={20} className={styles.spinIcon} />
+                <span>Loading checkout...</span>
+            </div>
+        );
+    }
 
     if (cart.length === 0 && !isProcessing) {
         return (
@@ -933,11 +947,11 @@ export default function CheckoutPage() {
                                 <div
                                     ref={cardContainerRef}
                                     id="paypal-card-container"
-                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit' || cardFieldsInstanceRef.current) ? 'none' : 'block' }}
+                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit' || cardFieldsReady) ? 'none' : 'block' }}
                                 />
 
                                 {/* Custom Place Order button for Card Fields */}
-                                {selectedGateway === 'paypal-credit' && cardFieldsInstanceRef.current && (
+                                {selectedGateway === 'paypal-credit' && cardFieldsReady && (
                                     <button 
                                         className={styles.placeOrderBtn}
                                         onClick={handlePlaceOrder}

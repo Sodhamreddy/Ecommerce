@@ -266,17 +266,28 @@ function decodeHtml(str: string): string {
 }
 
 /**
- * Apply coupon to WooCommerce cart
+ * Apply coupon to WooCommerce cart.
+ * Forces a fresh nonce before the request — stale nonces on Hostinger cause
+ * silent failures (WC returns 200 error body) that bypass the 401 retry logic.
  */
 export async function applyCoupon(code: string): Promise<WCCart | null> {
+    clearNonce();
+    await ensureNonce();
     try {
         const response = await doMutation('wc/store/v1/cart/apply-coupon', { code });
         if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            const rawMsg = err.message || err.error || 'Failed to apply coupon';
+            const ct = response.headers.get('content-type') || '';
+            const err = ct.includes('application/json')
+                ? await response.json().catch(() => ({}))
+                : {};
+            const rawMsg = err.message || err.error || `Failed to apply coupon (status ${response.status})`;
             throw new Error(decodeHtml(rawMsg));
         }
-        return await response.json();
+        const cart = await response.json().catch(() => null);
+        if (!cart || !('items' in cart)) {
+            throw new Error('Invalid response from server. Please try again.');
+        }
+        return cart;
     } catch (e: any) {
         throw new Error(decodeHtml(e.message || 'Coupon error'));
     }
