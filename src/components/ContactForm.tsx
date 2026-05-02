@@ -40,12 +40,6 @@ export default function ContactForm() {
 
     return (
         <div className={styles.pageWrapper}>
-            {/* Hero */}
-            <div className={styles.hero}>
-                <h1 className={styles.heroTitle}>Get In Touch</h1>
-                <p className={styles.heroSubtitle}>We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.</p>
-            </div>
-
             <div className="container">
                 <div className={styles.splitLayout}>
                     {/* Left: Info Panel */}
@@ -98,11 +92,20 @@ export default function ContactForm() {
                         <div className={styles.infoDivider} />
 
                         <div className={styles.socialRow}>
-                            <a href="https://www.instagram.com/jerseyperfume" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Instagram">
+                            <a href="https://www.instagram.com/jerseyperfumeusa/" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Instagram">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                             </a>
-                            <a href="https://www.facebook.com/jerseyperfume" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Facebook">
+                            <a href="https://www.facebook.com/profile.php?id=61576907750503" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Facebook">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                            </a>
+                            <a href="https://www.youtube.com/@jerseyperfume" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="YouTube">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.96-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
+                            </a>
+                            <a href="https://x.com/JerseyPerfume" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Twitter / X">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            </a>
+                            <a href="https://www.pinterest.com/jerseyperfumeofficial/" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Pinterest">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.548 2.143-.83 3.33-.236.995.499 1.806 1.476 1.806 1.772 0 3.137-1.868 3.137-4.566 0-2.386-1.716-4.054-4.165-4.054-2.837 0-4.502 2.128-4.502 4.328 0 .857.33 1.775.741 2.276a.3.3 0 0 1 .069.285c-.076.312-.244.995-.277 1.134-.044.183-.146.222-.337.134-1.249-.581-2.03-2.407-2.03-3.874 0-3.154 2.292-6.052 6.608-6.052 3.469 0 6.165 2.473 6.165 5.776 0 3.447-2.173 6.22-5.19 6.22-1.013 0-1.966-.527-2.292-1.148l-.623 2.378c-.226.869-.835 1.958-1.244 2.621.937.29 1.931.446 2.962.446 5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
                             </a>
                         </div>
                     </div>

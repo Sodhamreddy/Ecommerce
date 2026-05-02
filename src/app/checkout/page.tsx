@@ -145,7 +145,16 @@ export default function CheckoutPage() {
     }, [formData.country, formData.state, formData.zip, formData.city]);
 
     const validateForm = () => {
-        const data = formRef.current;
+        // Sync DOM values first — browser autofill populates inputs without firing React onChange
+        const fieldNames = ['email', 'phone', 'firstName', 'lastName', 'address', 'address2', 'city', 'state', 'zip', 'country', 'company', 'orderNotes'] as const;
+        const synced = { ...formRef.current };
+        fieldNames.forEach(name => {
+            const el = document.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`);
+            if (el && el.value) synced[name] = el.value;
+        });
+        formRef.current = synced;
+
+        const data = synced;
         const newErrors: Record<string, string> = {};
         if (!data.email) newErrors.email = 'Email is required';
         if (!data.phone) newErrors.phone = 'Phone number is required';
@@ -208,7 +217,7 @@ export default function CheckoutPage() {
     useEffect(() => {
         if (!fetchedClientId || paypalLoaded) return;
         const s = document.createElement('script');
-        s.src = `https://www.paypal.com/sdk/js?client-id=${fetchedClientId}&components=buttons,funding-eligibility,card-fields`;
+        s.src = `https://www.paypal.com/sdk/js?client-id=${fetchedClientId}&components=buttons,funding-eligibility`;
         s.async = true;
         s.onload = () => setPaypalLoaded(true);
         s.onerror = () => {
@@ -372,155 +381,19 @@ export default function CheckoutPage() {
             paypalBtnsRef.current.render(paypalContainerRef.current).catch(() => {});
         }
 
-        // 2. Card Fields (Advanced)
-        if (paypal.CardFields && selectedGateway === 'paypal-credit') {
-            const cardFields = paypal.CardFields({
-                createOrder: async () => {
-                    setError(null);
-                    if (!validateForm()) {
-                        throw new Error('Please fill in all required fields.');
-                    }
-                    startProcessing();
-                    try {
-                        const totalStr = totalRef.current.toFixed(2);
-                        if (isNaN(parseFloat(totalStr)) || parseFloat(totalStr) <= 0) {
-                            throw new Error('Invalid total amount');
-                        }
-                        // PayPal CardFields requires server-side order creation (actions.order is not available)
-                        const res = await fetch('/api/paypal/create-order', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ amount: totalStr }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok || !data.id) {
-                            throw new Error(data.error || 'Failed to initialize payment. Please try again.');
-                        }
-                        return data.id;
-                    } catch (err: any) {
-                        stopProcessing();
-                        setError(err.message || 'Payment initialization failed.');
-                        throw err;
-                    }
-                },
-                onApprove: async (data: any, actions: any) => {
-                    try {
-                        const captureResult = await actions.order.capture();
-                        const transactionId = captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.id || '';
-
-                        const res = await fetch('/api/paypal/complete-order', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                paypalOrderId: data.orderID,
-                                paypalTransactionId: transactionId,
-                                cartItems: cartRef.current,
-                                formData: formRef.current,
-                                createAccount: createAccountRef.current,
-                                accountPassword: accountPasswordRef.current
-                            })
-                        });
-                        const result = await res.json();
-                        if (result.orderId) {
-                            clearCart();
-                            router.push(`/order-success?id=${result.orderId}`);
-                        } else {
-                            throw new Error(result.error || 'Order creation failed. Please contact info@jerseyperfume.com.');
-                        }
-                    } catch (err: any) {
-                        console.error('Order completion error:', err);
-                        stopProcessing();
-                        setError(err.message || 'Payment captured but order could not be placed. Please contact info@jerseyperfume.com.');
-                    }
-                },
-                onError: (err: any) => {
-                    console.error('Card Fields Error:', err);
-                    stopProcessing();
-                    // Don't overwrite validation errors
-                    setError(prev => {
-                        if (prev && (prev.includes('required') || prev.includes('terms') || prev.includes('fill in') || prev.includes('highlighted'))) return prev;
-                        return 'Payment error. Please check your card details and try again.';
-                    });
-                }
-            });
-
-            if (cardFields.isEligible()) {
-                cardFieldsInstanceRef.current = cardFields;
-                setCardFieldsReady(true);
-                
-                const style = {
-                    'input': { 
-                        'font-size': '15px', 
-                        'color': '#111',
-                        'font-family': 'sans-serif',
-                        'appearance': 'none',
-                        'border': 'none',
-                        'outline': 'none',
-                        'padding': '0 12px',
-                    },
-                    '.invalid': { 'color': '#d32f2f' },
-                    ':focus': { 'color': '#111' }
-                };
-
-                const nameField = cardFields.NameField({ placeholder: 'Full Name', style });
-                nameField.render('#card-name-field-container').catch(() => {});
-                
-                const numberField = cardFields.NumberField({ placeholder: 'Card Number', style });
-                numberField.render('#card-number-field-container').catch(() => {});
-                
-                const expiryField = cardFields.ExpiryField({ placeholder: 'MM / YY', style });
-                expiryField.render('#card-expiry-field-container').catch(() => {});
-                
-                const cvvField = cardFields.CVVField({ placeholder: 'CVV', style });
-                cvvField.render('#card-cvv-field-container').catch(() => {});
-            } else {
-                // Fallback to standard button if advanced fields not eligible
-                if (cardContainerRef.current) {
-                    cardBtnsRef.current = paypal.Buttons(getConfig('card'));
-                    cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
-                }
-            }
-        } else if (cardContainerRef.current && selectedGateway === 'paypal-credit') {
-             // Fallback/Legacy Card Button if needed
-             cardBtnsRef.current = paypal.Buttons(getConfig('card'));
-             cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
+        // 2. Card Button — opens PayPal's hosted card payment page (no special account permission needed)
+        if (cardContainerRef.current) {
+            cardBtnsRef.current = paypal.Buttons(getConfig('card'));
+            cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
         }
         
         return () => {
             if (paypalBtnsRef.current) { try { paypalBtnsRef.current.close(); } catch(e) {} }
             if (cardBtnsRef.current) { try { cardBtnsRef.current.close(); } catch(e) {} }
-            cardFieldsInstanceRef.current = null;
-            setCardFieldsReady(false);
         };
     }, [paypalLoaded, selectedGateway, fetchedClientId]);
 
 
-    const handlePlaceOrder = async () => {
-        if (!cardFieldsInstanceRef.current) return;
-        if (!validateForm()) return;
-
-        try {
-            const state = await cardFieldsInstanceRef.current.getState();
-            if (!state.isFormValid) {
-                setError('Please check your credit card details. Some fields are missing or invalid.');
-                // Highlight containers that are invalid
-                const fields = ['NameField', 'NumberField', 'ExpiryField', 'CVVField'];
-                fields.forEach(f => {
-                    const fieldState = (state.fields as any)[f];
-                    if (!fieldState?.isValid) {
-                        // Visual feedback could be added here if needed
-                    }
-                });
-                return;
-            }
-            
-            await cardFieldsInstanceRef.current.submit();
-        } catch (err: any) {
-            console.error('Submit error:', err);
-            setIsProcessing(false);
-            setError(prev => prev || 'Payment submission failed. Please check your details.');
-        }
-    };
 
 
 
@@ -553,7 +426,7 @@ export default function CheckoutPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        setFormData(prev => ({ ...prev, [name]: value }));
         // Clear field error when user starts typing
         if (fieldErrors[name]) {
             setFieldErrors(prev => {
@@ -892,33 +765,10 @@ export default function CheckoutPage() {
                                         </div>
                                     </label>
 
-                                    {/* Card Form — only visible when credit selected */}
                                     {selectedGateway === 'paypal-credit' && (
-                                        <div className={styles.cardForm}>
-                                            <div className={styles.formGroup}>
-                                                <label>Cardholder Name</label>
-                                                <div id="card-name-field-container" className={styles.cardFieldContainer}></div>
-                                            </div>
-                                            <div className={styles.formGroup}>
-                                                <label>Card number *</label>
-                                                <div id="card-number-field-container" className={styles.cardFieldContainer}></div>
-                                            </div>
-                                            <div className={styles.formRow}>
-                                                <div className={styles.formGroup}>
-                                                    <label>Expiry (MM/YY) *</label>
-                                                    <div id="card-expiry-field-container" className={styles.cardFieldContainer}></div>
-                                                </div>
-                                                <div className={styles.formGroup}>
-                                                    <label>CVV *</label>
-                                                    <div id="card-cvv-field-container" className={styles.cardFieldContainer}></div>
-                                                </div>
-                                            </div>
-
-                                            <label className={styles.checkboxRow} style={{ marginTop: '1rem', fontSize: '0.8rem', opacity: 0.8 }}>
-                                                <input type="checkbox" className={styles.checkboxInput} />
-                                                Save to account
-                                            </label>
-                                        </div>
+                                        <p style={{ fontSize: '0.82rem', color: '#555', margin: '0.5rem 0 0', padding: '0 0.25rem' }}>
+                                            Click the button below to enter your card details securely on PayPal&apos;s encrypted page. No PayPal account required.
+                                        </p>
                                     )}
                                 </div>
                             )}
@@ -943,23 +793,12 @@ export default function CheckoutPage() {
                                     style={{ display: (isProcessing || selectedGateway !== 'paypal') ? 'none' : 'block' }}
                                 />
 
-                                {/* Card Button Container (Fallback) */}
+                                {/* Card Button Container */}
                                 <div
                                     ref={cardContainerRef}
                                     id="paypal-card-container"
-                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit' || cardFieldsReady) ? 'none' : 'block' }}
+                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit') ? 'none' : 'block' }}
                                 />
-
-                                {/* Custom Place Order button for Card Fields */}
-                                {selectedGateway === 'paypal-credit' && cardFieldsReady && (
-                                    <button 
-                                        className={styles.placeOrderBtn}
-                                        onClick={handlePlaceOrder}
-                                        disabled={isProcessing}
-                                    >
-                                        {isProcessing ? <Loader2 size={18} className={styles.spinIcon} /> : 'PLACE ORDER'}
-                                    </button>
-                                )}
                             </div>
                         </div>
 

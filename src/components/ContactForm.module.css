@@ -1,33 +1,8 @@
-/* Hero */
 .pageWrapper {
     background: #f8f8f6;
     min-height: 70vh;
+    padding-top: 3rem;
     padding-bottom: 5rem;
-}
-
-.hero {
-    background: #151c39;
-    color: white;
-    text-align: center;
-    padding: 4rem 1rem 3rem;
-    margin-bottom: 3rem;
-}
-
-.heroTitle {
-    font-family: var(--font-display, serif);
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-}
-
-.heroSubtitle {
-    font-size: 1rem;
-    color: rgba(255,255,255,0.7);
-    max-width: 480px;
-    margin: 0 auto;
-    line-height: 1.6;
 }
 
 /* Split layout */
