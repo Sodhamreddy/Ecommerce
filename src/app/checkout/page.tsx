@@ -143,16 +143,17 @@ export default function CheckoutPage() {
     }, [formData.country, formData.state, formData.zip, formData.city]);
 
     const validateForm = () => {
+        const data = formRef.current;
         const newErrors: Record<string, string> = {};
-        if (!formData.email) newErrors.email = 'Email is required';
-        if (!formData.phone) newErrors.phone = 'Phone number is required';
-        if (!formData.firstName) newErrors.firstName = 'First name is required';
-        if (!formData.lastName) newErrors.lastName = 'Last name is required';
-        if (!formData.address) newErrors.address = 'Street address is required';
-        if (!formData.city) newErrors.city = 'Town / City is required';
-        if (!formData.state) newErrors.state = 'State is required';
-        if (!formData.zip) newErrors.zip = 'ZIP code is required';
-        
+        if (!data.email) newErrors.email = 'Email is required';
+        if (!data.phone) newErrors.phone = 'Phone number is required';
+        if (!data.firstName) newErrors.firstName = 'First name is required';
+        if (!data.lastName) newErrors.lastName = 'Last name is required';
+        if (!data.address) newErrors.address = 'Street address is required';
+        if (!data.city) newErrors.city = 'Town / City is required';
+        if (!data.state) newErrors.state = 'State is required';
+        if (!data.zip) newErrors.zip = 'ZIP code is required';
+
         setFieldErrors(newErrors);
 
         if (Object.keys(newErrors).length > 0) {
@@ -160,7 +161,7 @@ export default function CheckoutPage() {
             return false;
         }
 
-        if (!agreedToTerms) {
+        if (!agreedRef.current) {
             const termsMsg = 'Please check the box to agree to the website terms and conditions.';
             setError(termsMsg);
             setFieldErrors(prev => ({ ...prev, terms: 'required' }));
