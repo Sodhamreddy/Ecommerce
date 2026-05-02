@@ -82,7 +82,7 @@ export default function CheckoutPage() {
     const localShipping = subtotal > 59.99 ? 0 : 5.99;
     const shipping = wcSynced ? wcShipping : localShipping;
     const tax = wcSynced ? getVal(wcCart!.totals.total_tax) / factor : 0;
-    const discount = wcSynced && wcCart!.totals.total_discount ? getVal(wcCart!.totals.total_discount) / factor : 0;
+    const discount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
     const total = wcSynced ? getVal(wcCart!.totals.total_price) / factor : (subtotal + shipping - discount);
     const appliedCoupons = wcCart?.coupons || [];
     totalRef.current = total;
@@ -183,10 +183,17 @@ export default function CheckoutPage() {
                     const ppcp = data.find((g: any) => g.id === 'ppcp-gateway');
                     if (ppcp?.clientId) {
                         setFetchedClientId(ppcp.clientId);
+                    } else {
+                        // No client ID returned from API
+                        console.error('[Checkout] No PayPal Client ID in gateway response:', data);
+                        setError('Payment system configuration error. Please contact support or try again later.');
+                        setGatewaysLoading(false);
+                        return;
                     }
                 }
             } catch (err) {
                 console.error('Failed to fetch gateways:', err);
+                setError('Unable to load payment options. Please refresh the page and try again.');
             } finally {
                 setGatewaysLoading(false);
             }
@@ -203,9 +210,19 @@ export default function CheckoutPage() {
         s.onload = () => setPaypalLoaded(true);
         s.onerror = () => {
             console.error('PayPal SDK failed to load.');
-            setError('Failed to load PayPal. Please try again later.');
+            setError('Failed to load payment system. Please refresh the page or contact support.');
         };
         document.body.appendChild(s);
+
+        // Fail gracefully if SDK doesn't load within 20 seconds
+        const timeout = setTimeout(() => {
+            if (!(window as any).paypal) {
+                console.error('[Checkout] PayPal SDK load timeout');
+                setError('Payment system is taking too long to load. Please refresh the page and try again.');
+            }
+        }, 20000);
+
+        return () => clearTimeout(timeout);
     }, [fetchedClientId]);
 
     // Render PayPal & Card Buttons
@@ -303,14 +320,18 @@ export default function CheckoutPage() {
                     return Promise.reject(err);
                 }
             },
-            onApprove: async (data: any) => {
+            onApprove: async (data: any, actions: any) => {
                 try {
+                    // Capture the PayPal payment before creating the WC order
+                    const captureResult = await actions.order.capture();
+                    const transactionId = captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.id || '';
+
                     const res = await fetch('/api/paypal/complete-order', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             paypalOrderId: data.orderID,
-                            paypalTransactionId: data.facilitatorAccessToken || '', // Some SDK versions provide this
+                            paypalTransactionId: transactionId,
                             cartItems: cartRef.current,
                             formData: formRef.current,
                             createAccount: createAccountRef.current,
@@ -318,16 +339,16 @@ export default function CheckoutPage() {
                         })
                     });
                     const result = await res.json();
-                    if (res.ok && (result.success || result.orderId)) {
+                    if (result.orderId) {
                         clearCart();
-                        router.push(`/checkout/success?order_id=${result.orderId || result.order_id}`);
+                        router.push(`/order-success?id=${result.orderId}`);
                     } else {
-                        throw new Error(result.error || result.message || 'Order creation failed');
+                        throw new Error(result.error || 'Order creation failed. Please contact info@jerseyperfume.com.');
                     }
                 } catch (err: any) {
                     console.error('Order completion error:', err);
                     stopProcessing();
-                    setError(err.message || 'Payment completed but order update failed.');
+                    setError(err.message || 'Payment captured but order could not be placed. Please contact info@jerseyperfume.com.');
                 }
             },
             onCancel: () => { stopProcessing(); },
@@ -378,13 +399,17 @@ export default function CheckoutPage() {
                         throw err;
                     }
                 },
-                onApprove: async (data: any) => {
+                onApprove: async (data: any, actions: any) => {
                     try {
+                        const captureResult = await actions.order.capture();
+                        const transactionId = captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.id || '';
+
                         const res = await fetch('/api/paypal/complete-order', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 paypalOrderId: data.orderID,
+                                paypalTransactionId: transactionId,
                                 cartItems: cartRef.current,
                                 formData: formRef.current,
                                 createAccount: createAccountRef.current,
@@ -392,16 +417,16 @@ export default function CheckoutPage() {
                             })
                         });
                         const result = await res.json();
-                        if (res.ok && (result.success || result.orderId)) {
+                        if (result.orderId) {
                             clearCart();
-                            router.push(`/checkout/success?order_id=${result.orderId || result.order_id}`);
+                            router.push(`/order-success?id=${result.orderId}`);
                         } else {
-                            throw new Error(result.error || result.message || 'Order creation failed');
+                            throw new Error(result.error || 'Order creation failed. Please contact info@jerseyperfume.com.');
                         }
                     } catch (err: any) {
                         console.error('Order completion error:', err);
                         stopProcessing();
-                        setError(err.message || 'Payment completed but order update failed.');
+                        setError(err.message || 'Payment captured but order could not be placed. Please contact info@jerseyperfume.com.');
                     }
                 },
                 onError: (err: any) => {
@@ -459,6 +484,7 @@ export default function CheckoutPage() {
         return () => {
             if (paypalBtnsRef.current) { try { paypalBtnsRef.current.close(); } catch(e) {} }
             if (cardBtnsRef.current) { try { cardBtnsRef.current.close(); } catch(e) {} }
+            cardFieldsInstanceRef.current = null;
         };
     }, [paypalLoaded, selectedGateway, fetchedClientId]);
 
@@ -485,7 +511,8 @@ export default function CheckoutPage() {
             await cardFieldsInstanceRef.current.submit();
         } catch (err: any) {
             console.error('Submit error:', err);
-            setError('Payment submission failed. Please check your details.');
+            setIsProcessing(false);
+            setError(prev => prev || 'Payment submission failed. Please check your details.');
         }
     };
 
