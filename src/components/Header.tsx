@@ -89,7 +89,7 @@ export default function Header() {
               alt="Jersey Perfume"
               width={260}
               height={78}
-              style={{ width: '100%', height: 'auto', maxWidth: '260px' }}
+              style={{ objectFit: 'contain', maxWidth: '100%' }}
               priority
             />
           </Link>
@@ -108,7 +108,7 @@ export default function Header() {
             <div className={styles.cartContainer}>
               <Link href="/cart" className={styles.iconBtn} style={{ gap: '6px' }}>
                 <ShoppingBag size={24} strokeWidth={1.5} />
-                {mounted && <span className={styles.cartCountText}>{cartCount}</span>}
+                {mounted && cartCount > 0 && <span className={styles.cartCountText}>{cartCount}</span>}
               </Link>
               <div className={styles.cartDropdown}>
                 {cart.length === 0 ? (
@@ -116,7 +116,7 @@ export default function Header() {
                 ) : (
                   <>
                     <div className={styles.cartDropdownItems}>
-                      {cart.map((item) => (
+                      {cart.filter(item => item?.product?.id).map((item) => (
                         <div key={item.product.id} className={styles.cartDropdownItem}>
                           <div className={styles.cartDropdownItemImg}>
                             {item.product.images?.[0]?.src && (
@@ -133,7 +133,10 @@ export default function Header() {
                     <div className={styles.cartDropdownFooter}>
                       <div className={styles.cartDropdownTotal}>
                         <span>Subtotal:</span>
-                        <span>${cart.reduce((total, item) => total + (parseInt(item.product.prices?.price || '0') / Math.pow(10, item.product.prices?.currency_minor_unit || 2)) * item.quantity, 0).toFixed(2)}</span>
+                        <span>${cart.filter(item => item?.product?.prices?.price).reduce((total, item) => {
+                          const price = parseFloat(item.product.prices.price) / Math.pow(10, item.product.prices?.currency_minor_unit || 2);
+                          return isNaN(price) ? total : total + (price * item.quantity);
+                        }, 0).toFixed(2)}</span>
                       </div>
                       <div className={styles.cartDropdownActions}>
                         <Link href="/cart" className={styles.viewCartBtn}>View Cart</Link>

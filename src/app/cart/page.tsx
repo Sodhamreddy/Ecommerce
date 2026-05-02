@@ -59,7 +59,7 @@ export default function CartPage() {
                             <div key={item.product.id} className={styles.item}>
                                 <div className={styles.imageContainer}>
                                     <Image
-                                        src={item.product.images[0]?.src || '/placeholder.jpg'}
+                                        src={item.product.images?.[0]?.src || '/placeholder.jpg'}
                                         alt={item.product.name}
                                         width={100}
                                         height={100}

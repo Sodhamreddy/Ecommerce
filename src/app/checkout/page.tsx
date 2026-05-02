@@ -7,8 +7,7 @@ import Image from 'next/image';
 import { ShieldCheck, Lock, Loader2, Truck, RotateCcw, Tag } from 'lucide-react';
 import styles from './Checkout.module.css';
 
-// Dynamic PayPal Client ID fetched from API
-let PAYPAL_CLIENT_ID = ''; 
+// Dynamic PayPal Client ID fetched from API is now handled via state
 
 export default function CheckoutPage() {
     const {
@@ -29,7 +28,7 @@ export default function CheckoutPage() {
 
     // UI state
     const [isProcessing, setIsProcessing] = useState(false);
-    const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
+    const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [couponCode, setCouponCode] = useState('');
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponMsg, setCouponMsg] = useState<{text: string, type: 'error' | 'success'} | null>(null);
@@ -41,7 +40,7 @@ export default function CheckoutPage() {
     const [gateways, setGateways] = useState<any[]>([]);
     const [gatewaysLoading, setGatewaysLoading] = useState(true);
     const [fetchedClientId, setFetchedClientId] = useState<string | null>(null);
-    const [cardFieldsReady, setCardFieldsReady] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     // Refs for stable closures in PayPal callbacks
     const paypalContainerRef = useRef<HTMLDivElement>(null);
@@ -62,10 +61,11 @@ export default function CheckoutPage() {
     const discountRef = useRef(0);
 
     // Calculate totals
-    const getVal = (str?: string) => {
-        if (!str) return 0;
+    const getVal = (str?: any) => {
+        if (!str || typeof str !== 'string') return 0;
         const normalized = str.replace(/[^0-9.]/g, '');
         const val = parseFloat(normalized || '0');
+        if (isNaN(val)) return 0;
         // If the string already contains a decimal point, assume it's NOT in minor units
         if (normalized.includes('.')) return val * factor;
         return val;
@@ -74,18 +74,20 @@ export default function CheckoutPage() {
     const factor = Math.pow(10, minorUnit);
     
     // Use backend totals when item counts match, OR when a coupon is applied (WC owns the authoritative discount total)
-    const wcSubtotal = wcCart ? getVal(wcCart.totals.total_items) / factor : 0;
+    const wcSubtotal = wcCart?.totals?.total_items ? getVal(wcCart.totals.total_items) / factor : 0;
     const itemCountMatch = wcCart?.items?.length === cart.length;
     const hasCoupon = (wcCart?.coupons?.length ?? 0) > 0;
+    // Use WC totals if we have a coupon (WC owns the logic) OR if item counts match perfectly.
+    // This prevents showing local totals when WC has authoritative discount/tax data.
     const wcSynced = wcSubtotal > 0 && (itemCountMatch || hasCoupon);
-    
+
     const subtotal = wcSynced ? wcSubtotal : cartTotal;
-    const wcShipping = wcSynced ? getVal(wcCart!.totals.total_shipping) / factor : 0;
+    const wcShipping = wcSynced && wcCart?.totals?.total_shipping ? getVal(wcCart.totals.total_shipping) / factor : 0;
     const localShipping = subtotal > 59.99 ? 0 : 5.99;
     const shipping = wcSynced ? wcShipping : localShipping;
-    const tax = wcSynced ? getVal(wcCart!.totals.total_tax) / factor : 0;
+    const tax = wcSynced && wcCart?.totals?.total_tax ? getVal(wcCart.totals.total_tax) / factor : 0;
     const discount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
-    const total = wcSynced ? getVal(wcCart!.totals.total_price) / factor : (subtotal + shipping - discount);
+    const total = wcSynced && wcCart?.totals?.total_price ? getVal(wcCart.totals.total_price) / factor : (subtotal + shipping - discount);
     const appliedCoupons = wcCart?.coupons || [];
     totalRef.current = total;
     subtotalRef.current = subtotal;
@@ -99,6 +101,10 @@ export default function CheckoutPage() {
     useEffect(() => { cartRef.current = cart; }, [cart]);
     useEffect(() => { createAccountRef.current = createAccount; }, [createAccount]);
     useEffect(() => { accountPasswordRef.current = accountPassword; }, [accountPassword]);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Auto-fill form from logged-in user
     useEffect(() => {
@@ -237,106 +243,71 @@ export default function CheckoutPage() {
         return () => clearTimeout(timeout);
     }, [fetchedClientId]);
 
-    // Render PayPal & Card Buttons
+    // Render PayPal & Card Buttons — runs once when SDK loads, never on gateway tab switch.
+    // Switching tabs only toggles CSS visibility; tearing down PayPal iframes causes the
+    // "No ack for postMessage" timeout error.
     useEffect(() => {
         if (!paypalLoaded) return;
-        
+
         const paypal = (window as any).paypal;
-        if (!paypal?.Buttons) return;
-
-        // Cleanup existing buttons if any to ensure fresh start
-        if (paypalBtnsRef.current) { 
-            try { paypalBtnsRef.current.close(); } catch(e) {} 
-            paypalBtnsRef.current = null; 
-        }
-        if (cardBtnsRef.current) { 
-            try { cardBtnsRef.current.close(); } catch(e) {} 
-            cardBtnsRef.current = null; 
-        }
-
-        // Explicitly clear field containers to prevent duplicate injections
-        const containers = [
-            'card-name-field-container',
-            'card-number-field-container',
-            'card-expiry-field-container',
-            'card-cvv-field-container'
-        ];
-        containers.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = '';
-        });
+        if (!paypal) return;
 
         const startProcessing = () => {
             setIsProcessing(true);
-            // Safety timeout: if still processing after 45s, reset it
-            const timer = setTimeout(() => {
+            setError(null);
+            if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
+            processingTimeoutRef.current = setTimeout(() => {
                 setIsProcessing(false);
-                setError('Payment is taking longer than expected. Please check your connection or try a different method.');
-            }, 45000);
-            setProcessingTimeout(timer);
+                processingTimeoutRef.current = null;
+                setError('Payment is taking longer than expected. Please refresh and try again, or contact info@jerseyperfume.com.');
+            }, 120000);
         };
 
         const stopProcessing = () => {
             setIsProcessing(false);
-            if (processingTimeout) {
-                clearTimeout(processingTimeout);
-                setProcessingTimeout(null);
+            if (processingTimeoutRef.current) {
+                clearTimeout(processingTimeoutRef.current);
+                processingTimeoutRef.current = null;
             }
         };
 
-        // Common config factory
-        const getConfig = (type: 'paypal' | 'card') => ({ 
-            fundingSource: type === 'paypal' ? paypal.FUNDING.PAYPAL : paypal.FUNDING.CARD,
-            style: { 
-                layout: 'vertical', 
-                color: type === 'paypal' ? 'gold' : 'black', 
-                shape: 'rect', 
+        const makeConfig = (fundingSource?: any) => ({
+            fundingSource,
+            style: {
+                layout: 'vertical',
+                color: fundingSource === paypal.FUNDING.PAYPAL ? 'gold' : 'black',
+                shape: 'rect',
                 label: 'checkout',
-                height: 48 
-            }, 
-            onClick: (data: any, actions: any) => {
-                // Validate before opening the PayPal/Card popup
-                if (validateForm()) {
-                    return actions.resolve();
-                } else {
-                    return actions.reject();
-                }
+                height: 50
             },
-            createOrder: async (data: any, actions: any) => {
-                setError(null);
-                
+            onClick: (data: any, actions: any) => {
                 if (!validateForm()) {
                     return actions.reject();
                 }
-
-                startProcessing();
+                return actions.resolve();
+            },
+            createOrder: async () => {
                 try {
-                    return actions.order.create({
-                        purchase_units: [{
-                            description: 'Jersey Perfume Order',
-                            amount: {
-                                currency_code: 'USD',
-                                value: totalRef.current.toFixed(2),
-                                breakdown: {
-                                    item_total: { currency_code: 'USD', value: subtotalRef.current.toFixed(2) },
-                                    shipping: { currency_code: 'USD', value: shippingRef.current.toFixed(2) },
-                                    tax_total: { currency_code: 'USD', value: taxRef.current.toFixed(2) },
-                                    discount: { currency_code: 'USD', value: discountRef.current.toFixed(2) }
-                                }
-                            }
-                        }]
+                    startProcessing();
+                    const res = await fetch('/api/paypal/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: totalRef.current.toFixed(2) }),
                     });
+                    const data = await res.json();
+                    if (data.id) return data.id;
+                    throw new Error(data.error || 'Failed to create PayPal order');
                 } catch (err: any) {
+                    console.error('PayPal Order Creation Error:', err);
                     stopProcessing();
-                    setError(err.message || 'Payment initialization failed.');
-                    return Promise.reject(err);
+                    setError(err.message || 'Payment system unavailable. Please try again.');
+                    throw err;
                 }
             },
             onApprove: async (data: any, actions: any) => {
                 try {
-                    // Capture the PayPal payment before creating the WC order
-                    const captureResult = await actions.order.capture();
-                    const transactionId = captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.id || '';
+                    const capture = await actions.order.capture();
+                    const transactionId = capture.id;
 
                     const res = await fetch('/api/paypal/complete-order', {
                         method: 'POST',
@@ -344,18 +315,21 @@ export default function CheckoutPage() {
                         body: JSON.stringify({
                             paypalOrderId: data.orderID,
                             paypalTransactionId: transactionId,
-                            cartItems: cartRef.current,
                             formData: formRef.current,
+                            cartItems: cartRef.current,
                             createAccount: createAccountRef.current,
-                            accountPassword: accountPasswordRef.current
-                        })
+                            accountPassword: accountPasswordRef.current,
+                        }),
                     });
+
                     const result = await res.json();
-                    if (result.orderId) {
+                    stopProcessing();
+
+                    if (result.success) {
                         clearCart();
-                        router.push(`/order-success?id=${result.orderId}`);
+                        router.push(`/order-confirmation?id=${result.orderId}&key=${result.orderKey}`);
                     } else {
-                        throw new Error(result.error || 'Order creation failed. Please contact info@jerseyperfume.com.');
+                        throw new Error(result.error || 'Failed to complete order');
                     }
                 } catch (err: any) {
                     console.error('Order completion error:', err);
@@ -365,36 +339,55 @@ export default function CheckoutPage() {
             },
             onCancel: () => { stopProcessing(); },
             onError: (err: any) => {
-                console.error('PayPal Interface Error:', err);
+                console.error('PayPal Error:', err);
                 stopProcessing();
-                // If there's already a specific validation error (like terms), don't overwrite it
                 setError(prev => {
                     if (prev && (prev.includes('terms') || prev.includes('required') || prev.includes('highlighted'))) return prev;
-                    return 'Payment error. Please check your credit card details and try again.';
+                    return 'Payment error. Please check your card details and try again.';
                 });
             }
         });
 
-        // 1. PayPal Button
-        if (paypalContainerRef.current) {
-            paypalBtnsRef.current = paypal.Buttons(getConfig('paypal'));
-            paypalBtnsRef.current.render(paypalContainerRef.current).catch(() => {});
+        // PayPal Yellow Button
+        if (paypalContainerRef.current && !paypalBtnsRef.current) {
+            try {
+                const btns = paypal.Buttons(makeConfig(paypal.FUNDING.PAYPAL));
+                if (btns.isEligible()) {
+                    paypalBtnsRef.current = btns;
+                    btns.render(paypalContainerRef.current).catch((err: any) => {
+                        console.error('[PayPal] Yellow Button Render Error:', err);
+                    });
+                }
+            } catch (err) {
+                console.error('[PayPal] Yellow Button Init Error:', err);
+            }
         }
 
-        // 2. Card Button — opens PayPal's hosted card payment page (no special account permission needed)
-        if (cardContainerRef.current) {
-            cardBtnsRef.current = paypal.Buttons(getConfig('card'));
-            cardBtnsRef.current.render(cardContainerRef.current).catch(() => {});
+        // Standard Black Card Button
+        const cardBtnContainer = document.getElementById('paypal-card-container');
+        if (cardBtnContainer && cardBtnContainer.children.length === 0) {
+            try {
+                const cardBtn = paypal.Buttons(makeConfig(paypal.FUNDING.CARD));
+                if (cardBtn.isEligible()) {
+                    cardBtn.render('#paypal-card-container').catch((err: any) => {
+                        console.error('[PayPal] Black Button Render Error:', err);
+                    });
+                }
+            } catch (err) {
+                console.error('[PayPal] Black Button Init Error:', err);
+            }
         }
-        
+
         return () => {
-            if (paypalBtnsRef.current) { try { paypalBtnsRef.current.close(); } catch(e) {} }
-            if (cardBtnsRef.current) { try { cardBtnsRef.current.close(); } catch(e) {} }
+            if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
+            if (paypalBtnsRef.current) { 
+                try { 
+                    paypalBtnsRef.current.close(); 
+                    paypalBtnsRef.current = null;
+                } catch (_) {} 
+            }
         };
-    }, [paypalLoaded, selectedGateway, fetchedClientId]);
-
-
-
+    }, [paypalLoaded, mounted]);
 
 
     const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -437,7 +430,7 @@ export default function CheckoutPage() {
         }
     };
 
-    if (!cartInitialized) {
+    if (!mounted || !cartInitialized) {
         return (
             <div className={styles.emptyContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
                 <Loader2 size={20} className={styles.spinIcon} />
@@ -474,12 +467,12 @@ export default function CheckoutPage() {
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label>Email Address *</label>
-                                <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email for order tracking" className={fieldErrors.email ? styles.errorInput : ''} />
+                                <input required type="email" name="email" autoComplete="email" value={formData.email} onChange={handleChange} placeholder="Email for order tracking" className={fieldErrors.email ? styles.errorInput : ''} />
                                 {fieldErrors.email && <span className={styles.errorText}>{fieldErrors.email}</span>}
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Phone Number *</label>
-                                <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Mobile number" className={fieldErrors.phone ? styles.errorInput : ''} />
+                                <input required type="tel" name="phone" autoComplete="tel" value={formData.phone} onChange={handleChange} placeholder="Mobile number" className={fieldErrors.phone ? styles.errorInput : ''} />
                                 {fieldErrors.phone && <span className={styles.errorText}>{fieldErrors.phone}</span>}
                             </div>
                         </div>
@@ -490,18 +483,18 @@ export default function CheckoutPage() {
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label>First Name *</label>
-                                <input required type="text" name="firstName" value={formData.firstName} onChange={handleChange} className={fieldErrors.firstName ? styles.errorInput : ''} />
+                                <input required type="text" name="firstName" autoComplete="given-name" value={formData.firstName} onChange={handleChange} className={fieldErrors.firstName ? styles.errorInput : ''} />
                                 {fieldErrors.firstName && <span className={styles.errorText}>{fieldErrors.firstName}</span>}
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Last Name *</label>
-                                <input required type="text" name="lastName" value={formData.lastName} onChange={handleChange} className={fieldErrors.lastName ? styles.errorInput : ''} />
+                                <input required type="text" name="lastName" autoComplete="family-name" value={formData.lastName} onChange={handleChange} className={fieldErrors.lastName ? styles.errorInput : ''} />
                                 {fieldErrors.lastName && <span className={styles.errorText}>{fieldErrors.lastName}</span>}
                             </div>
                         </div>
                         <div className={styles.formGroup}>
                             <label>Company Name (optional)</label>
-                            <input type="text" name="company" value={formData.company} onChange={handleChange} placeholder="Company (optional)" />
+                            <input type="text" name="company" autoComplete="organization" value={formData.company} onChange={handleChange} placeholder="Company (optional)" />
                         </div>
                         <div className={styles.formGroup}>
                             <label>Country / Region *</label>
@@ -535,26 +528,26 @@ export default function CheckoutPage() {
                         </div>
                         <div className={styles.formGroup}>
                             <label>Street Address *</label>
-                            <input required type="text" name="address" value={formData.address} onChange={handleChange} placeholder="House number and street name" className={fieldErrors.address ? styles.errorInput : ''} />
+                            <input required type="text" name="address" autoComplete="address-line1" value={formData.address} onChange={handleChange} placeholder="House number and street name" className={fieldErrors.address ? styles.errorInput : ''} />
                             {fieldErrors.address && <span className={styles.errorText}>{fieldErrors.address}</span>}
                         </div>
                         <div className={styles.formGroup}>
-                            <input type="text" name="address2" value={formData.address2} onChange={handleChange} placeholder="Apartment, suite, unit, etc. (optional)" />
+                            <input type="text" name="address2" autoComplete="address-line2" value={formData.address2} onChange={handleChange} placeholder="Apartment, suite, unit, etc. (optional)" />
                         </div>
                         <div className={styles.formRow}>
                             <div className={styles.formGroup}>
                                 <label>Town / City *</label>
-                                <input required type="text" name="city" value={formData.city} onChange={handleChange} className={fieldErrors.city ? styles.errorInput : ''} />
+                                <input required type="text" name="city" autoComplete="address-level2" value={formData.city} onChange={handleChange} className={fieldErrors.city ? styles.errorInput : ''} />
                                 {fieldErrors.city && <span className={styles.errorText}>{fieldErrors.city}</span>}
                             </div>
                             <div className={styles.formGroup} style={{ flex: '0 0 120px' }}>
                                 <label>State *</label>
-                                <input required type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" className={fieldErrors.state ? styles.errorInput : ''} />
+                                <input required type="text" name="state" autoComplete="address-level1" value={formData.state} onChange={handleChange} placeholder="State" className={fieldErrors.state ? styles.errorInput : ''} />
                                 {fieldErrors.state && <span className={styles.errorText}>{fieldErrors.state}</span>}
                             </div>
                             <div className={styles.formGroup} style={{ flex: '0 0 140px' }}>
                                 <label>ZIP Code *</label>
-                                <input required type="text" name="zip" value={formData.zip} onChange={handleChange} className={fieldErrors.zip ? styles.errorInput : ''} />
+                                <input required type="text" name="zip" autoComplete="postal-code" value={formData.zip} onChange={handleChange} className={fieldErrors.zip ? styles.errorInput : ''} />
                                 {fieldErrors.zip && <span className={styles.errorText}>{fieldErrors.zip}</span>}
                             </div>
                         </div>
@@ -606,7 +599,7 @@ export default function CheckoutPage() {
 
                         {/* Items */}
                         <div className={styles.summaryItems}>
-                            {cart.map((item: CartItem) => (
+                            {cart.filter(item => item?.product?.id).map((item: CartItem) => (
                                 <div key={item.product.id} className={styles.summaryItem}>
                                     <div className={styles.itemImgWrapper}>
                                         {item.product.images?.[0]?.src && (
@@ -623,7 +616,7 @@ export default function CheckoutPage() {
                                     <div className={styles.itemInfo}>
                                         <div className={styles.itemName}>{item.product.name}</div>
                                         <div className={styles.itemPrice}>
-                                            ${((parseInt(item.product.prices.price) / Math.pow(10, item.product.prices.currency_minor_unit || 2)) * item.quantity).toFixed(2)}
+                                            ${((parseInt(item.product.prices?.price || '0') / Math.pow(10, item.product.prices?.currency_minor_unit || 2)) * item.quantity).toFixed(2)}
                                         </div>
                                     </div>
                                 </div>
@@ -655,13 +648,13 @@ export default function CheckoutPage() {
                             {appliedCoupons.length > 0 && (
                                 <div className={styles.appliedCoupons}>
                                     {appliedCoupons.map((c: any) => (
-                                        <div key={c.code} className={styles.appliedCouponTag}>
+                                        <div key={c.code || Math.random().toString()} className={styles.appliedCouponTag}>
                                             <Tag size={12} />
-                                            <span>{c.code.toUpperCase()}</span>
+                                            <span>{(c.code || 'COUPON').toUpperCase()}</span>
                                             {discount === 0 && (
                                                 <span style={{ fontSize: '0.7rem', opacity: 0.65, marginLeft: 2 }}>(free shipping)</span>
                                             )}
-                                            <button type="button" onClick={() => handleRemoveCoupon(c.code)} className={styles.removeCouponBtn}>✕</button>
+                                            <button type="button" onClick={() => handleRemoveCoupon(c.code || '')} className={styles.removeCouponBtn}>✕</button>
                                         </div>
                                     ))}
                                 </div>
@@ -727,24 +720,52 @@ export default function CheckoutPage() {
                                 </div>
                             ) : (
                                 <div className={styles.paymentMethods}>
-                                    {/* PayPal Option */}
-                                    <label className={`${styles.paymentRadio} ${selectedGateway === 'paypal' ? styles.activeRadio : ''}`}>
-                                        <div className={styles.radioLeft}>
-                                            <input
-                                                type="radio"
-                                                name="paymentMethod"
-                                                checked={selectedGateway === 'paypal'}
-                                                onChange={() => setSelectedGateway('paypal')}
-                                            />
-                                            <div>
-                                                <div className={styles.gatewayTitle}>PayPal</div>
-                                                <div className={styles.gatewayDesc}>Pay via PayPal.</div>
+                                    {gateways.map((gw) => (
+                                        <div key={gw.id}>
+                                            <div
+                                                className={`${styles.paymentRadio} ${selectedGateway === (gw.id === 'ppcp-gateway' ? 'paypal' : gw.id) ? styles.activeRadio : ''}`}
+                                                onClick={() => setSelectedGateway(gw.id === 'ppcp-gateway' ? 'paypal' : gw.id)}
+                                            >
+                                                <div className={styles.radioLeft}>
+                                                    <input
+                                                        type="radio"
+                                                        name="paymentMethod"
+                                                        checked={selectedGateway === (gw.id === 'ppcp-gateway' ? 'paypal' : gw.id)}
+                                                        onChange={() => setSelectedGateway(gw.id === 'ppcp-gateway' ? 'paypal' : gw.id)}
+                                                    />
+                                                    <div>
+                                                        <div className={styles.gatewayTitle}>{gw.title}</div>
+                                                        <div className={styles.gatewayDesc}>{gw.description}</div>
+                                                    </div>
+                                                </div>
+                                                {gw.id === 'ppcp-gateway' && (
+                                                <Image 
+                                                    src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png" 
+                                                    alt="PayPal" 
+                                                    width={70} 
+                                                    height={18} 
+                                                    style={{ objectFit: 'contain', opacity: 0.9 }} 
+                                                />
+                                            )}
                                             </div>
-                                        </div>
-                                    </label>
 
-                                    {/* Credit Card Option — specifically handled for ppcp-gateway */}
-                                    <label className={`${styles.paymentRadio} ${selectedGateway === 'paypal-credit' ? styles.activeRadio : ''}`}>
+                                            {/* PayPal Button Container (Always in DOM) */}
+                                            {gw.id === 'ppcp-gateway' && (
+                                                <div
+                                                    ref={paypalContainerRef}
+                                                    id="paypal-button-container"
+                                                    style={{ display: selectedGateway === 'paypal' && !isProcessing ? 'block' : 'none', marginTop: '1rem' }}
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {/* Debit & Credit Cards Option */}
+                                    <div
+                                        className={`${styles.paymentRadio} ${selectedGateway === 'paypal-credit' ? styles.activeRadio : ''}`}
+                                        onClick={() => setSelectedGateway('paypal-credit')}
+                                        style={{ marginTop: '0.7rem' }}
+                                    >
                                         <div className={styles.radioLeft}>
                                             <input
                                                 type="radio"
@@ -754,24 +775,27 @@ export default function CheckoutPage() {
                                             />
                                             <div>
                                                 <div className={styles.gatewayTitle}>Debit & Credit Cards</div>
-                                                <div className={styles.gatewayDesc}>Encrypted & secure.</div>
+                                                <div className={styles.gatewayDesc}>Pay securely with your card via PayPal.</div>
                                             </div>
                                         </div>
                                         <div className={styles.cardIcons}>
                                             <span className={styles.cardIcon}>VISA</span>
-                                            <span className={styles.cardIcon} style={{ background: '#eb001b', color: '#fff', border: 'none' }}>MC</span>
-                                            <span className={styles.cardIcon} style={{ background: '#0070d1', color: '#fff', border: 'none' }}>AMEX</span>
-                                            <span className={styles.cardIcon} style={{ background: '#f68121', color: '#fff', border: 'none' }}>DISC</span>
+                                            <span className={styles.cardIcon}>MC</span>
+                                            <span className={styles.cardIcon}>AMEX</span>
+                                            <span className={styles.cardIcon}>DISC</span>
                                         </div>
-                                    </label>
+                                    </div>
 
-                                    {selectedGateway === 'paypal-credit' && (
-                                        <p style={{ fontSize: '0.82rem', color: '#555', margin: '0.5rem 0 0', padding: '0 0.25rem' }}>
-                                            Click the button below to enter your card details securely on PayPal&apos;s encrypted page. No PayPal account required.
+                                <div className={styles.cardForm} style={{ display: selectedGateway === 'paypal-credit' ? 'block' : 'none', marginTop: '1rem' }}>
+                                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                                        <p className={styles.gatewayDesc} style={{ marginBottom: '1.5rem' }}>
+                                            Pay securely with your Debit or Credit card via PayPal. No account required.
                                         </p>
-                                    )}
+                                        <div id="paypal-card-container" />
+                                    </div>
                                 </div>
-                            )}
+                                </div>
+              )}
 
                             <div style={{ marginTop: '1.5rem' }}>
                                 {isProcessing ? (
@@ -785,20 +809,7 @@ export default function CheckoutPage() {
                                         Finalizing...
                                     </div>
                                 ) : null}
-                                
-                                {/* PayPal Button Container */}
-                                <div
-                                    ref={paypalContainerRef}
-                                    id="paypal-button-container"
-                                    style={{ display: (isProcessing || selectedGateway !== 'paypal') ? 'none' : 'block' }}
-                                />
 
-                                {/* Card Button Container */}
-                                <div
-                                    ref={cardContainerRef}
-                                    id="paypal-card-container"
-                                    style={{ display: (isProcessing || selectedGateway !== 'paypal-credit') ? 'none' : 'block' }}
-                                />
                             </div>
                         </div>
 

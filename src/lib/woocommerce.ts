@@ -301,10 +301,16 @@ export async function updateCartCustomer(data: {
     shipping_address?: { country?: string; state?: string; postcode?: string; city?: string };
 }): Promise<WCCart | null> {
     try {
-        const response = await doMutation('wc/store/v1/cart/update-customer', data);
+        // Try v1 first, then fallback to version-less path if it fails with 404
+        let response = await doMutation('wc/store/v1/cart/update-customer', data);
+        if (response.status === 404) {
+            console.warn('[WooCommerce] v1 update-customer not found, trying fallback...');
+            response = await doMutation('wc/store/cart/update-customer', data);
+        }
         if (!response.ok) return null;
         return await response.json().catch(() => null);
-    } catch {
+    } catch (err) {
+        console.error('[WooCommerce] updateCartCustomer error:', err);
         return null;
     }
 }

@@ -133,9 +133,8 @@ export async function POST(request: Request) {
             ...(nonce ? { 'Nonce': nonce } : {}),
         };
 
-        if (nonce) {
-            if (!finalUrl.includes('?')) finalUrl += '?';
-            finalUrl += `&_wpnonce=${encodeURIComponent(nonce)}&nonce=${encodeURIComponent(nonce)}`;
+        if (nonce && !finalUrl.includes('_wpnonce=')) {
+            finalUrl += (finalUrl.includes('?') ? '&' : '?') + `_wpnonce=${encodeURIComponent(nonce)}`;
         }
 
         const response = await fetch(finalUrl, {

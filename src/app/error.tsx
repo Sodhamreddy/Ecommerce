@@ -35,6 +35,23 @@ export default function GlobalError({ error, reset }: Props) {
             >
                 Something went wrong
             </h2>
+            {error?.message && (
+                <p
+                    style={{
+                        fontSize: "0.8rem",
+                        color: "#c00",
+                        marginBottom: "0.75rem",
+                        maxWidth: "480px",
+                        fontFamily: "monospace",
+                        background: "#fff0f0",
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "4px",
+                        wordBreak: "break-word",
+                    }}
+                >
+                    {error.message}
+                </p>
+            )}
             <p
                 style={{
                     fontSize: "0.95rem",

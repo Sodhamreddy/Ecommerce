@@ -46,12 +46,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const [syncError, setSyncError] = useState<string | null>(null);
     const [cartLoaded, setCartLoaded] = useState(false);
 
-    // Load cart from localStorage on mount
+    // Load cart from localStorage on mount, filtering out any malformed items
+    // that lack the minimum required fields (product.id, product.prices.price, quantity).
     useEffect(() => {
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
             try {
-                setCart(JSON.parse(savedCart));
+                const parsed = JSON.parse(savedCart);
+                if (Array.isArray(parsed)) {
+                    const valid = parsed.filter(
+                        (item: any) =>
+                            item?.product?.id &&
+                            item?.product?.prices?.price &&
+                            typeof item.quantity === 'number'
+                    );
+                    setCart(valid);
+                }
             } catch {
                 setCart([]);
             }
