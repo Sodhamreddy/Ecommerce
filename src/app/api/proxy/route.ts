@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { API_BASE_URL } from '@/lib/config';
+import { SITE_DOMAIN } from '@/lib/config';
 
 export async function GET(request: Request) {
     const url = new URL(request.url);
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     // Construct the backend URL using the more reliable ?rest_route= format.
     // This bypasses many server-side security rules/misconfigurations that block pretty /wp-json/ urls.
     const cleanPath = '/' + path.replace(/^\//, '');
-    const backendUrl = new URL('https://backend.jerseyperfume.com/index.php');
+    const backendUrl = new URL(`${SITE_DOMAIN}/index.php`);
     backendUrl.searchParams.set('rest_route', cleanPath);
     
     // Forward all other query parameters
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     if (!path) return NextResponse.json({ error: 'Missing path' }, { status: 400 });
 
     const cleanPath = '/' + path.replace(/^\//, '');
-    let finalUrl = `https://backend.jerseyperfume.com/index.php?rest_route=${cleanPath}`;
+    let finalUrl = `${SITE_DOMAIN}/index.php?rest_route=${cleanPath}`;
     
     // Pick up the nonce for forwarding
     const nonce = request.headers.get('X-WC-Store-Api-Nonce') || 

@@ -43,7 +43,7 @@ async function ensureNonce(): Promise<void> {
     if (typeof window === 'undefined') return;
     try {
         const isProd = process.env.NODE_ENV === 'production';
-        const url = isProd ? '/api/wc/nonce.php' : '/api/wc/nonce';
+        const url = isProd ? '/api/wc/nonce.php' : '/api/wc/nonce/';
         const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
         if (res.ok) {
             const data = await res.json().catch(() => ({}));
@@ -140,7 +140,7 @@ const getApiUrl = (path: string, params: Record<string, string | number> = {}) =
         return queryString ? `/proxy.php?path=${path}&${queryString}` : `/proxy.php?path=${path}`;
     }
 
-    return queryString ? `/api/proxy?path=${path}&${queryString}` : `/api/proxy?path=${path}`;
+    return queryString ? `/api/proxy/?path=${path}&${queryString}` : `/api/proxy/?path=${path}`;
 };
 
 // ─── Cart Management via local API proxy ───
@@ -357,7 +357,7 @@ export async function getPaymentGateways(): Promise<PaymentGateway[]> {
 
     try {
         const isProd = process.env.NODE_ENV === 'production';
-        const url = isProd ? '/api/wc/payment-gateways.php' : '/api/wc/payment-gateways';
+        const url = isProd ? '/api/wc/payment-gateways.php' : '/api/wc/payment-gateways/';
         const response = await fetch(url, { headers: COMMON_HEADERS, cache: 'no-store' });
         if (!response.ok) {
             console.warn(`[Gateways] API returned status ${response.status}`);

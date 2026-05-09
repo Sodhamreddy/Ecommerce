@@ -624,21 +624,25 @@
 .cardForm {
     background: #fff;
     border: 1px solid #e0e0e0;
-    padding: 1.5rem;
+    padding: 1.1rem;
     border-radius: 4px;
-    margin-top: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-top: 1rem;
+    box-shadow: none;
 }
 
 .cardFieldContainer {
-    height: 46px !important;
-    border: 1px solid #e2e8f0;
+    height: 44px !important;
+    min-height: 44px;
+    border: 1px solid #b7bcc5;
     padding: 0;
-    border-radius: 6px;
+    border-radius: 4px;
     background: #fff;
     display: block;
     position: relative;
     overflow: hidden;
+    cursor: text;
+    pointer-events: auto;
+    z-index: 1;
     transition: all 0.2s ease;
 }
 
@@ -655,7 +659,12 @@
 .cardFieldContainer iframe {
     width: 100% !important;
     height: 100% !important;
+    min-height: 44px !important;
     border: none !important;
+    display: block !important;
+    position: relative !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
 }
 
 .cardFieldContainer :global(.paypal-card-field-focused) {
@@ -684,6 +693,13 @@
 
 .placeOrderBtn:hover { background: #333; }
 .placeOrderBtn:disabled { background: #aaa; cursor: not-allowed; }
+
+.cardError {
+    color: #dc2626;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    margin-top: 0.75rem;
+}
 
 .errorInput {
     border-color: #dc2626 !important;

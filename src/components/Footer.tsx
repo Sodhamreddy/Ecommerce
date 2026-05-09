@@ -126,7 +126,7 @@ export default function Footer() {
           &copy; {mounted ? new Date().getFullYear() : '2026'} JerseyPerfume. All rights reserved. | Powered by Jersey Perfume USA
         </div>
         <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.05em' }}>
-          v1.2.0
+          v1.3.0
         </div>
       </div>
     </footer>

@@ -23,7 +23,7 @@ async function getAccessToken(): Promise<string> {
 
 export async function POST(request: Request) {
     try {
-        const { amount } = await request.json();
+        const { amount, paymentSource } = await request.json();
         const parsed = parseFloat(amount);
         if (!amount || isNaN(parsed) || parsed <= 0) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
@@ -36,6 +36,17 @@ export async function POST(request: Request) {
             body: JSON.stringify({
                 intent: 'CAPTURE',
                 purchase_units: [{ amount: { currency_code: 'USD', value: parsed.toFixed(2) } }],
+                ...(paymentSource === 'card' ? {
+                    payment_source: {
+                        card: {
+                            attributes: {
+                                verification: {
+                                    method: 'SCA_WHEN_REQUIRED',
+                                },
+                            },
+                        },
+                    },
+                } : {}),
             }),
         });
 

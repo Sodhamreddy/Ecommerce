@@ -6,6 +6,36 @@ import nodemailer from 'nodemailer';
 const WC_KEY = process.env.WC_CONSUMER_KEY;
 const WC_SECRET = process.env.WC_CONSUMER_SECRET;
 
+const PAYPAL_API = process.env.PAYPAL_ENV === 'sandbox'
+    ? 'https://api-m.sandbox.paypal.com'
+    : 'https://api-m.paypal.com';
+
+async function getPayPalAccessToken(): Promise<string> {
+    const clientId = process.env.PAYPAL_CLIENT_ID!;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET!;
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=client_credentials',
+        cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`PayPal auth failed (${res.status})`);
+    return (await res.json()).access_token;
+}
+
+async function capturePayPalOrder(orderId: string): Promise<string> {
+    const accessToken = await getPayPalAccessToken();
+    const res = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        cache: 'no-store',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `PayPal capture failed (${res.status})`);
+    return data?.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+}
+
 async function sendOrderConfirmationEmail(order: any, formData: any, cartItems: any[]) {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
     try {
@@ -99,10 +129,16 @@ async function sendOrderConfirmationEmail(order: any, formData: any, cartItems: 
 
 export async function POST(request: Request) {
     try {
-        const { formData, cartItems, paypalOrderId, paypalTransactionId, createAccount, accountPassword } = await request.json();
+        const { formData, cartItems, paypalOrderId, paypalTransactionId, createAccount, accountPassword, shouldCapture } = await request.json();
 
         if (!WC_KEY || !WC_SECRET) {
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        }
+
+        // Hosted Fields flow: capture the PayPal order server-side before creating the WC order
+        let transactionId = paypalTransactionId || '';
+        if (shouldCapture && paypalOrderId) {
+            transactionId = await capturePayPalOrder(paypalOrderId);
         }
 
         const lineItems = (cartItems as any[]).map((item) => ({
@@ -113,7 +149,7 @@ export async function POST(request: Request) {
 
         const metaData: any[] = [
             { key: 'paypal_order_id', value: paypalOrderId },
-            { key: 'paypal_transaction_id', value: paypalTransactionId },
+            { key: 'paypal_transaction_id', value: transactionId },
         ];
 
         const orderData: any = {
