@@ -43,6 +43,7 @@
     border-radius: 8px;
     overflow: hidden;
     margin: 1.5rem 0;
+    background: #f7f7f7;
 }
 
 /* ─── Content Body ─── */
@@ -113,9 +114,10 @@
 .content .wp-block-gallery img {
     width: 100% !important;
     height: 180px !important;
-    object-fit: cover;
+    object-fit: contain;
     margin: 0;
     border-radius: 4px;
+    background: #f7f7f7;
 }
 
 .content figcaption {

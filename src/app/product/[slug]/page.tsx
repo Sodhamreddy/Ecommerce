@@ -1,12 +1,11 @@
 import { fetchProductBySlug, fetchProductsByIDs, fetchProducts as apiFetchProducts } from '@/lib/api';
 import { Metadata } from 'next';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
 import ProductTabs from '@/components/ProductTabs';
 import AddToCartButton from '@/components/AddToCartButton';
 import VariationSelector from '@/components/VariationSelector';
-import ImageZoom from '@/components/ImageZoom';
+import ProductImageGallery from './ProductImageGallery';
 import { Truck, RotateCcw, ShieldCheck, Star, Share2, Heart, Award, Leaf, Droplets, Wind } from 'lucide-react';
 import styles from './ProductPage.module.css';
 
@@ -141,44 +140,7 @@ export default async function ProductPage({ params }: Props) {
         <div className={styles.container}>
             <div className={styles.productLayout}>
                 {/* ── Image Gallery ── */}
-                <div className={styles.imageGallery}>
-                    {/* Thumbnail sidebar */}
-                    {product.images.length > 1 && (
-                        <div className={styles.thumbnailList}>
-                            {product.images.slice(0, 5).map((img, idx) => (
-                                <div key={img.id || idx} className={styles.thumbnailItem}>
-                                    <Image
-                                        src={img.src}
-                                        alt={img.alt || product.name}
-                                        width={70}
-                                        height={70}
-                                        style={{ objectFit: 'contain', borderRadius: '8px' }}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <div className={styles.mainImageBlock}>
-                        {product.images.map((img, index) => (
-                            <div key={img.id || index} className={styles.galleryImageContainer} style={index > 0 ? { marginTop: '1rem' } : {}}>
-                                {index === 0 ? (
-                                    <ImageZoom
-                                        src={img.src}
-                                        alt={img.alt || product.name}
-                                    />
-                                ) : (
-                                    <Image
-                                        src={img.src}
-                                        alt={img.alt || product.name}
-                                        width={800}
-                                        height={800}
-                                        className={styles.galleryImage}
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <ProductImageGallery images={product.images} productName={product.name} />
 
                 {/* ── Info Section ── */}
                 <div className={styles.infoSection}>

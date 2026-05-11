@@ -1129,6 +1129,7 @@
     width: 100%;
     height: 240px;
     overflow: hidden;
+    background: #f7f7f7;
 }
 
 .blogImgWrapper img {

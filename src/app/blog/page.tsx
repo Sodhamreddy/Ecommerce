@@ -50,7 +50,7 @@ export default async function BlogPage() {
                                         src={imgUrl}
                                         alt={post.title.rendered}
                                         fill
-                                        style={{ objectFit: 'cover' }}
+                                        style={{ objectFit: 'contain' }}
                                     />
                                 </div>
                                 <div className={styles.postContent}>

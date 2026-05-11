@@ -289,7 +289,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.editorialLeft}>
+                    <Link href="/product-category/lattafa" className={styles.editorialLeft}>
                         <Image src="/images/lattafa.jpeg" alt="Angham Second Song by Lattafa" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
@@ -425,7 +425,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DUOGFMrDU3Q/" />
                             <h3 className={styles.reelTitle}>Lattafa Angham Second Song</h3>
-                            <Link href="/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
+                            <Link href="/product-category/lattafa" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/p/DNDnLzfC0-Z/" />
@@ -501,7 +501,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                                 return (
                                     <Link href={`/blog/${post.slug}`} key={post.id} className={styles.blogCard}>
                                         <div className={styles.blogImgWrapper}>
-                                            <Image src={imgUrl} alt={post.title.rendered} fill style={{ objectFit: "cover" }} />
+                                            <Image src={imgUrl} alt={post.title.rendered} fill style={{ objectFit: "contain" }} />
                                             <div className={styles.blogCardOverlay} />
                                         </div>
                                         <div className={styles.blogContent}>

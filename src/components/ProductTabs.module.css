@@ -70,6 +70,15 @@
     margin-bottom: 1.5rem;
 }
 
+.description h1,
+.description h2,
+.description h3,
+.description h4,
+.description h5,
+.description h6 {
+    text-align: left !important;
+}
+
 .reviews {
     padding: 1rem 0;
 }
@@ -152,4 +161,4 @@
     color: #fff !important;
     border-color: #000;
     transform: translateY(-2px);
-}
+}
