@@ -72,7 +72,7 @@ export default function AutoSuggestSearch() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (query.trim()) {
-            router.push(`/shop?search=${encodeURIComponent(query)}`);
+            router.push(`/shop/?search=${encodeURIComponent(query)}`);
             setIsOpen(false);
         }
     };

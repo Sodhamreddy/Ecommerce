@@ -383,7 +383,7 @@ export default function CheckoutPage() {
                             const capture = await actions.order.capture();
                             const result = await completeOrder(data.orderID, capture.id);
                             stopProcessing();
-                            if (result.success) { clearCart(); router.push(`/order-confirmation?id=${result.orderId}&key=${result.orderKey}`); }
+                            if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                             else throw new Error(result.error || 'Failed to complete order');
                         } catch (err: any) {
                             stopProcessing();
@@ -461,7 +461,7 @@ export default function CheckoutPage() {
                         }),
                     }).then(r => r.json());
                     stopProcessing();
-                    if (result.success) { clearCart(); router.push(`/order-confirmation?id=${result.orderId}&key=${result.orderKey}`); }
+                    if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                     else throw new Error(result.error || 'Order failed. Please contact info@jerseyperfume.com.');
                 } catch (err: any) {
                     stopProcessing();
@@ -568,7 +568,7 @@ export default function CheckoutPage() {
                             }),
                         }).then(r => r.json());
                         stopProcessing();
-                        if (result.success) { clearCart(); router.push(`/order-confirmation?id=${result.orderId}&key=${result.orderKey}`); }
+                        if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                         else throw new Error(result.error || 'Failed to complete order');
                 } catch (err: any) {
                     stopProcessing();

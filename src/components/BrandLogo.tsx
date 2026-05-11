@@ -6,24 +6,24 @@ interface BrandLogoProps {
 }
 
 const BRAND_LINKS: Record<string, string> = {
-    'DUMONT PARIS': '/shop?search=dumont',
+    'DUMONT PARIS': '/shop/?search=dumont',
     'LATTAFA': '/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/',
-    'RASASI': '/shop?search=rasasi',
-    'AHMED AL MAGHRIBI': '/shop?search=ahmed+al+maghribi',
-    'GIORGIO ARMANI': '/shop?search=armani',
-    'BURBERRY': '/shop?search=burberry',
-    'PACO RABANNE': '/shop?search=paco+rabanne',
-    'GIVENCHY': '/shop?search=givenchy',
-    'JIMMY CHOO': '/shop?search=jimmy+choo',
-    'BVLGARI': '/shop?search=bvlgari',
-    'VERSACE': '/shop?search=versace',
-    'DIOR': '/shop?search=dior',
-    'CHANEL': '/shop?search=chanel',
-    'CREED': '/shop?search=creed',
-    'TOM FORD': '/shop?search=tom+ford',
-    'ARMAF': '/shop?search=armaf',
-    'MAISON ALHAMBRA': '/shop?search=maison+alhambra',
-    'AL HARAMAIN': '/shop?search=al+haramain',
+    'RASASI': '/shop/?search=rasasi',
+    'AHMED AL MAGHRIBI': '/shop/?search=ahmed+al+maghribi',
+    'GIORGIO ARMANI': '/shop/?search=armani',
+    'BURBERRY': '/shop/?search=burberry',
+    'PACO RABANNE': '/shop/?search=paco+rabanne',
+    'GIVENCHY': '/shop/?search=givenchy',
+    'JIMMY CHOO': '/shop/?search=jimmy+choo',
+    'BVLGARI': '/shop/?search=bvlgari',
+    'VERSACE': '/shop/?search=versace',
+    'DIOR': '/shop/?search=dior',
+    'CHANEL': '/shop/?search=chanel',
+    'CREED': '/shop/?search=creed',
+    'TOM FORD': '/shop/?search=tom+ford',
+    'ARMAF': '/shop/?search=armaf',
+    'MAISON ALHAMBRA': '/shop/?search=maison+alhambra',
+    'AL HARAMAIN': '/shop/?search=al+haramain',
 };
 
 const BRAND_LOGOS: Record<string, string> = {
@@ -76,7 +76,7 @@ export default function BrandLogo({ brand }: BrandLogoProps) {
         }
     };
 
-    const href = BRAND_LINKS[brand.toUpperCase()] || `/shop?search=${encodeURIComponent(brand.toLowerCase())}`;
+    const href = BRAND_LINKS[brand.toUpperCase()] || `/shop/?search=${encodeURIComponent(brand.toLowerCase())}`;
     const logoSrc = BRAND_LOGOS[brand.toUpperCase()];
     const showLogo = logoSrc && !logoFailed;
 

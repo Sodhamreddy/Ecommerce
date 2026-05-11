@@ -27,7 +27,7 @@ const FALLBACK_SLIDES: SlideData[] = [
     {
         title: "LUXURY\nFRAGRANCES",
         subtitle: "UP TO 80% OFF RETAIL PRICES",
-        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-1-1.jpg`,
+        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-1-1.jpg`,
         href: "/shop",
         cta: "SHOP COLLECTION",
         accent: '#d4a853'
@@ -35,7 +35,7 @@ const FALLBACK_SLIDES: SlideData[] = [
     {
         title: "EXCLUSIVE\nDEALS",
         subtitle: "AUTHENTIC SCENTS FOR EVERY OCCASION",
-        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-2-1.jpg`,
+        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-2-1.jpg`,
         href: "/shop",
         cta: "DISCOVER MORE",
         accent: '#d4a853'
@@ -43,7 +43,7 @@ const FALLBACK_SLIDES: SlideData[] = [
     {
         title: "NEW\nARRIVALS",
         subtitle: "EXPLORE THE LATEST FROM TOP BRANDS",
-        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-3-1.jpg`,
+        bg: `https://jerseyperfume.com/wp-content/uploads/2025/02/Banner-3-1.jpg`,
         href: "/shop",
         cta: "SHOP NOW",
         accent: '#d4a853'
@@ -87,7 +87,7 @@ function getCategoryImage(cat: Category): string {
     // Hardcoded overrides for key homepage categories
     if (slug.includes('best-sellers')) return "/cat-best-sellers.jpg";
     if (slug.includes('womens-fragrances') || slug === 'womens') return "/cat-womens-fragrances.jpg";
-    if (slug.includes('mens-fragrances') || slug === 'mens') return "https://backend.jerseyperfume.com/wp-content/uploads/2026/04/91laFHfKyL._SL1500_.jpg";
+    if (slug.includes('mens-fragrances') || slug === 'mens') return "https://jerseyperfume.com/wp-content/uploads/2026/04/91laFHfKyL._SL1500_.jpg";
 
     // Default to API image if available
     if (cat.image?.src) return cat.image.src;
@@ -301,7 +301,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                     </Link>
 
                     <div className={styles.editorialRight}>
-                        <Link href="/shop?search=ahmed+al+maghribi" className={styles.editorialSmall}>
+                        <Link href="/shop/?search=ahmed+al+maghribi" className={styles.editorialSmall}>
                             <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
@@ -312,7 +312,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                             </div>
                         </Link>
 
-                        <Link href="/shop?search=tumi" className={styles.editorialSmall}>
+                        <Link href="/shop/?search=tumi" className={styles.editorialSmall}>
                             <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`} alt="TUMI" fill style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
@@ -435,7 +435,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                         <div className={styles.reelWrapper}>
                             <InstagramEmbed url="https://www.instagram.com/reel/DQXk3C6k0pl/" />
                             <h3 className={styles.reelTitle}>Ahmed Al Maghribi</h3>
-                            <Link href="/shop?search=ahmed+al+maghribi" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
+                            <Link href="/shop/?search=ahmed+al+maghribi" className={styles.reelShopBtn} style={{ background: 'linear-gradient(135deg, #ce1126 0%, #d4a853 100%)', color: '#fff', margin: '0 auto', width: 'fit-content', padding: '0.6rem 2rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', gap: '4px' }}>Shop Now <ChevronRight size={14} /></Link>
                         </div>
                     </div>
                 </div>

@@ -120,7 +120,7 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
 
                         <div className={styles.aboutHero} style={{ gridTemplateColumns: '1fr 1.1fr', marginTop: '5rem' }}>
                             <div className={styles.aboutHeroImage}>
-                                <Image src="https://backend.jerseyperfume.com/wp-content/uploads/2026/04/91laFHfKyL._SL1500_.jpg" alt="Curated Classics" width={600} height={600} style={{ objectFit: 'cover' }} />
+                                <Image src="https://jerseyperfume.com/wp-content/uploads/2026/04/91laFHfKyL._SL1500_.jpg" alt="Curated Classics" width={600} height={600} style={{ objectFit: 'cover' }} />
                             </div>
                             <div className={styles.aboutHeroText}>
                                 <h2>Curation Without Borders</h2>
