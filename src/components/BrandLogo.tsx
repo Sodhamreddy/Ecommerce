@@ -7,7 +7,7 @@ interface BrandLogoProps {
 
 const BRAND_LINKS: Record<string, string> = {
     'DUMONT PARIS': '/shop/?search=dumont',
-    'LATTAFA': '/product/lattafa-angham-second-song-eau-de-parfum-100ml-unisex-oriental-vanilla-fragrance-long-lasting-sweet-creamy-scent/',
+    'LATTAFA': '/shop?search=lattafa',
     'RASASI': '/shop/?search=rasasi',
     'AHMED AL MAGHRIBI': '/shop/?search=ahmed+al+maghribi',
     'GIORGIO ARMANI': '/shop/?search=armani',

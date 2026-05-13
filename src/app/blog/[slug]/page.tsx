@@ -95,7 +95,7 @@ export default async function BlogPostPage({ params }: Props) {
                             src={imgUrl}
                             alt={featuredMedia?.alt_text || 'Featured image'}
                             fill
-                            style={{ objectFit: 'contain' }}
+                            style={{ objectFit: 'cover' }}
                             priority
                         />
                     </div>
