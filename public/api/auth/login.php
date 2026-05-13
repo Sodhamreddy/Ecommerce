@@ -11,8 +11,8 @@ $username = trim($data['username'] ?? '');
 $password = $data['password'] ?? '';
 if (!$username || !$password) { http_response_code(400); echo json_encode(['error' => 'Username and password are required.']); exit; }
 
-$WP = 'https://jerseyperfume.com/wp-json';
-$SITE = 'https://jerseyperfume.com';
+$WP = 'https://backend.jerseyperfume.com/wp-json';
+$SITE = 'https://backend.jerseyperfume.com';
 $CK = ''; $CS = ''; // WC consumer keys — set via env if available
 if (function_exists('getenv')) { $CK = getenv('WC_CONSUMER_KEY') ?: ''; $CS = getenv('WC_CONSUMER_SECRET') ?: ''; }
 

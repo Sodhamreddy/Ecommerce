@@ -15,7 +15,7 @@ $password = $data['password'] ?? '';
 
 if (!$id) { http_response_code(400); echo json_encode(['error' => 'User ID is required.']); exit; }
 
-$WP = 'https://jerseyperfume.com/wp-json';
+$WP = 'https://backend.jerseyperfume.com/wp-json';
 $CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
 $CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
 

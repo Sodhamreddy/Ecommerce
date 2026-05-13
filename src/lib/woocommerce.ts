@@ -761,7 +761,7 @@ export interface SlideData {
  * });
  *
  * After activating, the endpoint is live at:
- *   GET https://jerseyperfume.com/wp-json/jersey/v1/slides?id=2
+ *   GET https://backend.jerseyperfume.com/wp-json/jersey/v1/slides?id=2
  * ────────────────────────────────────────────────────────────────────────────
  *
  * Falls back to hardcoded slides if the endpoint is not yet set up.

@@ -10,7 +10,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 $user_login = trim($data['user_login'] ?? '');
 if (!$user_login) { http_response_code(400); echo json_encode(['error' => 'Email is required.']); exit; }
 
-$SITE = 'https://jerseyperfume.com';
+$SITE = 'https://backend.jerseyperfume.com';
 $WP = "$SITE/wp-json";
 
 // Try WordPress native lost-password endpoint
