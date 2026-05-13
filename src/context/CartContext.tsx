@@ -184,6 +184,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         try {
             const result = await applyCoupon(code);
             if (result && 'items' in result) {
+                console.log('[Coupon] WC cart totals:', JSON.stringify(result.totals));
+                console.log('[Coupon] WC coupons:', JSON.stringify(result.coupons));
                 setWcCart(result);
                 // Sync WC cart item keys back into local cart so future mutations work
                 setCart(prev => prev.map(item => {

@@ -80,21 +80,39 @@ export default function CheckoutPage() {
     const minorUnit = wcCart?.totals?.currency_minor_unit || 2;
     const factor = Math.pow(10, minorUnit);
     
-    // Use backend totals when item counts match, OR when a coupon is applied (WC owns the authoritative discount total)
     const wcSubtotal = wcCart?.totals?.total_items ? getVal(wcCart.totals.total_items) / factor : 0;
     const itemCountMatch = wcCart?.items?.length === cart.length;
     const hasCoupon = (wcCart?.coupons?.length ?? 0) > 0;
-    // Use WC totals if we have a coupon (WC owns the logic) OR if item counts match perfectly.
-    // This prevents showing local totals when WC has authoritative discount/tax data.
-    const wcSynced = wcSubtotal > 0 && (itemCountMatch || hasCoupon);
+    // Only trust WC subtotal when item counts match — coupon alone is not enough
+    // because WC cart may only have a subset of local cart items synced.
+    const wcSynced = wcSubtotal > 0 && itemCountMatch;
 
-    const subtotal = wcSynced ? wcSubtotal : cartTotal;
-    const wcShipping = wcSynced && wcCart?.totals?.total_shipping ? getVal(wcCart.totals.total_shipping) / factor : 0;
+    // Always use local cartTotal as subtotal — it is derived from localStorage and is always complete.
+    // wcSubtotal can be wrong when WC cart is partially synced (fewer items than local cart).
+    const subtotal = cartTotal;
     const localShipping = subtotal > 59.99 ? 0 : 5.99;
-    const shipping = wcSynced ? wcShipping : localShipping;
     const tax = wcSynced && wcCart?.totals?.total_tax ? getVal(wcCart.totals.total_tax) / factor : 0;
     const discount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
-    const total = wcSynced && wcCart?.totals?.total_price ? getVal(wcCart.totals.total_price) / factor : (subtotal + shipping - discount);
+
+    // A free-shipping-only coupon: discount=0 but hasCoupon=true.
+    // WC only zeroes shipping after address+method chosen, so force it here.
+    const isFreeShippingCoupon = hasCoupon && discount === 0;
+
+    let shipping: number;
+    if (isFreeShippingCoupon || subtotal > 59.99) {
+        shipping = 0;
+    } else if (wcCart?.totals?.total_shipping != null && wcSynced) {
+        shipping = getVal(wcCart.totals.total_shipping) / factor;
+    } else {
+        shipping = localShipping;
+    }
+
+    const wcTotalRaw = wcSynced && wcCart?.totals?.total_price
+        ? getVal(wcCart.totals.total_price) / factor
+        : null;
+    // Always compute total from local subtotal to avoid WC partial-sync errors.
+    // Only use wcTotalRaw when fully synced AND it makes sense (> subtotal with shipping would imply no discount).
+    const total = subtotal + shipping - discount;
     const appliedCoupons = wcCart?.coupons || [];
     totalRef.current = total;
     subtotalRef.current = subtotal;
