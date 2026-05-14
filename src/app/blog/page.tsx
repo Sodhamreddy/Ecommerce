@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { fetchWithRetry, delay } from '@/lib/fetch-utils';
 import styles from './Blog.module.css';
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export const metadata: Metadata = {
     title: 'The Fragrance Blog | Jersey Perfume',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 async function getPosts() {
     try {
-        const res = await fetchWithRetry(`${API_BASE_URL}/wp/v2/posts?_embed`, { next: { revalidate: 3600 } }, 3, 1000, 'Blog');
+        const res = await fetchWithRetry(`${API_BASE_URL}/wp/v2/posts?per_page=100&_embed`, { next: { revalidate: 60 } }, 3, 1000, 'Blog');
         if (!res.ok) {
             console.warn('[Blog] Failed to fetch posts:', res.status);
             return [];

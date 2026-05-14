@@ -150,6 +150,7 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
                                     .replace(/info@backend\.jerseyperfume\.com/g, 'info@jerseyperfume.com')
                                     .replace(/info@jerseyparfums\.com/g, 'info@jerseyperfume.com')
                                     .replace(/support@jerseyperfume\.com/g, 'info@jerseyperfume.com')
+                                    .replace(/https:\/\/jerseyperfume\.com\/index\.php\/refund-policy\/?/g, '/info/refund-policy')
                             }}
                         />
                     </div>

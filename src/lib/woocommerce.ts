@@ -714,7 +714,7 @@ export interface SlideData {
  *       global $wpdb;
  *       $id     = intval($req->get_param('id') ?: 2);
  *       $slides = $wpdb->get_results($wpdb->prepare(
- *         "SELECT thumbnail, params FROM {$wpdb->prefix}nextend2_smartslider3_slides
+ *         "SELECT thumbnail, params, slide FROM {$wpdb->prefix}nextend2_smartslider3_slides
  *          WHERE slider = %d AND published = 1 ORDER BY ordering ASC", $id
  *       ));
  *       $out = [];
@@ -725,34 +725,38 @@ export interface SlideData {
  *         if (!$bg) continue;
  *         if (!str_starts_with($bg, 'http')) $bg = get_site_url() . '/' . ltrim($bg, '/');
  *
+ *         // 1. Check params for link
  *         $raw_link = $p['link'] ?? $p['background']['link'] ?? '';
- *         
- *         // Fallback: If the link is on a Button or Image Layer instead of the background
+ *
+ *         // 2. If not found, walk the slide layer data (where SmartSlider stores button/image links)
  *         if (empty($raw_link) && !empty($s->slide)) {
- *             $layer_data = json_decode($s->slide, true);
- *             if (is_array($layer_data)) {
- *                 array_walk_recursive($layer_data, function($value, $key) use (&$raw_link) {
- *                     if (($key === 'href' || $key === 'url' || $key === 'link') && is_string($value) && strlen($value) > 3) {
- *                         if (empty($raw_link) && $value !== '#' && $value !== '/shop') {
- *                             $raw_link = $value;
- *                         }
- *                     }
- *                 });
- *             }
+ *           $layer_data = json_decode($s->slide, true);
+ *           if (is_array($layer_data)) {
+ *             $found = '';
+ *             array_walk_recursive($layer_data, function($value, $key) use (&$found) {
+ *               if (!empty($found)) return;
+ *               if (in_array($key, ['href', 'url', 'link'], true) && is_string($value) && strlen($value) > 3 && $value !== '#' && $value !== '/shop') {
+ *                 $found = $value;
+ *               }
+ *             });
+ *             if (!empty($found)) $raw_link = $found;
+ *           }
  *         }
  *
+ *         // 3. Normalise to a relative path
  *         $href = '/shop';
  *         if (is_string($raw_link) && strpos($raw_link, '|*|') !== false) {
- *             $href = explode('|*|', $raw_link)[0];
+ *           $href = explode('|*|', $raw_link)[0];
  *         } elseif (is_string($raw_link) && !empty($raw_link)) {
- *             $href = $raw_link;
+ *           $href = $raw_link;
  *         } elseif (is_array($raw_link) && isset($raw_link['href'])) {
- *             $href = $raw_link['href'];
+ *           $href = $raw_link['href'];
  *         }
- *         
- *         // Clean up SmartSlider internal path references
- *         if (str_starts_with($href, 'article')) $href = '/shop';
- *         
+ *
+ *         // Strip domain so links are always relative
+ *         $href = preg_replace('#^https?://(backend\.)?jerseyperfume\.com(/index\.php)?#', '', $href);
+ *         if (empty($href) || str_starts_with($href, 'article')) $href = '/shop';
+ *
  *         $out[] = ['bg' => $bg, 'href' => $href, 'cta' => 'SHOP NOW'];
  *       }
  *       return rest_ensure_response($out);
@@ -768,6 +772,8 @@ export interface SlideData {
  */
 export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<SlideData[]> {
     const fallback: SlideData[] = [
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/05/Memorial-Day-Banner-1.png`,   href: '/shop',                                                              cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/05/Jersey-Banner-12.png`,       href: '/product/pride-new-york-the-city-of-dreams-by-lattafa-edp-3-4-oz/', cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-11.png`,       href: '/product/kaaf-noir-by-ahmed-al-maghribi-extrait-de-parfum-3-4-oz/', cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-10.png`,       href: '/product/nitro-gold-by-dumont-extrait-de-parfum-3-4-oz-for-men/', cta: 'SHOP NOW',     accent: '#d4a853' },
         { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/product-category/womens-fragrances', cta: "SHOP WOMEN'S", accent: '#d4a853' },
@@ -792,7 +798,10 @@ export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<Slid
         return slides.map((s: any): SlideData => {
             const bg = (s.bg || '').replace('$upload$', 'wp-content/uploads');
             const fallbackSlide = fallback.find(f => bg.includes(f.bg.split('/').pop() || '!!!'));
-            const href = s.href && s.href !== '/shop' ? s.href : (fallbackSlide?.href || '/shop');
+            const rawHref = (s.href || '')
+                .replace(/https?:\/\/(?:backend\.)?jerseyperfume\.com\/index\.php/g, '')
+                .replace(/https?:\/\/(?:backend\.)?jerseyperfume\.com/g, '');
+            const href = rawHref && rawHref !== '/shop' ? rawHref : (fallbackSlide?.href || '/shop');
             return {
                 bg,
                 href,
