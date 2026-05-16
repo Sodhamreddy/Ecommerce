@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/config';
 import { fetchWithRetry } from '@/lib/fetch-utils';
 
+type RegisterResponse = {
+    id?: number;
+    code?: string;
+    message?: string;
+};
+
 export async function POST(request: Request) {
     const { email, password, first_name, last_name } = await request.json();
 
@@ -49,16 +55,16 @@ export async function POST(request: Request) {
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, first_name, last_name }),
+                body: JSON.stringify({ email, username: email, password, first_name, last_name }),
             },
             3, 1000, 'RegisterCreate'
         );
 
-        const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({})) as RegisterResponse;
 
         if (!res.ok) {
-            const msg = (data as any).message || '';
-            const code = (data as any).code || '';
+            const msg = data.message || '';
+            const code = data.code || '';
             if (msg.toLowerCase().includes('exists') || msg.toLowerCase().includes('registered')) {
                 return NextResponse.json(
                     { error: 'An account with this email already exists. Please log in.' },
@@ -77,8 +83,8 @@ export async function POST(request: Request) {
             );
         }
 
-        return NextResponse.json({ success: true, user_id: (data as any).id });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message || 'Registration error.' }, { status: 500 });
+        return NextResponse.json({ success: true, user_id: data.id });
+    } catch (e: unknown) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : 'Registration error.' }, { status: 500 });
     }
 }

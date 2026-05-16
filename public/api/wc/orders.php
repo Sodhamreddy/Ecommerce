@@ -5,17 +5,17 @@ header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
+require_once __DIR__ . '/../config.php';
+
 $customer = intval($_GET['customer'] ?? 0);
 if (!$customer) { echo json_encode([]); exit; }
 
-$WP = 'https://backend.jerseyperfume.com/wp-json';
-$CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
-$CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
-
-if (!$CK || !$CS) { echo json_encode([]); exit; }
+$WP = WP_BASE;
+$CK = WC_CK;
+$CS = WC_CS;
 
 $ctx = stream_context_create(['http' => ['method' => 'GET', 'header' => "Authorization: Basic " . base64_encode("$CK:$CS"), 'timeout' => 10, 'ignore_errors' => true], 'ssl' => ['verify_peer' => false]]);
-$resp = @file_get_contents("$WP/wc/v3/orders?customer=$customer&per_page=20&consumer_key=$CK&consumer_secret=$CS", false, $ctx);
+$resp = @file_get_contents("$WP/wc/v3/orders?customer=$customer&per_page=100&orderby=date&order=desc&consumer_key=$CK&consumer_secret=$CS", false, $ctx);
 $orders = $resp ? json_decode($resp, true) : [];
 
 if (!is_array($orders)) { echo json_encode([]); exit; }

@@ -14,19 +14,26 @@ $last_name = trim($data['last_name'] ?? '');
 
 if (!$email || !$password) { http_response_code(400); echo json_encode(['error' => 'Email and password are required.']); exit; }
 
-$WP = 'https://backend.jerseyperfume.com/wp-json';
-$CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
-$CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
+require_once __DIR__ . '/../config.php';
+$WP = WP_BASE;
+$CK = WC_CK;
+$CS = WC_CS;
 
 if (!$CK || !$CS) { http_response_code(500); echo json_encode(['error' => 'Registration is currently unavailable. Please contact support.']); exit; }
 
-$body = json_encode(['email' => $email, 'password' => $password, 'first_name' => $first_name, 'last_name' => $last_name, 'username' => $email]);
+$body = json_encode([
+    'email' => $email,
+    'username' => $email,
+    'password' => $password,
+    'first_name' => $first_name,
+    'last_name' => $last_name,
+]);
 $ctx = stream_context_create(['http' => ['method' => 'POST', 'header' => "Content-Type: application/json\r\nAuthorization: Basic " . base64_encode("$CK:$CS"), 'content' => $body, 'timeout' => 10, 'ignore_errors' => true], 'ssl' => ['verify_peer' => false]]);
-$resp = @file_get_contents("$WP/wc/v2/customers", false, $ctx);
+$resp = @file_get_contents("$WP/wc/v3/customers", false, $ctx);
 $d = $resp ? json_decode($resp, true) : null;
 
 if (!empty($d['id'])) {
-    echo json_encode(['success' => true, 'message' => 'Account created successfully.']);
+    echo json_encode(['success' => true, 'user_id' => $d['id'], 'message' => 'Account created successfully.']);
 } else {
     $msg = $d['message'] ?? ($d['error'] ?? 'Registration failed. The email may already be in use.');
     http_response_code(400);

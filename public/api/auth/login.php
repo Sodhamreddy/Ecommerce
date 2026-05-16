@@ -11,10 +11,11 @@ $username = trim($data['username'] ?? '');
 $password = $data['password'] ?? '';
 if (!$username || !$password) { http_response_code(400); echo json_encode(['error' => 'Username and password are required.']); exit; }
 
-$WP = 'https://backend.jerseyperfume.com/wp-json';
-$SITE = 'https://backend.jerseyperfume.com';
-$CK = ''; $CS = ''; // WC consumer keys — set via env if available
-if (function_exists('getenv')) { $CK = getenv('WC_CONSUMER_KEY') ?: ''; $CS = getenv('WC_CONSUMER_SECRET') ?: ''; }
+require_once __DIR__ . '/../config.php';
+$WP   = WP_BASE;
+$SITE = SITE_URL;
+$CK   = WC_CK;
+$CS   = WC_CS;
 
 function wp_http($method, $url, $body = null, $headers = []) {
     $opts = ['method' => $method, 'header' => implode("\r\n", $headers), 'timeout' => 10, 'ignore_errors' => true];

@@ -5,9 +5,10 @@ header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
-$WP = 'https://backend.jerseyperfume.com/wp-json';
-$CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
-$CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
+require_once __DIR__ . '/../config.php';
+$WP = WP_BASE;
+$CK = WC_CK;
+$CS = WC_CS;
 
 $ALLOWED = ['ppcp-gateway', 'ppcp-credit-card-gateway', 'stripe', 'woocommerce_payments', 'cod', 'paypal'];
 $LABELS  = [

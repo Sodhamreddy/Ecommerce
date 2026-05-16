@@ -15,11 +15,10 @@ $password = $data['password'] ?? '';
 
 if (!$id) { http_response_code(400); echo json_encode(['error' => 'User ID is required.']); exit; }
 
-$WP = 'https://backend.jerseyperfume.com/wp-json';
-$CK = function_exists('getenv') ? (getenv('WC_CONSUMER_KEY') ?: '') : '';
-$CS = function_exists('getenv') ? (getenv('WC_CONSUMER_SECRET') ?: '') : '';
-
-if (!$CK || !$CS) { http_response_code(500); echo json_encode(['error' => 'Account update is currently unavailable.']); exit; }
+require_once __DIR__ . '/../config.php';
+$WP = WP_BASE;
+$CK = WC_CK;
+$CS = WC_CS;
 
 $payload = ['first_name' => $first_name, 'last_name' => $last_name, 'email' => $email];
 if ($password) $payload['password'] = $password;
