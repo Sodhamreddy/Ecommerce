@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/bridge2cart/:path*',
+        destination: 'https://backend.jerseyperfume.com/bridge2cart/:path*',
+        permanent: false,
+      },
+      {
         source: '/sitemap-0.xml',
         destination: '/sitemap.xml',
         permanent: true,
@@ -151,16 +156,6 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
     ];
-  },
-  async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/bridge2cart/:path*',
-          destination: 'https://backend.jerseyperfume.com/bridge2cart/:path*',
-        },
-      ],
-    };
   },
 };
 
