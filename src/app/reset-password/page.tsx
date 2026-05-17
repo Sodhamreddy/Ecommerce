@@ -10,6 +10,7 @@ function ResetPasswordForm() {
 
     const key   = searchParams.get('key')   || '';
     const login = searchParams.get('login') || '';
+    const token = searchParams.get('token') || '';
 
     const [password, setPassword]       = useState('');
     const [confirm, setConfirm]         = useState('');
@@ -20,8 +21,8 @@ function ResetPasswordForm() {
     const [success, setSuccess]         = useState(false);
 
     useEffect(() => {
-        if (!key || !login) setError('Invalid or expired reset link. Please request a new one.');
-    }, [key, login]);
+        if (!token && (!key || !login)) setError('Invalid or expired reset link. Please request a new one.');
+    }, [key, login, token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,14 +35,14 @@ function ResetPasswordForm() {
             const res = await fetch('/api/auth/confirm-reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key, login, password }),
+                body: JSON.stringify({ key, login, token, password }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to reset password.');
             setSuccess(true);
             setTimeout(() => router.push('/account/'), 3000);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to reset password.');
         } finally {
             setLoading(false);
         }
@@ -61,7 +62,7 @@ function ResetPasswordForm() {
                         {error && (
                             <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '4px', padding: '0.75rem', color: '#dc2626', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
                                 {error}
-                                {(!key || !login) && (
+                                {(!token && (!key || !login)) && (
                                     <div style={{ marginTop: '0.75rem' }}>
                                         <a href="/account/" style={{ color: '#151c39', fontWeight: 600, textDecoration: 'underline' }}>← Request a new reset link</a>
                                     </div>
@@ -69,7 +70,7 @@ function ResetPasswordForm() {
                             </div>
                         )}
 
-                        {key && login && (
+                        {(token || (key && login)) && (
                             <form onSubmit={handleSubmit}>
                                 <div style={{ marginBottom: '1.25rem' }}>
                                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem', color: '#333' }}>New Password *</label>
