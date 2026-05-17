@@ -53,6 +53,7 @@ export default function RootLayout({
           <main>{children}</main>
           <Footer />
         </CartProvider>
+        <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('load',function(){var w=document.createElement('charla-widget');w.setAttribute('p','a8d2503d-958a-47bd-802b-0a27220a8b1c');document.body.appendChild(w);var s=document.createElement('script');s.src='https://app.charla.com/widget/widget.js';document.body.appendChild(s);});` }} />
       </body>
     </html>
   );
