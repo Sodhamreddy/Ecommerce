@@ -42,7 +42,16 @@ function serveFile(res, filePath) {
 
 const server = http.createServer((req, res) => {
   // Strip query string and decode URI
-  const urlPath = decodeURIComponent(req.url.split('?')[0]);
+  const [rawUrlPath, queryString] = req.url.split('?');
+  const urlPath = decodeURIComponent(rawUrlPath);
+
+  if (urlPath === '/bridge2cart/bridge.php') {
+    const location = `https://backend.jerseyperfume.com/bridge2cart/bridge.php${queryString ? `?${queryString}` : ''}`;
+    res.writeHead(307, { Location: location });
+    res.end();
+    return;
+  }
+
   let filePath = path.join(STATIC_DIR, urlPath);
 
   fs.stat(filePath, (err, stat) => {

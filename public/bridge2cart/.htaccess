@@ -1,2 +1,2 @@
 RewriteEngine On
-RewriteRule ^(.*)$ https://backend.jerseyperfume.com/bridge2cart/$1 [R=302,L]
+RewriteRule ^bridge\.php$ https://backend.jerseyperfume.com/bridge2cart/bridge.php [R=307,L,NE]
