@@ -152,6 +152,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/bridge2cart/:path*',
+          destination: 'https://backend.jerseyperfume.com/bridge2cart/:path*',
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;

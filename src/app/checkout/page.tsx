@@ -364,7 +364,10 @@ export default function CheckoutPage() {
             const res = await fetch('/api/paypal/create-order/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: totalRef.current.toFixed(2) }),
+                body: JSON.stringify({
+                    amount: totalRef.current.toFixed(2),
+                    cartItems: cartRef.current,
+                }),
             });
             const data = await res.json();
             if (!data.id) throw new Error(data.error || 'Failed to create PayPal order');
@@ -458,7 +461,11 @@ export default function CheckoutPage() {
                 const res = await fetch('/api/paypal/create-order/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: totalRef.current.toFixed(2), paymentSource: 'card' }),
+                    body: JSON.stringify({
+                        amount: totalRef.current.toFixed(2),
+                        paymentSource: 'card',
+                        cartItems: cartRef.current,
+                    }),
                 });
                 const d = await res.json();
                 if (!d.id) throw new Error(d.error || 'Failed to create order');
@@ -563,7 +570,11 @@ export default function CheckoutPage() {
                     const res = await fetch('/api/paypal/create-order/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ amount: totalRef.current.toFixed(2), paymentSource: 'card' }),
+                        body: JSON.stringify({
+                            amount: totalRef.current.toFixed(2),
+                            paymentSource: 'card',
+                            cartItems: cartRef.current,
+                        }),
                     });
                     const data = await res.json();
                     if (!data.id) throw new Error(data.error || 'Failed to create PayPal order');

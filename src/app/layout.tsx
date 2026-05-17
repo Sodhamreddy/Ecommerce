@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
+import Script from "next/script";
 
 const mulish = Mulish({
   subsets: ["latin"],
@@ -53,7 +54,26 @@ export default function RootLayout({
           <main>{children}</main>
           <Footer />
         </CartProvider>
-        <script dangerouslySetInnerHTML={{ __html: `window.addEventListener('load',function(){var w=document.createElement('charla-widget');w.setAttribute('p','a8d2503d-958a-47bd-802b-0a27220a8b1c');document.body.appendChild(w);var s=document.createElement('script');s.src='https://app.charla.com/widget/widget.js';document.body.appendChild(s);});` }} />
+        <Script id="charla-widget-loader" strategy="afterInteractive">
+          {`
+            (function () {
+              var projectId = 'a8d2503d-958a-47bd-802b-0a27220a8b1c';
+
+              if (!document.querySelector('charla-widget[p="' + projectId + '"]')) {
+                var widgetElement = document.createElement('charla-widget');
+                widgetElement.setAttribute('p', projectId);
+                document.body.appendChild(widgetElement);
+              }
+
+              if (!document.querySelector('script[src="https://app.charla.com/widget/widget.js"]')) {
+                var widgetCode = document.createElement('script');
+                widgetCode.src = 'https://app.charla.com/widget/widget.js';
+                widgetCode.async = true;
+                document.body.appendChild(widgetCode);
+              }
+            })();
+          `}
+        </Script>
       </body>
     </html>
   );

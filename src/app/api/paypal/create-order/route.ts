@@ -5,6 +5,68 @@ const PAYPAL_API = process.env.PAYPAL_ENV === 'sandbox'
     ? 'https://api-m.sandbox.paypal.com'
     : 'https://api-m.paypal.com';
 
+type PayPalCartItem = {
+    product?: {
+        id?: number;
+        name?: string;
+        slug?: string;
+        prices?: {
+            price?: string;
+            currency_minor_unit?: number;
+        };
+    };
+    quantity?: number;
+};
+
+function toMoney(value: number) {
+    return value.toFixed(2);
+}
+
+function buildPayPalItems(cartItems: PayPalCartItem[] | undefined, expectedTotal: number) {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+        return null;
+    }
+
+    const items = cartItems.map((item) => {
+        const product = item.product || {};
+        const quantity = Math.max(1, Number(item.quantity || 1));
+        const minorUnit = product.prices?.currency_minor_unit || 2;
+        const rawPrice = Number.parseInt(product.prices?.price || '0', 10);
+        const unitPrice = rawPrice / Math.pow(10, minorUnit);
+
+        if (!product.id || !product.name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+            return null;
+        }
+
+        return {
+            name: product.name.slice(0, 127),
+            quantity: String(quantity),
+            sku: String(product.id),
+            category: 'PHYSICAL_GOODS',
+            unit_amount: {
+                currency_code: 'USD',
+                value: toMoney(unitPrice),
+            },
+            ...(product.slug ? { url: `https://jerseyperfume.com/product/${product.slug}/` } : {}),
+        };
+    }).filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+    if (items.length === 0) return null;
+
+    const itemTotal = items.reduce((sum, item) => {
+        return sum + Number(item.unit_amount.value) * Number(item.quantity);
+    }, 0);
+
+    if (Math.abs(itemTotal - expectedTotal) > 0.01) {
+        return null;
+    }
+
+    return {
+        items,
+        itemTotal: toMoney(itemTotal),
+    };
+}
+
 async function getAccessToken(): Promise<string> {
     const clientId = process.env.PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -23,19 +85,36 @@ async function getAccessToken(): Promise<string> {
 
 export async function POST(request: Request) {
     try {
-        const { amount, paymentSource } = await request.json();
+        const { amount, paymentSource, cartItems } = await request.json();
         const parsed = parseFloat(amount);
         if (!amount || isNaN(parsed) || parsed <= 0) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
         }
 
         const accessToken = await getAccessToken();
+        const paypalItems = buildPayPalItems(cartItems, parsed);
+        const amountPayload = {
+            currency_code: 'USD',
+            value: parsed.toFixed(2),
+            ...(paypalItems ? {
+                breakdown: {
+                    item_total: {
+                        currency_code: 'USD',
+                        value: paypalItems.itemTotal,
+                    },
+                },
+            } : {}),
+        };
+
         const res = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 intent: 'CAPTURE',
-                purchase_units: [{ amount: { currency_code: 'USD', value: parsed.toFixed(2) } }],
+                purchase_units: [{
+                    amount: amountPayload,
+                    ...(paypalItems ? { items: paypalItems.items } : {}),
+                }],
                 ...(paymentSource === 'card' ? {
                     payment_source: {
                         card: {
@@ -57,8 +136,8 @@ export async function POST(request: Request) {
 
         const order = await res.json();
         return NextResponse.json({ id: order.id });
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('[PayPal Create Order]', e);
-        return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
+        return NextResponse.json({ error: e instanceof Error ? e.message : 'Server error' }, { status: 500 });
     }
 }
