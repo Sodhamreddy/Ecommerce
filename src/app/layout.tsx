@@ -57,7 +57,7 @@ export default function RootLayout({
         <Script id="charla-widget-loader" strategy="afterInteractive">
           {`
             (function () {
-              var projectId = 'a8d2503d-958a-47bd-802b-0a27220a8b1c';
+              var projectId = 'ac74e22f-afeb-40b1-8c42-40f0c6865905';
 
               if (!document.querySelector('charla-widget[p="' + projectId + '"]')) {
                 var widgetElement = document.createElement('charla-widget');

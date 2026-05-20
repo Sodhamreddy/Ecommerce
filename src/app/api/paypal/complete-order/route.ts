@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { SITE_DOMAIN } from '@/lib/config';
+import { validateCheckoutProtection } from '@/lib/checkout-protection';
 
 const WC_KEY = process.env.WC_CONSUMER_KEY;
 const WC_SECRET = process.env.WC_CONSUMER_SECRET;
@@ -140,6 +141,13 @@ async function createCheckoutCustomer(formData: CheckoutFormData, password: stri
 
 export async function POST(request: Request) {
     try {
+        const body = (await request.json()) as CompleteOrderBody;
+        const protectionError = validateCheckoutProtection(request, body, {
+            maxAttempts: 6,
+            windowMs: 10 * 60 * 1000,
+        });
+        if (protectionError) return protectionError;
+
         const {
             formData,
             cartItems,
@@ -148,7 +156,7 @@ export async function POST(request: Request) {
             createAccount,
             accountPassword,
             shouldCapture,
-        } = (await request.json()) as CompleteOrderBody;
+        } = body;
 
         if (!WC_KEY || !WC_SECRET) {
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });

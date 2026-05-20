@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { WC_STORE_API } from '@/lib/config';
+import { validateCheckoutProtection } from '@/lib/checkout-protection';
 
 
 
@@ -9,6 +10,12 @@ import { WC_STORE_API } from '@/lib/config';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        const protectionError = validateCheckoutProtection(request, body, {
+            maxAttempts: 6,
+            windowMs: 10 * 60 * 1000,
+        });
+        if (protectionError) return protectionError;
+
         const cookie = request.headers.get('cookie') || '';
         const nonce = request.headers.get('X-WC-Store-Api-Nonce') || request.headers.get('Nonce') || request.headers.get('nonce') || '';
 
@@ -20,10 +27,12 @@ export async function POST(request: Request) {
         };
         if (nonce) headers['X-WC-Store-Api-Nonce'] = nonce;
 
+        const { checkoutProtection: _checkoutProtection, ...checkoutBody } = body;
+
         const response = await fetch(`${WC_STORE_API}/checkout`, {
             method: 'POST',
             headers,
-            body: JSON.stringify(body)
+            body: JSON.stringify(checkoutBody)
         });
         
         const contentType = response.headers.get('content-type') || '';

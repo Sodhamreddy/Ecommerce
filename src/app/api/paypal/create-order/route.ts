@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { validateCheckoutProtection } from '@/lib/checkout-protection';
 
 const PAYPAL_API = process.env.PAYPAL_ENV === 'sandbox'
     ? 'https://api-m.sandbox.paypal.com'
@@ -85,7 +86,14 @@ async function getAccessToken(): Promise<string> {
 
 export async function POST(request: Request) {
     try {
-        const { amount, paymentSource, cartItems } = await request.json();
+        const body = await request.json();
+        const protectionError = validateCheckoutProtection(request, body, {
+            maxAttempts: 12,
+            windowMs: 10 * 60 * 1000,
+        });
+        if (protectionError) return protectionError;
+
+        const { amount, paymentSource, cartItems } = body;
         const parsed = parseFloat(amount);
         if (!amount || isNaN(parsed) || parsed <= 0) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });

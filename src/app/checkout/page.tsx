@@ -21,6 +21,8 @@ export default function CheckoutPage() {
         firstName: '', lastName: '', company: '', email: '', phone: '',
         address: '', address2: '', city: '', state: '', zip: '',
         country: 'US', orderNotes: '',
+        checkoutStartedAt: Date.now(),
+        companyWebsite: '',
     });
     const [createAccount, setCreateAccount] = useState(false);
     const [accountPassword, setAccountPassword] = useState('');
@@ -61,6 +63,10 @@ export default function CheckoutPage() {
     const cartRef = useRef(cart);
     const createAccountRef = useRef(createAccount);
     const accountPasswordRef = useRef(accountPassword);
+    const checkoutProtectionRef = useRef({
+        checkoutStartedAt: formData.checkoutStartedAt,
+        companyWebsite: formData.companyWebsite,
+    });
     const totalRef = useRef(0);
     const subtotalRef = useRef(0);
     const shippingRef = useRef(0);
@@ -122,6 +128,12 @@ export default function CheckoutPage() {
 
     // Keep refs in sync with state
     useEffect(() => { formRef.current = formData; }, [formData]);
+    useEffect(() => {
+        checkoutProtectionRef.current = {
+            checkoutStartedAt: formData.checkoutStartedAt,
+            companyWebsite: formData.companyWebsite,
+        };
+    }, [formData.checkoutStartedAt, formData.companyWebsite]);
     useEffect(() => { agreedRef.current = agreedToTerms; }, [agreedToTerms]);
     useEffect(() => { cartRef.current = cart; }, [cart]);
     useEffect(() => { createAccountRef.current = createAccount; }, [createAccount]);
@@ -367,6 +379,7 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     amount: totalRef.current.toFixed(2),
                     cartItems: cartRef.current,
+                    checkoutProtection: checkoutProtectionRef.current,
                 }),
             });
             const data = await res.json();
@@ -383,6 +396,7 @@ export default function CheckoutPage() {
                     paypalTransactionId: transactionId,
                     formData: formRef.current,
                     cartItems: cartRef.current,
+                    checkoutProtection: checkoutProtectionRef.current,
                     createAccount: createAccountRef.current,
                     accountPassword: accountPasswordRef.current,
                 }),
@@ -465,6 +479,7 @@ export default function CheckoutPage() {
                         amount: totalRef.current.toFixed(2),
                         paymentSource: 'card',
                         cartItems: cartRef.current,
+                        checkoutProtection: checkoutProtectionRef.current,
                     }),
                 });
                 const d = await res.json();
@@ -481,6 +496,7 @@ export default function CheckoutPage() {
                             shouldCapture: true,
                             formData: formRef.current,
                             cartItems: cartRef.current,
+                            checkoutProtection: checkoutProtectionRef.current,
                             createAccount: createAccountRef.current,
                             accountPassword: accountPasswordRef.current,
                         }),
@@ -574,6 +590,7 @@ export default function CheckoutPage() {
                             amount: totalRef.current.toFixed(2),
                             paymentSource: 'card',
                             cartItems: cartRef.current,
+                            checkoutProtection: checkoutProtectionRef.current,
                         }),
                     });
                     const data = await res.json();
@@ -592,6 +609,7 @@ export default function CheckoutPage() {
                                 paypalTransactionId: capture.id,
                                 formData: formRef.current,
                                 cartItems: cartRef.current,
+                                checkoutProtection: checkoutProtectionRef.current,
                                 createAccount: createAccountRef.current,
                                 accountPassword: accountPasswordRef.current,
                             }),
@@ -738,6 +756,16 @@ export default function CheckoutPage() {
 
                 {/* LEFT — Billing / Shipping Form */}
                 <div className={styles.leftCol}>
+                    <input
+                        type="text"
+                        name="companyWebsite"
+                        value={formData.companyWebsite}
+                        onChange={handleChange}
+                        autoComplete="off"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        style={{ display: 'none' }}
+                    />
                     <div className={styles.sectionBlock}>
                         <h2 className={styles.sectionTitle}>Contact Information</h2>
                         <div className={styles.formRow}>

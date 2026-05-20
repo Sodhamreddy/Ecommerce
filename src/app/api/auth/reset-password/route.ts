@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { SITE_DOMAIN, API_BASE_URL } from '@/lib/config';
+import { API_BASE_URL } from '@/lib/config';
 import { createPasswordResetToken } from '@/lib/password-reset-token';
 import nodemailer from 'nodemailer';
 
@@ -35,6 +35,7 @@ function escapeHtml(value: string) {
 async function findCustomer(userLogin: string): Promise<WCCustomer | null> {
     if (!ckKey || !ckSecret) return null;
 
+    const normalizedLogin = userLogin.toLowerCase();
     const params = new URLSearchParams({
         consumer_key: ckKey,
         consumer_secret: ckSecret,
@@ -50,11 +51,10 @@ async function findCustomer(userLogin: string): Promise<WCCustomer | null> {
     const customers = await res.json().catch(() => []);
     if (!Array.isArray(customers) || customers.length === 0) return null;
 
-    const normalizedLogin = userLogin.toLowerCase();
     return customers.find((customer: WCCustomer) => {
         return customer.email?.toLowerCase() === normalizedLogin
             || customer.username?.toLowerCase() === normalizedLogin;
-    }) || customers[0] || null;
+    }) || null;
 }
 
 async function sendResetEmail(customer: WCCustomer, requestedLogin: string) {
@@ -142,69 +142,25 @@ export async function POST(request: Request) {
     }
 
     const requestedLogin = String(user_login).trim();
+    if (!requestedLogin) {
+        return NextResponse.json({ error: 'Email or username is required.' }, { status: 400 });
+    }
 
     try {
         const customer = await findCustomer(requestedLogin);
-        if (customer?.email) {
-            await sendResetEmail(customer, requestedLogin);
-            return NextResponse.json({ success: true });
+        if (!customer?.email) {
+            return NextResponse.json(
+                { error: 'No account found with that email or username.' },
+                { status: 404 }
+            );
         }
+
+        await sendResetEmail(customer, requestedLogin);
+        return NextResponse.json({ success: true });
     } catch (e: unknown) {
         return NextResponse.json(
             { error: e instanceof Error ? e.message : 'Failed to send reset link.' },
             { status: 500 }
         );
     }
-
-    // Keep WordPress' native reset as a fallback for stores/users not returned by WooCommerce.
-    try {
-        const res = await fetch(`${SITE_DOMAIN}/wp-login.php?action=lostpassword`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                Cookie: 'wordpress_test_cookie=WP+Cookie+check',
-                Referer: `${SITE_DOMAIN}/wp-login.php`,
-            },
-            body: new URLSearchParams({
-                user_login: requestedLogin,
-                redirect_to: '',
-                'wp-submit': 'Get New Password',
-                testcookie: '1',
-            }).toString(),
-            redirect: 'manual',
-        });
-
-        const location = res.headers.get('location') || '';
-        if ((res.status >= 300 && res.status < 400) && (location.includes('checkemail') || location.includes('wp-login'))) {
-            return NextResponse.json({ success: true });
-        }
-
-        if (res.status === 302 || res.status === 301) {
-            return NextResponse.json({ success: true });
-        }
-
-        const text = await res.text().catch(() => '');
-        if (
-            text.includes('check your email') ||
-            text.includes('checkemail') ||
-            text.includes('password reset') ||
-            text.includes('has been sent') ||
-            text.includes('ERROR') ||
-            text.includes('Invalid')
-        ) {
-            return NextResponse.json({ success: true });
-        }
-    } catch {}
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/wc/store/v1/customers/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: requestedLogin }),
-        });
-        if (res.ok) return NextResponse.json({ success: true });
-    } catch {}
-
-    return NextResponse.json({ success: true });
 }
