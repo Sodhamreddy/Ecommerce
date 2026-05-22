@@ -56,6 +56,33 @@ type WooCommerceOrderPayload = {
     customer_id?: number;
 };
 
+type VerifiedPayPalPayment = {
+    transactionId: string;
+    amount: string;
+    currency: string;
+};
+
+type PayPalCapture = {
+    id?: string;
+    status?: string;
+    amount?: {
+        value?: string;
+        currency_code?: string;
+    };
+};
+
+type PayPalPurchaseUnit = {
+    payments?: {
+        captures?: PayPalCapture[];
+    };
+};
+
+type PayPalOrder = {
+    status?: string;
+    message?: string;
+    purchase_units?: PayPalPurchaseUnit[];
+};
+
 async function getPayPalAccessToken(): Promise<string> {
     const clientId = process.env.PAYPAL_CLIENT_ID!;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET!;
@@ -70,16 +97,59 @@ async function getPayPalAccessToken(): Promise<string> {
     return (await res.json()).access_token;
 }
 
-async function capturePayPalOrder(orderId: string): Promise<string> {
+function verifyCompletedPayPalPayment(paypalOrder: PayPalOrder): VerifiedPayPalPayment {
+    if (paypalOrder?.status !== 'COMPLETED') {
+        throw new Error('PayPal payment was not completed.');
+    }
+
+    const capture = paypalOrder?.purchase_units
+        ?.flatMap((unit) => unit?.payments?.captures || [])
+        ?.find((item) => item?.status === 'COMPLETED' && item?.id);
+
+    if (!capture) {
+        throw new Error('PayPal capture could not be verified.');
+    }
+
+    const amount = capture?.amount?.value;
+    const currency = capture?.amount?.currency_code;
+    if (!amount || currency !== 'USD') {
+        throw new Error('PayPal capture amount could not be verified.');
+    }
+
+    return {
+        transactionId: capture.id,
+        amount,
+        currency,
+    };
+}
+
+async function getPayPalOrder(orderId: string): Promise<PayPalOrder> {
+    const accessToken = await getPayPalAccessToken();
+    const res = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        cache: 'no-store',
+    });
+    const data = await res.json() as PayPalOrder;
+    if (!res.ok) throw new Error(data.message || `PayPal verification failed (${res.status})`);
+    return data;
+}
+
+async function capturePayPalOrder(orderId: string): Promise<VerifiedPayPalPayment> {
     const accessToken = await getPayPalAccessToken();
     const res = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         cache: 'no-store',
     });
-    const data = await res.json();
+    const data = await res.json() as PayPalOrder;
     if (!res.ok) throw new Error(data.message || `PayPal capture failed (${res.status})`);
-    return data?.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+    return verifyCompletedPayPalPayment(data);
+}
+
+async function verifyExistingPayPalOrder(orderId: string): Promise<VerifiedPayPalPayment> {
+    const paypalOrder = await getPayPalOrder(orderId);
+    return verifyCompletedPayPalPayment(paypalOrder);
 }
 
 async function wcRequest(path: string, method: 'POST' | 'PUT', body: unknown) {
@@ -152,7 +222,6 @@ export async function POST(request: Request) {
             formData,
             cartItems,
             paypalOrderId,
-            paypalTransactionId,
             createAccount,
             accountPassword,
             shouldCapture,
@@ -162,10 +231,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
         }
 
-        let transactionId = paypalTransactionId || '';
-        if (shouldCapture && paypalOrderId) {
-            transactionId = await capturePayPalOrder(paypalOrderId);
+        if (!paypalOrderId) {
+            return NextResponse.json({ error: 'Missing PayPal order id' }, { status: 400 });
         }
+
+        const verifiedPayment = shouldCapture
+            ? await capturePayPalOrder(paypalOrderId)
+            : await verifyExistingPayPalOrder(paypalOrderId);
+
+        const transactionId = verifiedPayment.transactionId;
 
         const lineItems = cartItems.map((item) => ({
             product_id: item.product.id,
@@ -179,6 +253,8 @@ export async function POST(request: Request) {
             { key: '_ppcp_paypal_order_id', value: paypalOrderId },
             { key: '_paypal_transaction_id', value: transactionId },
             { key: '_ppcp_paypal_payment_capture_id', value: transactionId },
+            { key: '_verified_paypal_amount', value: verifiedPayment.amount },
+            { key: '_verified_paypal_currency', value: verifiedPayment.currency },
         ];
 
         let customerId: number | null = null;
