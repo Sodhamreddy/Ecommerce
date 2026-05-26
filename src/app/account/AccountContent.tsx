@@ -132,7 +132,9 @@ export default function AccountContent() {
         if (!user?.id) return;
         setOrdersLoading(true);
         try {
-            const res = await fetch(`/api/wc/orders?customer=${user.id}`);
+            const params = new URLSearchParams({ customer: String(user.id) });
+            if (user.user_email) params.set('email', user.user_email);
+            const res = await fetch(`/api/wc/orders?${params.toString()}`);
             if (res.ok) setOrders(await res.json());
         } catch {}
         setOrdersLoading(false);

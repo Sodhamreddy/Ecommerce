@@ -36,9 +36,20 @@ type CompleteOrderBody = {
     cartItems: CheckoutCartItem[];
     paypalOrderId: string;
     paypalTransactionId?: string;
+    checkoutTotals?: CheckoutTotals;
+    customerId?: number | null;
     createAccount?: boolean;
     accountPassword?: string;
     shouldCapture?: boolean;
+};
+
+type CheckoutTotals = {
+    subtotal?: number;
+    shipping?: number;
+    tax?: number;
+    discount?: number;
+    total?: number;
+    coupons?: string[];
 };
 
 type WooCommerceOrderPayload = {
@@ -51,6 +62,9 @@ type WooCommerceOrderPayload = {
     billing: Record<string, string>;
     shipping: Record<string, string>;
     line_items: Array<{ product_id: number; quantity: number; variation_id?: number }>;
+    shipping_lines?: Array<{ method_id: string; method_title: string; total: string }>;
+    coupon_lines?: Array<{ code: string; discount: string }>;
+    tax_lines?: Array<{ rate_code: string; label: string; tax_total: string; shipping_tax_total: string }>;
     customer_note: string;
     meta_data: Array<{ key: string; value: string }>;
     customer_id?: number;
@@ -117,7 +131,7 @@ function verifyCompletedPayPalPayment(paypalOrder: PayPalOrder): VerifiedPayPalP
     }
 
     return {
-        transactionId: capture.id,
+        transactionId: capture.id!,
         amount,
         currency,
     };
@@ -150,6 +164,11 @@ async function capturePayPalOrder(orderId: string): Promise<VerifiedPayPalPaymen
 async function verifyExistingPayPalOrder(orderId: string): Promise<VerifiedPayPalPayment> {
     const paypalOrder = await getPayPalOrder(orderId);
     return verifyCompletedPayPalPayment(paypalOrder);
+}
+
+function toMoney(value: unknown) {
+    const amount = Number(value || 0);
+    return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
 
 async function wcRequest(path: string, method: 'POST' | 'PUT', body: unknown) {
@@ -222,6 +241,8 @@ export async function POST(request: Request) {
             formData,
             cartItems,
             paypalOrderId,
+            checkoutTotals,
+            customerId: existingCustomerId,
             createAccount,
             accountPassword,
             shouldCapture,
@@ -238,6 +259,14 @@ export async function POST(request: Request) {
         const verifiedPayment = shouldCapture
             ? await capturePayPalOrder(paypalOrderId)
             : await verifyExistingPayPalOrder(paypalOrderId);
+
+        if (checkoutTotals?.total != null) {
+            const expectedTotal = Number(checkoutTotals.total);
+            const paidTotal = Number(verifiedPayment.amount);
+            if (!Number.isFinite(expectedTotal) || Math.abs(expectedTotal - paidTotal) > 0.01) {
+                throw new Error('PayPal payment amount does not match checkout total.');
+            }
+        }
 
         const transactionId = verifiedPayment.transactionId;
 
@@ -305,8 +334,41 @@ export async function POST(request: Request) {
             meta_data: metaData,
         };
 
-        if (customerId) {
-            orderData.customer_id = customerId;
+        const attachedCustomerId = customerId || (typeof existingCustomerId === 'number' ? existingCustomerId : null);
+        if (attachedCustomerId) {
+            orderData.customer_id = attachedCustomerId;
+        }
+
+        const shippingTotal = Number(checkoutTotals?.shipping || 0);
+        const taxTotal = Number(checkoutTotals?.tax || 0);
+        const discountTotal = Number(checkoutTotals?.discount || 0);
+        const couponCodes = Array.isArray(checkoutTotals?.coupons)
+            ? checkoutTotals.coupons.map((code) => String(code).trim()).filter(Boolean)
+            : [];
+
+        if (shippingTotal > 0) {
+            orderData.shipping_lines = [{
+                method_id: 'flat_rate',
+                method_title: 'Shipment',
+                total: toMoney(shippingTotal),
+            }];
+        }
+
+        if (discountTotal > 0) {
+            const discountPerCoupon = discountTotal / Math.max(1, couponCodes.length);
+            orderData.coupon_lines = (couponCodes.length ? couponCodes : ['coupon']).map((code) => ({
+                code,
+                discount: toMoney(discountPerCoupon),
+            }));
+        }
+
+        if (taxTotal > 0) {
+            orderData.tax_lines = [{
+                rate_code: 'TAX',
+                label: 'Tax',
+                tax_total: toMoney(taxTotal),
+                shipping_tax_total: '0.00',
+            }];
         }
 
         if (createAccount && accountPassword) {

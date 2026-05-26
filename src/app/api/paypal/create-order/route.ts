@@ -19,6 +19,14 @@ type PayPalCartItem = {
     quantity?: number;
 };
 
+type CheckoutTotals = {
+    subtotal?: number;
+    shipping?: number;
+    tax?: number;
+    discount?: number;
+    total?: number;
+};
+
 function toMoney(value: number) {
     return value.toFixed(2);
 }
@@ -93,23 +101,51 @@ export async function POST(request: Request) {
         });
         if (protectionError) return protectionError;
 
-        const { amount, paymentSource, cartItems } = body;
-        const parsed = parseFloat(amount);
+        const { amount, paymentSource, cartItems, checkoutTotals } = body as {
+            amount?: string;
+            paymentSource?: string;
+            cartItems?: PayPalCartItem[];
+            checkoutTotals?: CheckoutTotals;
+        };
+        const parsed = parseFloat(String(amount || ''));
         if (!amount || isNaN(parsed) || parsed <= 0) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
         }
 
         const accessToken = await getAccessToken();
-        const paypalItems = buildPayPalItems(cartItems, parsed);
+        const subtotal = Number(checkoutTotals?.subtotal || 0);
+        const shipping = Number(checkoutTotals?.shipping || 0);
+        const tax = Number(checkoutTotals?.tax || 0);
+        const discount = Number(checkoutTotals?.discount || 0);
+        const totalsMatch = Math.abs((subtotal + shipping + tax - discount) - parsed) <= 0.01;
+        const paypalItems = buildPayPalItems(cartItems, subtotal > 0 ? subtotal : parsed);
         const amountPayload = {
             currency_code: 'USD',
             value: parsed.toFixed(2),
-            ...(paypalItems ? {
+            ...(paypalItems && totalsMatch ? {
                 breakdown: {
                     item_total: {
                         currency_code: 'USD',
                         value: paypalItems.itemTotal,
                     },
+                    ...(shipping > 0 ? {
+                        shipping: {
+                            currency_code: 'USD',
+                            value: toMoney(shipping),
+                        },
+                    } : {}),
+                    ...(tax > 0 ? {
+                        tax_total: {
+                            currency_code: 'USD',
+                            value: toMoney(tax),
+                        },
+                    } : {}),
+                    ...(discount > 0 ? {
+                        discount: {
+                            currency_code: 'USD',
+                            value: toMoney(discount),
+                        },
+                    } : {}),
                 },
             } : {}),
         };

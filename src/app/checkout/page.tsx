@@ -63,6 +63,7 @@ export default function CheckoutPage() {
     const cartRef = useRef(cart);
     const createAccountRef = useRef(createAccount);
     const accountPasswordRef = useRef(accountPassword);
+    const customerIdRef = useRef<number | null>(null);
     const checkoutProtectionRef = useRef({
         checkoutStartedAt: formData.checkoutStartedAt,
         companyWebsite: formData.companyWebsite,
@@ -72,6 +73,7 @@ export default function CheckoutPage() {
     const shippingRef = useRef(0);
     const taxRef = useRef(0);
     const discountRef = useRef(0);
+    const couponsRef = useRef<string[]>([]);
 
     // Calculate totals
     const getVal = (str?: any) => {
@@ -87,18 +89,27 @@ export default function CheckoutPage() {
     const factor = Math.pow(10, minorUnit);
     
     const wcSubtotal = wcCart?.totals?.total_items ? getVal(wcCart.totals.total_items) / factor : 0;
-    const itemCountMatch = wcCart?.items?.length === cart.length;
+    const wcItemsMatchLocalCart = wcCart?.items?.length === cart.length && cart.every((cartItem) => {
+        const wcItem = wcCart?.items?.find((item: any) => item.id === cartItem.product.id);
+        return wcItem && Number(wcItem.quantity) === Number(cartItem.quantity);
+    });
     const hasCoupon = (wcCart?.coupons?.length ?? 0) > 0;
     // Only trust WC subtotal when item counts match — coupon alone is not enough
     // because WC cart may only have a subset of local cart items synced.
-    const wcSynced = wcSubtotal > 0 && itemCountMatch;
+    const wcSynced = wcSubtotal > 0 && wcItemsMatchLocalCart;
 
     // Always use local cartTotal as subtotal — it is derived from localStorage and is always complete.
     // wcSubtotal can be wrong when WC cart is partially synced (fewer items than local cart).
     const subtotal = cartTotal;
     const localShipping = subtotal > 59.99 ? 0 : 5.99;
     const tax = wcSynced && wcCart?.totals?.total_tax ? getVal(wcCart.totals.total_tax) / factor : 0;
-    const discount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
+    const appliedCoupons = wcCart?.coupons || [];
+    const couponCodes = appliedCoupons
+        .map((coupon: any) => String(coupon?.code || '').trim())
+        .filter(Boolean);
+    const rawDiscount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
+    const hero15Applied = couponCodes.some((code) => code.toUpperCase() === 'HERO15');
+    const discount = hero15Applied ? Math.min(rawDiscount, subtotal * 0.15) : rawDiscount;
 
     // A free-shipping-only coupon: discount=0 but hasCoupon=true.
     // WC only zeroes shipping after address+method chosen, so force it here.
@@ -118,13 +129,22 @@ export default function CheckoutPage() {
         : null;
     // Always compute total from local subtotal to avoid WC partial-sync errors.
     // Only use wcTotalRaw when fully synced AND it makes sense (> subtotal with shipping would imply no discount).
-    const total = subtotal + shipping - discount;
-    const appliedCoupons = wcCart?.coupons || [];
+    const total = subtotal + shipping + tax - discount;
     totalRef.current = total;
     subtotalRef.current = subtotal;
     shippingRef.current = shipping;
     taxRef.current = tax;
     discountRef.current = discount;
+    couponsRef.current = couponCodes;
+
+    const getCheckoutTotalsPayload = () => ({
+        subtotal: Number(subtotalRef.current.toFixed(2)),
+        shipping: Number(shippingRef.current.toFixed(2)),
+        tax: Number(taxRef.current.toFixed(2)),
+        discount: Number(discountRef.current.toFixed(2)),
+        total: Number(totalRef.current.toFixed(2)),
+        coupons: couponsRef.current,
+    });
 
     // Keep refs in sync with state
     useEffect(() => { formRef.current = formData; }, [formData]);
@@ -151,6 +171,7 @@ export default function CheckoutPage() {
             const user = JSON.parse(savedUser);
             if (user && typeof user === 'object') {
                 setIsLoggedIn(true);
+                customerIdRef.current = typeof user.id === 'number' ? user.id : null;
                 const b = user.billing;
                 if (b) {
                     setFormData(prev => ({
@@ -379,6 +400,7 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     amount: totalRef.current.toFixed(2),
                     cartItems: cartRef.current,
+                    checkoutTotals: getCheckoutTotalsPayload(),
                     checkoutProtection: checkoutProtectionRef.current,
                 }),
             });
@@ -396,6 +418,8 @@ export default function CheckoutPage() {
                     paypalTransactionId: transactionId,
                     formData: formRef.current,
                     cartItems: cartRef.current,
+                    checkoutTotals: getCheckoutTotalsPayload(),
+                    customerId: customerIdRef.current,
                     checkoutProtection: checkoutProtectionRef.current,
                     createAccount: createAccountRef.current,
                     accountPassword: accountPasswordRef.current,
@@ -479,6 +503,7 @@ export default function CheckoutPage() {
                         amount: totalRef.current.toFixed(2),
                         paymentSource: 'card',
                         cartItems: cartRef.current,
+                        checkoutTotals: getCheckoutTotalsPayload(),
                         checkoutProtection: checkoutProtectionRef.current,
                     }),
                 });
@@ -496,6 +521,8 @@ export default function CheckoutPage() {
                             shouldCapture: true,
                             formData: formRef.current,
                             cartItems: cartRef.current,
+                            checkoutTotals: getCheckoutTotalsPayload(),
+                            customerId: customerIdRef.current,
                             checkoutProtection: checkoutProtectionRef.current,
                             createAccount: createAccountRef.current,
                             accountPassword: accountPasswordRef.current,
@@ -590,6 +617,7 @@ export default function CheckoutPage() {
                             amount: totalRef.current.toFixed(2),
                             paymentSource: 'card',
                             cartItems: cartRef.current,
+                            checkoutTotals: getCheckoutTotalsPayload(),
                             checkoutProtection: checkoutProtectionRef.current,
                         }),
                     });
@@ -609,6 +637,8 @@ export default function CheckoutPage() {
                                 paypalTransactionId: capture.id,
                                 formData: formRef.current,
                                 cartItems: cartRef.current,
+                                checkoutTotals: getCheckoutTotalsPayload(),
+                                customerId: customerIdRef.current,
                                 checkoutProtection: checkoutProtectionRef.current,
                                 createAccount: createAccountRef.current,
                                 accountPassword: accountPasswordRef.current,
