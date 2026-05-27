@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import styles from './AccountContent.module.css';
 import {
     LayoutDashboard, User, LogOut, Package, Loader2,
@@ -34,6 +34,7 @@ export default function AccountContent() {
     const [user, setUser] = useState<any>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
+    const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
 
     const [showLoginPwd, setShowLoginPwd] = useState(false);
     const [showRegPwd, setShowRegPwd] = useState(false);
@@ -283,12 +284,42 @@ export default function AccountContent() {
                                         </thead>
                                         <tbody>
                                             {orders.map((order) => (
-                                                <tr key={order.id}>
-                                                    <td>#{order.number || order.id}</td>
-                                                    <td>{new Date(order.date_created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                                                    <td><span className={`${styles.statusBadge} ${statusColor[order.status] || ''}`}>{order.status}</span></td>
-                                                    <td>${parseFloat(order.total).toFixed(2)}</td>
-                                                </tr>
+                                                <Fragment key={order.id}>
+                                                    <tr
+                                                        className={styles.clickableOrderRow}
+                                                        onClick={() => setExpandedOrderId(prev => prev === order.id ? null : order.id)}
+                                                    >
+                                                        <td>
+                                                            <button type="button" className={styles.orderLink}>
+                                                                #{order.number || order.id}
+                                                            </button>
+                                                        </td>
+                                                        <td>{new Date(order.date_created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                                        <td><span className={`${styles.statusBadge} ${statusColor[order.status] || ''}`}>{order.status}</span></td>
+                                                        <td>${parseFloat(order.total).toFixed(2)}</td>
+                                                    </tr>
+                                                    {expandedOrderId === order.id && (
+                                                        <tr key={`${order.id}-details`} className={styles.orderDetailsRow}>
+                                                            <td colSpan={4}>
+                                                                <div className={styles.orderDetails}>
+                                                                    <div className={styles.orderDetailsTitle}>Order #{order.number || order.id}</div>
+                                                                    {order.line_items?.length ? (
+                                                                        <ul className={styles.orderItems}>
+                                                                            {order.line_items.map((item, index) => (
+                                                                                <li key={`${order.id}-${index}`}>
+                                                                                    <span>{item.name}</span>
+                                                                                    <span>Qty {item.quantity}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    ) : (
+                                                                        <p className={styles.emptyNote}>No item details available for this order.</p>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </Fragment>
                                             ))}
                                         </tbody>
                                     </table>

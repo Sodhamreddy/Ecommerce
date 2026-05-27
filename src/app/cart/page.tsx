@@ -41,10 +41,16 @@ export default function CartPage() {
         const v = parseFloat(n || '0');
         return n.includes('.') ? v * factor : v;
     };
-    const appliedCoupons = wcCart?.coupons || [];
-    const rawDiscount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
+    const wcSubtotal = wcCart?.totals?.total_items ? getVal(wcCart.totals.total_items) / factor : 0;
+    const wcItemsMatchLocalCart = wcCart?.items?.length === cart.length && cart.every((cartItem) => {
+        const wcItem = wcCart?.items?.find((item: any) => item.id === cartItem.product.id);
+        return wcItem && Number(wcItem.quantity) === Number(cartItem.quantity);
+    });
+    const wcSynced = wcSubtotal > 0 && wcItemsMatchLocalCart;
+    const appliedCoupons = wcSynced ? (wcCart?.coupons || []) : [];
+    const rawDiscount = wcSynced && wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
     const hero15Applied = appliedCoupons.some((coupon: any) => String(coupon?.code || '').toUpperCase() === 'HERO15');
-    const discount = hero15Applied ? Math.min(rawDiscount, cartTotal * 0.15) : rawDiscount;
+    const discount = Math.min(cartTotal, hero15Applied ? Math.min(rawDiscount, cartTotal * 0.15) : rawDiscount);
     const displayTotal = discount > 0 ? Math.max(0, cartTotal - discount) : cartTotal;
 
     return (

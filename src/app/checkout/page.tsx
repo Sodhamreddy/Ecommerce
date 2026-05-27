@@ -93,7 +93,6 @@ export default function CheckoutPage() {
         const wcItem = wcCart?.items?.find((item: any) => item.id === cartItem.product.id);
         return wcItem && Number(wcItem.quantity) === Number(cartItem.quantity);
     });
-    const hasCoupon = (wcCart?.coupons?.length ?? 0) > 0;
     // Only trust WC subtotal when item counts match — coupon alone is not enough
     // because WC cart may only have a subset of local cart items synced.
     const wcSynced = wcSubtotal > 0 && wcItemsMatchLocalCart;
@@ -103,20 +102,19 @@ export default function CheckoutPage() {
     const subtotal = cartTotal;
     const localShipping = subtotal > 59.99 ? 0 : 5.99;
     const tax = wcSynced && wcCart?.totals?.total_tax ? getVal(wcCart.totals.total_tax) / factor : 0;
-    const appliedCoupons = wcCart?.coupons || [];
+    const appliedCoupons = wcSynced ? (wcCart?.coupons || []) : [];
     const couponCodes = appliedCoupons
         .map((coupon: any) => String(coupon?.code || '').trim())
         .filter(Boolean);
-    const rawDiscount = wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
+    const rawDiscount = wcSynced && wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
     const hero15Applied = couponCodes.some((code) => code.toUpperCase() === 'HERO15');
-    const discount = hero15Applied ? Math.min(rawDiscount, subtotal * 0.15) : rawDiscount;
-
-    // A free-shipping-only coupon: discount=0 but hasCoupon=true.
-    // WC only zeroes shipping after address+method chosen, so force it here.
-    const isFreeShippingCoupon = hasCoupon && discount === 0;
+    const discount = Math.min(
+        subtotal,
+        hero15Applied ? Math.min(rawDiscount, subtotal * 0.15) : rawDiscount
+    );
 
     let shipping: number;
-    if (isFreeShippingCoupon || subtotal > 59.99) {
+    if (subtotal > 59.99) {
         shipping = 0;
     } else if (wcCart?.totals?.total_shipping != null && wcSynced) {
         shipping = getVal(wcCart.totals.total_shipping) / factor;
@@ -1005,12 +1003,10 @@ export default function CheckoutPage() {
                                 <span>Shipment</span>
                                 <span>{shipping === 0 ? <span style={{ color: '#388e3c' }}>Free</span> : `$${shipping.toFixed(2)}`}</span>
                             </div>
-                            {tax > 0 && (
-                                <div className={styles.totalRow}>
-                                    <span>Tax</span>
-                                    <span>${tax.toFixed(2)}</span>
-                                </div>
-                            )}
+                            <div className={styles.totalRow}>
+                                <span>Tax</span>
+                                <span>${tax.toFixed(2)}</span>
+                            </div>
                             {discount > 0 && (
                                 <div className={styles.totalRow} style={{ color: '#d32f2f' }}>
                                     <span>Discount</span>

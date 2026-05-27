@@ -91,6 +91,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         syncWCCart();
     }, []);
 
+    // Keep WooCommerce cart item keys attached to local cart items after refresh/load.
+    useEffect(() => {
+        if (!cartLoaded || !wcCart?.items?.length) return;
+        setCart(prev => prev.map(item => {
+            if (item.wcKey) return item;
+            const wcItem = wcCart.items.find(wi => wi.id === item.product.id);
+            return wcItem ? { ...item, wcKey: wcItem.key } : item;
+        }));
+    }, [cartLoaded, wcCart]);
+
     const addToCart = useCallback((product: Product, quantity: number) => {
         setCart(prev => {
             const existing = prev.find(item => item.product.id === product.id);
@@ -131,39 +141,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const removeFromCart = useCallback((productId: number) => {
         const item = cart.find(i => i.product.id === productId);
+        const wcKey = item?.wcKey || wcCart?.items?.find(wi => wi.id === productId)?.key;
         setCart(prev => prev.filter(item => item.product.id !== productId));
 
         // Sync with WooCommerce
-        if (item?.wcKey) {
+        if (wcKey) {
             (async () => {
                 try {
-                    const wcResult = await removeFromWCCart(item.wcKey!);
-                    if (wcResult) setWcCart(wcResult);
+                    const wcResult = await removeFromWCCart(wcKey);
+                    setWcCart(wcResult || await getWCCart());
                 } catch {
-                    // WC sync optional
+                    try {
+                        setWcCart(await getWCCart());
+                    } catch { /* WC sync optional */ }
                 }
             })();
         }
-    }, [cart]);
+    }, [cart, wcCart]);
 
     const updateQuantity = useCallback((productId: number, quantity: number) => {
         const item = cart.find(i => i.product.id === productId);
+        const wcKey = item?.wcKey || wcCart?.items?.find(wi => wi.id === productId)?.key;
         setCart(prev => prev.map(item =>
             item.product.id === productId ? { ...item, quantity } : item
         ));
 
         // Sync with WooCommerce
-        if (item?.wcKey) {
+        if (wcKey) {
             (async () => {
                 try {
-                    const wcResult = await updateWCCartItem(item.wcKey!, quantity);
-                    if (wcResult) setWcCart(wcResult);
+                    const wcResult = await updateWCCartItem(wcKey, quantity);
+                    setWcCart(wcResult || await getWCCart());
                 } catch {
-                    // WC sync optional
+                    try {
+                        setWcCart(await getWCCart());
+                    } catch { /* WC sync optional */ }
                 }
             })();
         }
-    }, [cart]);
+    }, [cart, wcCart]);
 
     const clearCart = useCallback(() => {
         setCart([]);
