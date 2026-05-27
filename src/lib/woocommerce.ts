@@ -6,6 +6,10 @@
 
 import { API_BASE_URL, SITE_DOMAIN } from './config';
 import { fetchWithRetry, delay } from './fetch-utils';
+import { decodeHtmlEntities } from './api';
+
+type DecodableName = { name: string } & Record<string, unknown>;
+type DecodableProduct = { name: string; categories?: DecodableName[] } & Record<string, unknown>;
 
 // WC Store API nonce — required for all cart mutation POST requests.
 // Restored from sessionStorage on load so page refreshes/navigations don't lose it.
@@ -210,7 +214,7 @@ export async function getWCCart(): Promise<WCCart | null> {
 
         if (nonce) setNonce(nonce);
         if (!response.ok) return null;
-        return await response.json().catch(() => null);
+        return decodeCart(await response.json().catch(() => null));
     } catch {
         return null;
     }
@@ -223,7 +227,7 @@ export async function addToWCCart(productId: number, quantity: number = 1): Prom
     try {
         const response = await doMutation('wc/store/v1/cart/add-item', { id: productId, quantity });
         if (!response.ok) return null;
-        return await response.json().catch(() => null);
+        return decodeCart(await response.json().catch(() => null));
     } catch {
         return null;
     }
@@ -236,7 +240,7 @@ export async function updateWCCartItem(itemKey: string, quantity: number): Promi
     try {
         const response = await doMutation('wc/store/v1/cart/update-item', { key: itemKey, quantity });
         if (!response.ok) return null;
-        return await response.json().catch(() => null);
+        return decodeCart(await response.json().catch(() => null));
     } catch {
         return null;
     }
@@ -249,7 +253,7 @@ export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> 
     try {
         const response = await doMutation('wc/store/v1/cart/remove-item', { key: itemKey });
         if (!response.ok) return null;
-        return await response.json().catch(() => null);
+        return decodeCart(await response.json().catch(() => null));
     } catch {
         return null;
     }
@@ -257,12 +261,53 @@ export async function removeFromWCCart(itemKey: string): Promise<WCCart | null> 
 
 /** Decode HTML entities returned in WC API error messages */
 function decodeHtml(str: string): string {
-    return str
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>');
+    return decodeHtmlEntities(str);
+}
+
+function decodeCart(cart: WCCart | null): WCCart | null {
+    if (!cart) return cart;
+    return {
+        ...cart,
+        items: cart.items?.map(item => ({
+            ...item,
+            name: decodeHtml(item.name),
+            short_description: decodeHtml(item.short_description),
+            images: item.images?.map(image => ({
+                ...image,
+                alt: decodeHtml(image.alt),
+            })) ?? [],
+        })) ?? [],
+    };
+}
+
+function decodeWPPost(post: WPPost): WPPost {
+    return {
+        ...post,
+        title: {
+            ...post.title,
+            rendered: decodeHtml(post.title?.rendered ?? ''),
+        },
+        _embedded: post._embedded
+            ? {
+                ...post._embedded,
+                'wp:featuredmedia': post._embedded['wp:featuredmedia']?.map(media => ({
+                    ...media,
+                    alt_text: decodeHtml(media.alt_text),
+                })),
+                'wp:term': post._embedded['wp:term']?.map(group => group.map(term => ({
+                    ...term,
+                    name: decodeHtml(term.name),
+                }))),
+            }
+            : post._embedded,
+        yoast_head_json: post.yoast_head_json
+            ? {
+                ...post.yoast_head_json,
+                title: post.yoast_head_json.title ? decodeHtml(post.yoast_head_json.title) : post.yoast_head_json.title,
+                og_title: post.yoast_head_json.og_title ? decodeHtml(post.yoast_head_json.og_title) : post.yoast_head_json.og_title,
+            }
+            : post.yoast_head_json,
+    };
 }
 
 /**
@@ -283,7 +328,7 @@ export async function applyCoupon(code: string): Promise<WCCart | null> {
             const rawMsg = err.message || err.error || `Failed to apply coupon (status ${response.status})`;
             throw new Error(decodeHtml(rawMsg));
         }
-        const cart = await response.json().catch(() => null);
+        const cart = decodeCart(await response.json().catch(() => null));
         if (!cart || !('items' in cart)) {
             throw new Error('Invalid response from server. Please try again.');
         }
@@ -308,7 +353,7 @@ export async function updateCartCustomer(data: {
             response = await doMutation('wc/store/cart/update-customer', data);
         }
         if (!response.ok) return null;
-        return await response.json().catch(() => null);
+        return decodeCart(await response.json().catch(() => null));
     } catch (err) {
         console.error('[WooCommerce] updateCartCustomer error:', err);
         return null;
@@ -517,8 +562,8 @@ export async function fetchWPPosts(
 
         const total = parseInt(response.headers.get('X-WP-Total') || '0');
         const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
-        const posts = await response.json();
-        return { posts, totalPages, total };
+        const posts: WPPost[] = await response.json();
+        return { posts: posts.map(decodeWPPost), totalPages, total };
     } catch {
         return { posts: [], totalPages: 0, total: 0 };
     }
@@ -532,8 +577,8 @@ export async function fetchWPPostBySlug(slug: string): Promise<WPPost | null> {
         const url = getApiUrl('wp/v2/posts', { slug, _embed: '1' });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
-        const posts = await response.json();
-        return posts[0] || null;
+        const posts: WPPost[] = await response.json();
+        return posts[0] ? decodeWPPost(posts[0]) : null;
     } catch {
         return null;
     }
@@ -547,8 +592,8 @@ export async function fetchWPPage(slug: string): Promise<WPPost | null> {
         const url = getApiUrl('wp/v2/pages', { slug, _embed: '1' });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
-        const pages = await response.json();
-        return pages[0] || null;
+        const pages: WPPost[] = await response.json();
+        return pages[0] ? decodeWPPost(pages[0]) : null;
     } catch {
         return null;
     }
@@ -562,7 +607,11 @@ export async function fetchWPCategories(): Promise<any[]> {
         const url = getApiUrl('wp/v2/categories', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
-        return await response.json();
+        const categories = await response.json();
+        return categories.map((category: DecodableName) => ({
+            ...category,
+            name: decodeHtml(category.name),
+        }));
     } catch {
         return [];
     }
@@ -576,7 +625,11 @@ export async function fetchWPTags(): Promise<any[]> {
         const url = getApiUrl('wp/v2/tags', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
-        return await response.json();
+        const tags = await response.json();
+        return tags.map((tag: DecodableName) => ({
+            ...tag,
+            name: decodeHtml(tag.name),
+        }));
     } catch {
         return [];
     }
@@ -591,7 +644,7 @@ export async function fetchWPTagBySlug(slug: string): Promise<{ id: number; name
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return null;
         const tags = await response.json();
-        return tags[0] || null;
+        return tags[0] ? { ...tags[0], name: decodeHtml(tags[0].name) } : null;
     } catch {
         return null;
     }
@@ -610,7 +663,7 @@ export async function fetchAllWPTags(): Promise<{ id: number; name: string; slug
             if (!response.ok) break;
             const tags = await response.json();
             if (!Array.isArray(tags) || tags.length === 0) break;
-            allTags.push(...tags);
+            allTags.push(...tags.map((tag: { id: number; name: string; slug: string }) => ({ ...tag, name: decodeHtml(tag.name) })));
             if (tags.length < 100) break;
             page++;
             await delay(200);
@@ -628,7 +681,11 @@ export async function fetchWCProductCategories(): Promise<any[]> {
         const url = getApiUrl('wc/store/v1/products/categories', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
-        return await response.json();
+        const categories = await response.json();
+        return categories.map((category: DecodableName) => ({
+            ...category,
+            name: decodeHtml(category.name),
+        }));
     } catch {
         return [];
     }
@@ -639,7 +696,11 @@ export async function fetchWCProductTags(): Promise<any[]> {
         const url = getApiUrl('wc/store/v1/products/tags', { per_page: 100 });
         const response = await fetchWithRetry(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
-        return await response.json();
+        const tags = await response.json();
+        return tags.map((tag: DecodableName) => ({
+            ...tag,
+            name: decodeHtml(tag.name),
+        }));
     } catch {
         return [];
     }
@@ -655,7 +716,18 @@ export async function fetchOnSaleProducts(page = 1, perPage = 20): Promise<any> 
         const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0');
         const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
         const products = await response.json();
-        return { products, totalPages, totalProducts };
+        return {
+            products: products.map((product: DecodableProduct) => ({
+                ...product,
+                name: decodeHtml(product.name),
+                categories: product.categories?.map((category: DecodableName) => ({
+                    ...category,
+                    name: decodeHtml(category.name),
+                })) ?? [],
+            })),
+            totalPages,
+            totalProducts,
+        };
     } catch {
         return { products: [], totalPages: 0, totalProducts: 0 };
     }
@@ -681,7 +753,8 @@ export async function fetchAllWPPages(): Promise<WPPost[]> {
         const url = getApiUrl('wp/v2/pages', { per_page: 100 });
         const response = await fetch(url, { headers: COMMON_HEADERS });
         if (!response.ok) return [];
-        return await response.json();
+        const pages: WPPost[] = await response.json();
+        return pages.map(decodeWPPost);
     } catch {
         return [];
     }

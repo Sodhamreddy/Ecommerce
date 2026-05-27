@@ -46,6 +46,90 @@ export interface Product {
 import { API_BASE_URL } from './config';
 import { fetchWithRetry, delay } from './fetch-utils';
 
+interface RawCategory {
+    id: number;
+    name: string;
+    slug: string;
+    count: number;
+    parent?: number;
+    image?: { id: number; src: string; alt?: string };
+}
+
+export function decodeHtmlEntities(value: string): string {
+    if (!value) return '';
+
+    const namedEntities: Record<string, string> = {
+        amp: '&',
+        quot: '"',
+        apos: "'",
+        lt: '<',
+        gt: '>',
+        nbsp: ' ',
+        ndash: '-',
+        mdash: '-',
+        rsquo: "'",
+        lsquo: "'",
+        rdquo: '"',
+        ldquo: '"',
+    };
+
+    let decoded = value;
+    for (let i = 0; i < 3; i++) {
+        const next = decoded
+            .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+            .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+            .replace(/&([a-z]+);/gi, (match, entity) => namedEntities[entity.toLowerCase()] ?? match);
+
+        if (next === decoded) break;
+        decoded = next;
+    }
+
+    return decoded;
+}
+
+function decodeProduct(product: Product): Product {
+    return {
+        ...product,
+        name: decodeHtmlEntities(product.name),
+        images: product.images?.map(image => ({
+            ...image,
+            alt: decodeHtmlEntities(image.alt),
+        })) ?? [],
+        categories: product.categories?.map(category => ({
+            ...category,
+            name: decodeHtmlEntities(category.name),
+        })) ?? [],
+        attributes: product.attributes?.map(attribute => ({
+            ...attribute,
+            name: decodeHtmlEntities(attribute.name),
+            terms: attribute.terms?.map(term => ({
+                ...term,
+                name: decodeHtmlEntities(term.name),
+            })) ?? [],
+        })) ?? [],
+    };
+}
+
+function decodeCategory(category: Category): Category {
+    return {
+        ...category,
+        name: decodeHtmlEntities(category.name),
+        image: category.image
+            ? {
+                ...category.image,
+                alt: decodeHtmlEntities(category.image.alt),
+            }
+            : category.image,
+    };
+}
+
+function decodeTag(tag: ProductTag): ProductTag {
+    return {
+        ...tag,
+        name: decodeHtmlEntities(tag.name),
+    };
+}
+
 const getApiUrl = (path: string, params: Record<string, string | number> = {}) => {
     const isServer = typeof window === 'undefined';
     const isProd = process.env.NODE_ENV === 'production';
@@ -159,9 +243,9 @@ export async function fetchProducts(
 
         const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0');
         const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
-        const data = await response.json();
+        const data: Product[] = await response.json();
 
-        return { products: data, totalPages, totalProducts };
+        return { products: data.map(decodeProduct), totalPages, totalProducts };
     } catch (error) {
         console.warn('Error fetching products:', error);
         return { products: [], totalPages: 0, totalProducts: 0 };
@@ -180,7 +264,7 @@ export async function fetchCategories(): Promise<Category[]> {
             );
             if (res.ok) {
                 const data = await res.json();
-                return data.map((c: any) => ({
+                return data.map((c: RawCategory) => decodeCategory({
                     id: c.id,
                     name: c.name,
                     slug: c.slug,
@@ -198,7 +282,7 @@ export async function fetchCategories(): Promise<Category[]> {
         });
         if (!response.ok) return [];
         const data = await response.json();
-        return data.map((c: any) => ({ ...c, parent: c.parent ?? 0 }));
+        return data.map((c: Category) => decodeCategory({ ...c, parent: c.parent ?? 0 }));
     } catch (error) {
         console.warn('Error fetching categories:', error);
         return [];
@@ -274,7 +358,7 @@ export async function fetchTags(): Promise<ProductTag[]> {
                 const data = await res.json();
                 return data.map((t: { id: number; name: string; slug: string; count: number }) => ({
                     id: t.id, name: t.name, slug: t.slug, count: t.count,
-                }));
+                })).map(decodeTag);
             }
         }
         return [];
@@ -312,8 +396,8 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
             next: { revalidate: 3600 } 
         });
         if (!response.ok) return null;
-        const data = await response.json();
-        return data[0] || null;
+        const data: Product[] = await response.json();
+        return data[0] ? decodeProduct(data[0]) : null;
     } catch (error) {
         console.warn(`Error fetching product ${slug}:`, error);
         return null;
@@ -332,7 +416,8 @@ export async function fetchProductsByIDs(ids: number[]): Promise<Product[]> {
             next: { revalidate: 3600 },
         });
         if (!response.ok) return [];
-        return await response.json();
+        const data: Product[] = await response.json();
+        return data.map(decodeProduct);
     } catch (error) {
         console.warn('Error fetching products by IDs:', error);
         return [];
