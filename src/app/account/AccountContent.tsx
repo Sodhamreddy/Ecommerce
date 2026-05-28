@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './AccountContent.module.css';
 import {
     LayoutDashboard, User, LogOut, Package, Loader2,
@@ -11,9 +11,15 @@ interface Order {
     id: number;
     status: string;
     total: string;
+    subtotal?: string;
+    discount_total?: string;
+    shipping_total?: string;
+    total_tax?: string;
     date_created: string;
     number: string;
-    line_items?: { name: string; quantity: number }[];
+    line_items?: { id?: number; name: string; quantity: number; total?: string; price?: number }[];
+    billing?: { first_name?: string; last_name?: string; email?: string; phone?: string; address_1?: string; address_2?: string; city?: string; state?: string; postcode?: string; country?: string };
+    shipping?: { first_name?: string; last_name?: string; address_1?: string; address_2?: string; city?: string; state?: string; postcode?: string; country?: string };
 }
 
 type DashView = 'dashboard' | 'orders' | 'addresses' | 'account-details';
@@ -34,7 +40,9 @@ export default function AccountContent() {
     const [user, setUser] = useState<any>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
-    const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
+    const [orderDetailsError, setOrderDetailsError] = useState('');
 
     const [showLoginPwd, setShowLoginPwd] = useState(false);
     const [showRegPwd, setShowRegPwd] = useState(false);
@@ -143,7 +151,26 @@ export default function AccountContent() {
 
     const handleViewOrders = () => {
         setDashView('orders');
+        setSelectedOrder(null);
         if (orders.length === 0) loadOrders();
+    };
+
+    const openOrderDetails = async (order: Order) => {
+        setSelectedOrder(order);
+        setOrderDetailsError('');
+        setOrderDetailsLoading(true);
+        try {
+            const params = new URLSearchParams({ id: String(order.id), customer: String(user.id) });
+            if (user.user_email) params.set('email', user.user_email);
+            const res = await fetch(`/api/wc/orders?${params.toString()}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load order details.');
+            setSelectedOrder(data);
+        } catch (err: any) {
+            setOrderDetailsError(err.message || 'Failed to load order details.');
+        } finally {
+            setOrderDetailsLoading(false);
+        }
     };
 
     const handleLogout = () => {
@@ -267,7 +294,62 @@ export default function AccountContent() {
                         {/* ── Orders ── */}
                         {dashView === 'orders' && (
                             <div className={styles.dashContent}>
-                                <h2 className={styles.sectionTitle}>Orders</h2>
+                                <h2 className={styles.sectionTitle}>{selectedOrder ? `Order #${selectedOrder.number || selectedOrder.id}` : 'Orders'}</h2>
+                                {selectedOrder ? (
+                                    <div className={styles.orderDetailPage}>
+                                        <button type="button" className={styles.backToOrdersBtn} onClick={() => setSelectedOrder(null)}>
+                                            Back to orders
+                                        </button>
+                                        {orderDetailsLoading ? (
+                                            <div className={styles.loadingRow}><Loader2 size={18} className="animate-spin" /> Loading order details...</div>
+                                        ) : (
+                                            <>
+                                                {orderDetailsError && <div className={styles.errorMsg}>{orderDetailsError}</div>}
+                                                <div className={styles.orderMetaGrid}>
+                                                    <div>
+                                                        <span>Date</span>
+                                                        <strong>{new Date(selectedOrder.date_created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                                                    </div>
+                                                    <div>
+                                                        <span>Status</span>
+                                                        <strong className={`${styles.statusBadge} ${statusColor[selectedOrder.status] || ''}`}>{selectedOrder.status}</strong>
+                                                    </div>
+                                                    <div>
+                                                        <span>Total</span>
+                                                        <strong>${parseFloat(selectedOrder.total || '0').toFixed(2)}</strong>
+                                                    </div>
+                                                </div>
+
+                                                <h3 className={styles.orderSubTitle}>Items</h3>
+                                                {selectedOrder.line_items?.length ? (
+                                                    <table className={styles.orderItemsTable}>
+                                                        <tbody>
+                                                            {selectedOrder.line_items.map((item, index) => (
+                                                                <tr key={item.id || index}>
+                                                                    <td>{item.name}</td>
+                                                                    <td>Qty {item.quantity}</td>
+                                                                    <td>${parseFloat(item.total || String((item.price || 0) * item.quantity) || '0').toFixed(2)}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                ) : (
+                                                    <p className={styles.emptyNote}>No item details available for this order.</p>
+                                                )}
+
+                                                <div className={styles.orderTotalsBox}>
+                                                    {selectedOrder.discount_total && parseFloat(selectedOrder.discount_total) > 0 && (
+                                                        <div><span>Discount</span><strong>-${parseFloat(selectedOrder.discount_total).toFixed(2)}</strong></div>
+                                                    )}
+                                                    <div><span>Shipping</span><strong>${parseFloat(selectedOrder.shipping_total || '0').toFixed(2)}</strong></div>
+                                                    <div><span>Tax</span><strong>${parseFloat(selectedOrder.total_tax || '0').toFixed(2)}</strong></div>
+                                                    <div><span>Total</span><strong>${parseFloat(selectedOrder.total || '0').toFixed(2)}</strong></div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
                                 {ordersLoading ? (
                                     <div className={styles.loadingRow}><Loader2 size={18} className="animate-spin" /> Loading orders...</div>
                                 ) : orders.length === 0 ? (
@@ -284,45 +366,25 @@ export default function AccountContent() {
                                         </thead>
                                         <tbody>
                                             {orders.map((order) => (
-                                                <Fragment key={order.id}>
-                                                    <tr
-                                                        className={styles.clickableOrderRow}
-                                                        onClick={() => setExpandedOrderId(prev => prev === order.id ? null : order.id)}
-                                                    >
-                                                        <td>
-                                                            <button type="button" className={styles.orderLink}>
-                                                                #{order.number || order.id}
-                                                            </button>
-                                                        </td>
-                                                        <td>{new Date(order.date_created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                                                        <td><span className={`${styles.statusBadge} ${statusColor[order.status] || ''}`}>{order.status}</span></td>
-                                                        <td>${parseFloat(order.total).toFixed(2)}</td>
-                                                    </tr>
-                                                    {expandedOrderId === order.id && (
-                                                        <tr key={`${order.id}-details`} className={styles.orderDetailsRow}>
-                                                            <td colSpan={4}>
-                                                                <div className={styles.orderDetails}>
-                                                                    <div className={styles.orderDetailsTitle}>Order #{order.number || order.id}</div>
-                                                                    {order.line_items?.length ? (
-                                                                        <ul className={styles.orderItems}>
-                                                                            {order.line_items.map((item, index) => (
-                                                                                <li key={`${order.id}-${index}`}>
-                                                                                    <span>{item.name}</span>
-                                                                                    <span>Qty {item.quantity}</span>
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    ) : (
-                                                                        <p className={styles.emptyNote}>No item details available for this order.</p>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </Fragment>
+                                                <tr
+                                                    key={order.id}
+                                                    className={styles.clickableOrderRow}
+                                                    onClick={() => openOrderDetails(order)}
+                                                >
+                                                    <td>
+                                                        <button type="button" className={styles.orderLink}>
+                                                            #{order.number || order.id}
+                                                        </button>
+                                                    </td>
+                                                    <td>{new Date(order.date_created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                                    <td><span className={`${styles.statusBadge} ${statusColor[order.status] || ''}`}>{order.status}</span></td>
+                                                    <td>${parseFloat(order.total).toFixed(2)}</td>
+                                                </tr>
                                             ))}
                                         </tbody>
                                     </table>
+                                )}
+                                    </>
                                 )}
                             </div>
                         )}

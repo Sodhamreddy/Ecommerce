@@ -371,33 +371,84 @@
     cursor: pointer;
 }
 
-.orderDetailsRow td {
-    background: #fafafa;
-    padding: 0.85rem 1rem 1rem;
+.orderDetailPage {
+    margin-top: 0.5rem;
 }
 
-.orderDetails {
-    border-left: 3px solid #111;
-    padding-left: 1rem;
-}
-
-.orderDetailsTitle {
+.backToOrdersBtn {
+    border: 1px solid #ddd;
+    background: #fff;
+    padding: 0.55rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
     font-weight: 700;
-    margin-bottom: 0.65rem;
+    cursor: pointer;
+    margin-bottom: 1.25rem;
 }
 
-.orderItems {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.backToOrdersBtn:hover {
+    border-color: #111;
 }
 
-.orderItems li {
+.orderMetaGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.orderMetaGrid > div {
+    border: 1px solid #eee;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.orderMetaGrid span {
+    display: block;
+    color: #777;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 0.45rem;
+}
+
+.orderSubTitle {
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.75rem;
+}
+
+.orderItemsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+}
+
+.orderItemsTable td {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.orderItemsTable td:nth-child(2),
+.orderItemsTable td:nth-child(3) {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.orderTotalsBox {
+    max-width: 320px;
+    margin-left: auto;
+    border-top: 2px solid #111;
+    padding-top: 0.5rem;
+}
+
+.orderTotalsBox > div {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.35rem 0;
-    color: #444;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
 }
 
 .statusBadge {

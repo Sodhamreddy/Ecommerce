@@ -23,11 +23,46 @@ async function fetchOrders(params: URLSearchParams) {
     return Array.isArray(data) ? data : [];
 }
 
+async function fetchOrder(id: string) {
+    if (!ckKey || !ckSecret) {
+        throw new Error('WooCommerce API credentials are missing.');
+    }
+
+    const params = new URLSearchParams({
+        consumer_key: ckKey,
+        consumer_secret: ckSecret,
+    });
+
+    const res = await fetch(`${API_BASE_URL}/wc/v3/orders/${id}?${params.toString()}`, {
+        cache: 'no-store',
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error((data as any)?.message || 'Failed to load order.');
+    }
+    return data;
+}
+
 export async function GET(request: Request) {
     try {
         const url = new URL(request.url);
+        const id = url.searchParams.get('id') || '';
         const customer = url.searchParams.get('customer') || '';
         const email = url.searchParams.get('email') || '';
+
+        if (id) {
+            const order = await fetchOrder(id);
+            const orderCustomer = String(order?.customer_id || '');
+            const orderEmail = String(order?.billing?.email || '').toLowerCase();
+            const allowedByCustomer = customer && customer !== '0' && orderCustomer === customer;
+            const allowedByEmail = email && orderEmail === email.toLowerCase();
+
+            if (!allowedByCustomer && !allowedByEmail) {
+                return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
+            }
+
+            return NextResponse.json(order);
+        }
 
         const baseParams = new URLSearchParams({
             per_page: '20',
