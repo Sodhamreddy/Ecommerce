@@ -15,6 +15,9 @@ interface Order {
     discount_total?: string;
     shipping_total?: string;
     total_tax?: string;
+    fee_lines?: { name?: string; total?: string }[];
+    tax_lines?: { tax_total?: string; shipping_tax_total?: string }[];
+    meta_data?: { key?: string; value?: string }[];
     date_created: string;
     number: string;
     line_items?: { id?: number; name: string; quantity: number; total?: string; price?: number }[];
@@ -24,6 +27,44 @@ interface Order {
 
 type DashView = 'dashboard' | 'orders' | 'addresses' | 'account-details';
 type AuthView = 'login' | 'register' | 'forgot';
+
+function money(value: unknown) {
+    const amount = typeof value === 'number' ? value : parseFloat(String(value || '0'));
+    return Number.isFinite(amount) ? amount : 0;
+}
+
+function getOrderMeta(order: Order, key: string) {
+    return order.meta_data?.find((item) => item.key === key)?.value;
+}
+
+function getOrderSalesTax(order: Order) {
+    const wcTax = money(order.total_tax);
+    if (wcTax > 0) return wcTax;
+
+    const salesTaxMeta = money(getOrderMeta(order, '_payment_sales_tax'));
+    if (salesTaxMeta > 0) return salesTaxMeta;
+
+    const feeTax = order.fee_lines
+        ?.filter((line) => String(line.name || '').toLowerCase().includes('sales tax'))
+        .reduce((sum, line) => sum + money(line.total), 0) || 0;
+    if (feeTax > 0) return feeTax;
+
+    const lineTax = order.tax_lines?.reduce((sum, line) => (
+        sum + money(line.tax_total) + money(line.shipping_tax_total)
+    ), 0) || 0;
+    if (lineTax > 0) return lineTax;
+
+    const verifiedPayPalAmount = money(getOrderMeta(order, '_verified_paypal_amount'));
+    const orderTotal = money(order.total);
+    const missingTax = verifiedPayPalAmount - orderTotal;
+    return missingTax > 0 && missingTax < 100 ? missingTax : 0;
+}
+
+function getOrderDisplayTotal(order: Order) {
+    const verifiedPayPalAmount = money(getOrderMeta(order, '_verified_paypal_amount'));
+    const orderTotal = money(order.total);
+    return verifiedPayPalAmount > orderTotal ? verifiedPayPalAmount : orderTotal;
+}
 
 export default function AccountContent() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -316,7 +357,7 @@ export default function AccountContent() {
                                                     </div>
                                                     <div>
                                                         <span>Total</span>
-                                                        <strong>${parseFloat(selectedOrder.total || '0').toFixed(2)}</strong>
+                                                        <strong>${getOrderDisplayTotal(selectedOrder).toFixed(2)}</strong>
                                                     </div>
                                                 </div>
 
@@ -342,8 +383,8 @@ export default function AccountContent() {
                                                         <div><span>Discount</span><strong>-${parseFloat(selectedOrder.discount_total).toFixed(2)}</strong></div>
                                                     )}
                                                     <div><span>Shipping</span><strong>${parseFloat(selectedOrder.shipping_total || '0').toFixed(2)}</strong></div>
-                                                    <div><span>Tax</span><strong>${parseFloat(selectedOrder.total_tax || '0').toFixed(2)}</strong></div>
-                                                    <div><span>Total</span><strong>${parseFloat(selectedOrder.total || '0').toFixed(2)}</strong></div>
+                                                    <div><span>Tax</span><strong>${getOrderSalesTax(selectedOrder).toFixed(2)}</strong></div>
+                                                    <div><span>Total</span><strong>${getOrderDisplayTotal(selectedOrder).toFixed(2)}</strong></div>
                                                 </div>
                                             </>
                                         )}

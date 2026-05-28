@@ -64,6 +64,7 @@ type WooCommerceOrderPayload = {
     line_items: Array<{ product_id: number; quantity: number; variation_id?: number }>;
     shipping_lines?: Array<{ method_id: string; method_title: string; total: string }>;
     coupon_lines?: Array<{ code: string; discount: string }>;
+    fee_lines?: Array<{ name: string; tax_status: string; total: string }>;
     tax_lines?: Array<{ rate_code: string; label: string; tax_total: string; shipping_tax_total: string }>;
     customer_note: string;
     meta_data: Array<{ key: string; value: string }>;
@@ -363,12 +364,13 @@ export async function POST(request: Request) {
         }
 
         if (taxTotal > 0) {
-            orderData.tax_lines = [{
-                rate_code: 'TAX',
-                label: 'Tax',
-                tax_total: toMoney(taxTotal),
-                shipping_tax_total: '0.00',
+            const salesTax = toMoney(taxTotal);
+            orderData.fee_lines = [{
+                name: 'Sales Tax',
+                tax_status: 'none',
+                total: salesTax,
             }];
+            metaData.push({ key: '_payment_sales_tax', value: salesTax });
         }
 
         if (createAccount && accountPassword) {
