@@ -1,4 +1,4 @@
-import { fetchProductBySlug, fetchProductsByIDs, fetchProducts as apiFetchProducts } from '@/lib/api';
+import { fetchProductBySlug, fetchProductSeoBySlug, fetchProductsByIDs, fetchProducts as apiFetchProducts } from '@/lib/api';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
@@ -27,26 +27,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const minorUnit = product.prices.currency_minor_unit ?? 2;
     const price = (parseInt(product.prices.price) / Math.pow(10, minorUnit)).toFixed(minorUnit);
-    const description = product.short_description
+    const backendSeo = await fetchProductSeoBySlug(slug);
+    const yoast = backendSeo?.yoast_head_json;
+    const metaDescription = backendSeo?.meta_data?.find((item) =>
+        ['_yoast_wpseo_metadesc', 'rank_math_description', '_aioseo_description'].includes(String(item.key || ''))
+    )?.value;
+    const metaTitle = backendSeo?.meta_data?.find((item) =>
+        ['_yoast_wpseo_title', 'rank_math_title', '_aioseo_title'].includes(String(item.key || ''))
+    )?.value;
+    const fallbackDescription = product.short_description
         ? product.short_description.replace(/<[^>]*>/g, '').substring(0, 160)
         : product.description.replace(/<[^>]*>/g, '').substring(0, 160);
+    const description = String(yoast?.description || metaDescription || fallbackDescription);
+    const rawTitle = String(yoast?.title || metaTitle || product.name);
+    const title = rawTitle.toLowerCase().includes('jersey perfume')
+        ? rawTitle
+        : `${rawTitle} | Jersey Perfume`;
+    const ogTitle = yoast?.og_title || rawTitle;
+    const ogDescription = yoast?.og_description || description;
+    const ogImages = yoast?.og_image?.map((img) => img.url).filter(Boolean) || product.images.map(img => img.src);
 
     return {
-        title: `${product.name} | Jersey Perfume`,
+        title,
         description,
-        alternates: { canonical: `https://jerseyperfume.com/product/${slug}/` },
+        alternates: { canonical: yoast?.canonical || `https://jerseyperfume.com/product/${slug}/` },
         openGraph: {
-            title: product.name,
-            description,
-            url: `https://jerseyperfume.com/product/${slug}/`,
+            title: ogTitle,
+            description: ogDescription,
+            url: yoast?.canonical || `https://jerseyperfume.com/product/${slug}/`,
             type: 'website',
-            images: product.images.map(img => ({ url: img.src, alt: product.name })),
+            images: ogImages.map(url => ({ url, alt: product.name })),
         },
         twitter: {
             card: 'summary_large_image',
-            title: product.name,
-            description,
-            images: product.images[0]?.src ? [product.images[0].src] : [],
+            title: ogTitle,
+            description: ogDescription,
+            images: ogImages[0] ? [ogImages[0]] : [],
         },
         other: {
             'product:price:amount': price,

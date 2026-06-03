@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './AccountContent.module.css';
 import {
     LayoutDashboard, User, LogOut, Package, Loader2,
-    Eye, EyeOff, MapPin, Settings, ShoppingBag
+    Eye, EyeOff, MapPin, Settings, ShoppingBag, XCircle, RotateCcw
 } from 'lucide-react';
 
 interface Order {
@@ -23,6 +23,12 @@ interface Order {
     line_items?: { id?: number; name: string; quantity: number; total?: string; price?: number }[];
     billing?: { first_name?: string; last_name?: string; email?: string; phone?: string; address_1?: string; address_2?: string; city?: string; state?: string; postcode?: string; country?: string };
     shipping?: { first_name?: string; last_name?: string; address_1?: string; address_2?: string; city?: string; state?: string; postcode?: string; country?: string };
+    actions?: {
+        can_cancel?: boolean;
+        can_refund?: boolean;
+        cancel_disabled_reason?: string;
+        refund_disabled_reason?: string;
+    };
 }
 
 type DashView = 'dashboard' | 'orders' | 'addresses' | 'account-details';
@@ -84,6 +90,8 @@ export default function AccountContent() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
     const [orderDetailsError, setOrderDetailsError] = useState('');
+    const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
+    const [orderActionError, setOrderActionError] = useState('');
 
     const [showLoginPwd, setShowLoginPwd] = useState(false);
     const [showRegPwd, setShowRegPwd] = useState(false);
@@ -214,6 +222,32 @@ export default function AccountContent() {
         }
     };
 
+    const handleOrderAction = async (order: Order, action: 'cancel' | 'refund') => {
+        setOrderActionLoading(`${action}-${order.id}`);
+        setOrderActionError('');
+        try {
+            const res = await fetch('/api/wc/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: order.id,
+                    customer: user.id,
+                    email: user.user_email,
+                    action,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Order action failed.');
+
+            setOrders(prev => prev.map(item => item.id === data.id ? data : item));
+            if (selectedOrder?.id === data.id) setSelectedOrder(data);
+        } catch (err: any) {
+            setOrderActionError(err.message || 'Order action failed.');
+        } finally {
+            setOrderActionLoading(null);
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('jp_user');
         setIsLoggedIn(false);
@@ -262,6 +296,7 @@ export default function AccountContent() {
         processing: styles['status-processing'],
         'on-hold': styles['status-onhold'],
         cancelled: styles['status-cancelled'],
+        refunded: styles['status-refunded'],
         pending: styles['status-pending'],
     };
 
@@ -360,6 +395,29 @@ export default function AccountContent() {
                                                         <strong>${getOrderDisplayTotal(selectedOrder).toFixed(2)}</strong>
                                                     </div>
                                                 </div>
+                                                {orderActionError && <div className={styles.errorMsg}>{orderActionError}</div>}
+                                                <div className={styles.orderActions}>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.cancelOrderBtn}
+                                                        disabled={!selectedOrder.actions?.can_cancel || orderActionLoading === `cancel-${selectedOrder.id}`}
+                                                        title={selectedOrder.actions?.can_cancel ? '' : selectedOrder.actions?.cancel_disabled_reason}
+                                                        onClick={() => handleOrderAction(selectedOrder, 'cancel')}
+                                                    >
+                                                        {orderActionLoading === `cancel-${selectedOrder.id}` ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
+                                                        Cancel order
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.refundOrderBtn}
+                                                        disabled={!selectedOrder.actions?.can_refund || orderActionLoading === `refund-${selectedOrder.id}`}
+                                                        title={selectedOrder.actions?.can_refund ? '' : selectedOrder.actions?.refund_disabled_reason}
+                                                        onClick={() => handleOrderAction(selectedOrder, 'refund')}
+                                                    >
+                                                        {orderActionLoading === `refund-${selectedOrder.id}` ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
+                                                        Request refund
+                                                    </button>
+                                                </div>
 
                                                 <h3 className={styles.orderSubTitle}>Items</h3>
                                                 {selectedOrder.line_items?.length ? (
@@ -403,6 +461,7 @@ export default function AccountContent() {
                                                 <th>Date</th>
                                                 <th>Status</th>
                                                 <th>Total</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -420,6 +479,29 @@ export default function AccountContent() {
                                                     <td>{new Date(order.date_created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                                                     <td><span className={`${styles.statusBadge} ${statusColor[order.status] || ''}`}>{order.status}</span></td>
                                                     <td>${parseFloat(order.total).toFixed(2)}</td>
+                                                    <td onClick={(event) => event.stopPropagation()}>
+                                                        {order.actions?.can_cancel ? (
+                                                            <button
+                                                                type="button"
+                                                                className={styles.tableActionBtn}
+                                                                disabled={orderActionLoading === `cancel-${order.id}`}
+                                                                onClick={() => handleOrderAction(order, 'cancel')}
+                                                            >
+                                                                {orderActionLoading === `cancel-${order.id}` ? <Loader2 size={14} className="animate-spin" /> : 'Cancel'}
+                                                            </button>
+                                                        ) : order.actions?.can_refund ? (
+                                                            <button
+                                                                type="button"
+                                                                className={styles.tableActionBtn}
+                                                                disabled={orderActionLoading === `refund-${order.id}`}
+                                                                onClick={() => handleOrderAction(order, 'refund')}
+                                                            >
+                                                                {orderActionLoading === `refund-${order.id}` ? <Loader2 size={14} className="animate-spin" /> : 'Refund'}
+                                                            </button>
+                                                        ) : (
+                                                            <span className={styles.emptyAction}>-</span>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

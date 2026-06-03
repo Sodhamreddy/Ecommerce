@@ -41,6 +41,15 @@ export interface Product {
     on_sale: boolean;
     attributes: ProductAttribute[];
     related_products?: number[];
+    yoast_head_json?: {
+        title?: string;
+        description?: string;
+        og_title?: string;
+        og_description?: string;
+        og_image?: { url: string }[];
+        canonical?: string;
+    };
+    meta_data?: { key?: string; value?: unknown }[];
 }
 
 import { API_BASE_URL } from './config';
@@ -400,6 +409,45 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
         return data[0] ? decodeProduct(data[0]) : null;
     } catch (error) {
         console.warn(`Error fetching product ${slug}:`, error);
+        return null;
+    }
+}
+
+export async function fetchProductSeoBySlug(slug: string): Promise<Pick<Product, 'yoast_head_json' | 'meta_data'> | null> {
+    try {
+        const key = process.env.WC_CONSUMER_KEY;
+        const secret = process.env.WC_CONSUMER_SECRET;
+        if (!key || !secret) return null;
+
+        const params = new URLSearchParams({
+            slug,
+            consumer_key: key,
+            consumer_secret: secret,
+        });
+        const response = await fetchWithRetry(`${API_BASE_URL}/wc/v3/products?${params.toString()}`, {
+            headers: { 'Accept': 'application/json' },
+            next: { revalidate: 3600 },
+        });
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        const product = Array.isArray(data) ? data[0] : null;
+        if (!product) return null;
+
+        return {
+            yoast_head_json: product.yoast_head_json
+                ? {
+                    ...product.yoast_head_json,
+                    title: product.yoast_head_json.title ? decodeHtmlEntities(product.yoast_head_json.title) : product.yoast_head_json.title,
+                    description: product.yoast_head_json.description ? decodeHtmlEntities(product.yoast_head_json.description) : product.yoast_head_json.description,
+                    og_title: product.yoast_head_json.og_title ? decodeHtmlEntities(product.yoast_head_json.og_title) : product.yoast_head_json.og_title,
+                    og_description: product.yoast_head_json.og_description ? decodeHtmlEntities(product.yoast_head_json.og_description) : product.yoast_head_json.og_description,
+                }
+                : undefined,
+            meta_data: product.meta_data,
+        };
+    } catch (error) {
+        console.warn(`Error fetching product SEO ${slug}:`, error);
         return null;
     }
 }

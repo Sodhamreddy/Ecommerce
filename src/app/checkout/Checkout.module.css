@@ -370,6 +370,31 @@
 
 .removeCouponBtn:hover { color: #d32f2f; }
 
+.freeShippingNotice,
+.freeShippingUnlocked {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.75rem 0.9rem;
+    border-radius: 4px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: 1rem;
+}
+
+.freeShippingNotice {
+    background: #fff8e1;
+    color: #7a4b00;
+    border: 1px solid #f5d788;
+}
+
+.freeShippingUnlocked {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
 /* Totals */
 .summaryTotals {
     padding-bottom: 1rem;

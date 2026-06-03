@@ -8,6 +8,13 @@ import { ShieldCheck, Lock, Loader2, Truck, RotateCcw, Tag } from 'lucide-react'
 import styles from './Checkout.module.css';
 
 // Dynamic PayPal Client ID fetched from API is now handled via state
+type CouponDefinition = {
+    code: string;
+    amount: string;
+    discount_type: string;
+    minimum_amount?: string;
+    maximum_amount?: string;
+};
 
 export default function CheckoutPage() {
     const {
@@ -32,6 +39,7 @@ export default function CheckoutPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [couponCode, setCouponCode] = useState('');
+    const [couponDefinitions, setCouponDefinitions] = useState<Record<string, CouponDefinition>>({});
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponMsg, setCouponMsg] = useState<{text: string, type: 'error' | 'success'} | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -89,28 +97,50 @@ export default function CheckoutPage() {
     const factor = Math.pow(10, minorUnit);
     
     const wcSubtotal = wcCart?.totals?.total_items ? getVal(wcCart.totals.total_items) / factor : 0;
+    const localItemCount = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    const wcItemQuantityCount = Number(wcCart?.items_count || wcCart?.items?.reduce((sum, item) => sum + Number(item.quantity || 0), 0) || 0);
     const wcItemsMatchLocalCart = wcCart?.items?.length === cart.length && cart.every((cartItem) => {
-        const wcItem = wcCart?.items?.find((item: any) => item.id === cartItem.product.id);
+        const wcItem = wcCart?.items?.find((item) => item.id === cartItem.product.id);
         return wcItem && Number(wcItem.quantity) === Number(cartItem.quantity);
     });
+    const wcQuantityMatchesLocalCart = localItemCount > 0 && wcItemQuantityCount === localItemCount;
     // Only trust WC subtotal when item counts match — coupon alone is not enough
     // because WC cart may only have a subset of local cart items synced.
-    const wcSynced = wcSubtotal > 0 && wcItemsMatchLocalCart;
+    const wcSynced = wcSubtotal > 0 && (wcItemsMatchLocalCart || wcQuantityMatchesLocalCart);
 
     // Always use local cartTotal as subtotal — it is derived from localStorage and is always complete.
     // wcSubtotal can be wrong when WC cart is partially synced (fewer items than local cart).
     const subtotal = cartTotal;
     const localShipping = subtotal > 59.99 ? 0 : 5.99;
     const tax = wcSynced && wcCart?.totals?.total_tax ? getVal(wcCart.totals.total_tax) / factor : 0;
-    const appliedCoupons = wcSynced ? (wcCart?.coupons || []) : [];
+    const appliedCoupons = wcCart?.coupons || [];
     const couponCodes = appliedCoupons
         .map((coupon: any) => String(coupon?.code || '').trim())
         .filter(Boolean);
-    const rawDiscount = wcSynced && wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
-    const hero15Applied = couponCodes.some((code) => code.toUpperCase() === 'HERO15');
+    const couponDiscount = appliedCoupons.reduce((sum: number, coupon: any) => {
+        const totals = coupon?.totals || {};
+        return sum + (totals.total_discount ? getVal(totals.total_discount) / factor : 0);
+    }, 0);
+    const rawDiscount = Math.max(
+        wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0,
+        couponDiscount
+    );
+    const apiPercentDiscount = couponCodes.reduce((sum, code) => {
+        const definition = couponDefinitions[code.toUpperCase()];
+        if (!definition || definition.discount_type !== 'percent') return sum;
+
+        const percent = Number(definition.amount || 0);
+        const minimum = Number(definition.minimum_amount || 0);
+        const maximum = Number(definition.maximum_amount || 0);
+        if (!Number.isFinite(percent) || percent <= 0) return sum;
+        if (minimum > 0 && subtotal < minimum) return sum;
+
+        const amount = subtotal * (percent / 100);
+        return sum + (maximum > 0 ? Math.min(amount, maximum) : amount);
+    }, 0);
     const discount = Math.min(
         subtotal,
-        hero15Applied ? Math.min(rawDiscount, subtotal * 0.15) : rawDiscount
+        Math.max(rawDiscount, apiPercentDiscount)
     );
 
     let shipping: number;
@@ -122,12 +152,10 @@ export default function CheckoutPage() {
         shipping = localShipping;
     }
 
-    const wcTotalRaw = wcSynced && wcCart?.totals?.total_price
-        ? getVal(wcCart.totals.total_price) / factor
-        : null;
     // Always compute total from local subtotal to avoid WC partial-sync errors.
-    // Only use wcTotalRaw when fully synced AND it makes sense (> subtotal with shipping would imply no discount).
     const total = subtotal + shipping + tax - discount;
+    const freeShippingThreshold = 59.99;
+    const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
     totalRef.current = total;
     subtotalRef.current = subtotal;
     shippingRef.current = shipping;
@@ -156,6 +184,31 @@ export default function CheckoutPage() {
     useEffect(() => { cartRef.current = cart; }, [cart]);
     useEffect(() => { createAccountRef.current = createAccount; }, [createAccount]);
     useEffect(() => { accountPasswordRef.current = accountPassword; }, [accountPassword]);
+
+    useEffect(() => {
+        const missingCodes = couponCodes
+            .map((code) => code.toUpperCase())
+            .filter((code) => !couponDefinitions[code]);
+        if (missingCodes.length === 0) return;
+
+        let cancelled = false;
+        Promise.all(missingCodes.map(async (code) => {
+            const res = await fetch(`/api/wc/coupons/?code=${encodeURIComponent(code)}`, { cache: 'no-store' });
+            if (!res.ok) return null;
+            return await res.json() as CouponDefinition;
+        })).then((definitions) => {
+            if (cancelled) return;
+            setCouponDefinitions(prev => {
+                const next = { ...prev };
+                definitions.filter(Boolean).forEach((definition) => {
+                    next[String(definition!.code).toUpperCase()] = definition!;
+                });
+                return next;
+            });
+        }).catch(() => {});
+
+        return () => { cancelled = true; };
+    }, [couponCodes, couponDefinitions]);
 
     useEffect(() => {
         setMounted(true);
@@ -991,6 +1044,15 @@ export default function CheckoutPage() {
                                     ))}
                                 </div>
                             )}
+                        </div>
+
+                        <div className={freeShippingRemaining > 0 ? styles.freeShippingNotice : styles.freeShippingUnlocked}>
+                            <Truck size={16} />
+                            <span>
+                                {freeShippingRemaining > 0
+                                    ? `Add $${freeShippingRemaining.toFixed(2)} more to qualify for free shipping.`
+                                    : 'Free shipping unlocked for this order.'}
+                            </span>
                         </div>
 
                         {/* Totals */}

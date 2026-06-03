@@ -47,8 +47,15 @@ export default function CartPage() {
         return wcItem && Number(wcItem.quantity) === Number(cartItem.quantity);
     });
     const wcSynced = wcSubtotal > 0 && wcItemsMatchLocalCart;
-    const appliedCoupons = wcSynced ? (wcCart?.coupons || []) : [];
-    const rawDiscount = wcSynced && wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0;
+    const appliedCoupons = wcCart?.coupons || [];
+    const couponDiscount = appliedCoupons.reduce((sum: number, coupon: any) => {
+        const totals = coupon?.totals || {};
+        return sum + (totals.total_discount ? getVal(totals.total_discount) / factor : 0);
+    }, 0);
+    const rawDiscount = Math.max(
+        wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0,
+        couponDiscount
+    );
     const hero15Applied = appliedCoupons.some((coupon: any) => String(coupon?.code || '').toUpperCase() === 'HERO15');
     const discount = Math.min(cartTotal, hero15Applied ? Math.min(rawDiscount, cartTotal * 0.15) : rawDiscount);
     const displayTotal = discount > 0 ? Math.max(0, cartTotal - discount) : cartTotal;
