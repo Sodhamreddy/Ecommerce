@@ -1,38 +1,79 @@
-import { fetchProducts, fetchCategories, fetchTags } from '@/lib/api';
-import { fetchAllWPPosts } from '@/lib/woocommerce';
+import { fetchCategories, fetchTags } from '@/lib/api';
+import { API_BASE_URL } from '@/lib/config';
 import { MetadataRoute } from 'next';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
 const SITE_URL = 'https://jerseyperfume.com';
 
-async function fetchBlogSlugs(): Promise<string[]> {
-    try {
-        const posts = await fetchAllWPPosts();
-        return posts.map(p => p.slug);
-    } catch {
-        return [];
+type SitemapEntry = {
+    slug: string;
+    modified?: string;
+    date_modified?: string;
+};
+
+async function fetchPaginatedEntries(urlForPage: (page: number) => string): Promise<SitemapEntry[]> {
+    const entries: SitemapEntry[] = [];
+    let page = 1;
+
+    while (true) {
+        try {
+            const res = await fetch(urlForPage(page), {
+                headers: { Accept: 'application/json' },
+                next: { revalidate: 3600 },
+            });
+            if (!res.ok) break;
+
+            const data = await res.json().catch(() => []);
+            if (!Array.isArray(data) || data.length === 0) break;
+
+            entries.push(...data);
+            const totalPages = Number(res.headers.get('X-WP-TotalPages') || 0);
+            if (data.length < 100 || (totalPages && page >= totalPages)) break;
+            page++;
+        } catch {
+            break;
+        }
     }
+
+    return entries;
 }
 
-async function fetchAllProductSlugs(): Promise<string[]> {
-    const slugs: string[] = [];
-    let page = 1;
-    while (true) {
-        const { products, totalPages } = await fetchProducts(page, 100);
-        slugs.push(...products.map(p => p.slug));
-        if (page >= totalPages) break;
-        page++;
+async function fetchBlogEntries(): Promise<SitemapEntry[]> {
+    return fetchPaginatedEntries((page) =>
+        `${API_BASE_URL}/wp/v2/posts?per_page=100&page=${page}&_fields=slug,modified`
+    );
+}
+
+async function fetchProductEntries(): Promise<SitemapEntry[]> {
+    const key = process.env.WC_CONSUMER_KEY;
+    const secret = process.env.WC_CONSUMER_SECRET;
+    if (key && secret) {
+        return fetchPaginatedEntries((page) => {
+            const params = new URLSearchParams({
+                per_page: '100',
+                page: String(page),
+                status: 'publish',
+                consumer_key: key,
+                consumer_secret: secret,
+                _fields: 'slug,date_modified',
+            });
+            return `${API_BASE_URL}/wc/v3/products?${params.toString()}`;
+        });
     }
-    return slugs;
+
+    return fetchPaginatedEntries((page) =>
+        `${API_BASE_URL}/wc/store/v1/products?per_page=100&page=${page}&_fields=slug`
+    );
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const [categories, tags, productSlugs, blogSlugs] = await Promise.all([
+    const [categories, tags, productEntries, blogEntries] = await Promise.all([
         fetchCategories(),
         fetchTags(),
-        fetchAllProductSlugs(),
-        fetchBlogSlugs(),
+        fetchProductEntries(),
+        fetchBlogEntries(),
     ]);
     const siteUrl = SITE_URL;
 
@@ -55,16 +96,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         }));
 
-    const productPages: MetadataRoute.Sitemap = productSlugs.map(slug => ({
-        url: `${siteUrl}/product/${slug}/`,
-        lastModified: new Date(),
+    const productPages: MetadataRoute.Sitemap = productEntries.map(product => ({
+        url: `${siteUrl}/product/${product.slug}/`,
+        lastModified: product.date_modified ? new Date(product.date_modified) : new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
     }));
 
-    const blogPages: MetadataRoute.Sitemap = blogSlugs.map(slug => ({
-        url: `${siteUrl}/blog/${slug}/`,
-        lastModified: new Date(),
+    const blogPages: MetadataRoute.Sitemap = blogEntries.map(post => ({
+        url: `${siteUrl}/blog/${post.slug}/`,
+        lastModified: post.modified ? new Date(post.modified) : new Date(),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
     }));

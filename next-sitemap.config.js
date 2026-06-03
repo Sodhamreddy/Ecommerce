@@ -4,14 +4,20 @@ const SITE_URL = 'https://jerseyperfume.com';
 
 async function fetchAllSlugs() {
     const paths = [];
+    const controllerForTimeout = () => {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 20000);
+        return controller;
+    };
 
     try {
         // --- Products ---
         let productPage = 1;
         while (true) {
+            const controller = controllerForTimeout();
             const res = await fetch(
-                `https://backend.jerseyperfume.com/wp-json/wc/store/v1/products?per_page=100&page=${productPage}`,
-                { headers: { Accept: 'application/json' } }
+                `https://backend.jerseyperfume.com/wp-json/wc/store/v1/products?per_page=100&page=${productPage}&_fields=slug,date_modified`,
+                { headers: { Accept: 'application/json' }, signal: controller.signal }
             );
             if (!res.ok) break;
             const products = await res.json();
@@ -35,9 +41,10 @@ async function fetchAllSlugs() {
         // --- Blog Posts ---
         let blogPage = 1;
         while (true) {
+            const controller = controllerForTimeout();
             const res = await fetch(
                 `https://backend.jerseyperfume.com/wp-json/wp/v2/posts?per_page=100&page=${blogPage}&_fields=slug,modified`,
-                { headers: { Accept: 'application/json' } }
+                { headers: { Accept: 'application/json' }, signal: controller.signal }
             );
             if (!res.ok) break;
             const posts = await res.json();
@@ -59,9 +66,10 @@ async function fetchAllSlugs() {
 
     try {
         // --- Info / WP Pages ---
+        const controller = controllerForTimeout();
         const res = await fetch(
             `https://backend.jerseyperfume.com/wp-json/wp/v2/pages?per_page=100&_fields=slug,modified`,
-            { headers: { Accept: 'application/json' } }
+            { headers: { Accept: 'application/json' }, signal: controller.signal }
         );
         if (res.ok) {
             const pages = await res.json();
