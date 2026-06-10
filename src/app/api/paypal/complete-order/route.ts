@@ -365,11 +365,6 @@ export async function POST(request: Request) {
 
         if (taxTotal > 0) {
             const salesTax = toMoney(taxTotal);
-            orderData.fee_lines = [{
-                name: 'Sales Tax',
-                tax_status: 'none',
-                total: salesTax,
-            }];
             metaData.push({ key: '_payment_sales_tax', value: salesTax });
         }
 
