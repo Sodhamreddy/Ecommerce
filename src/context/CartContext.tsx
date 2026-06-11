@@ -198,6 +198,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const applyCouponToCart = async (code: string): Promise<{ success: boolean; message: string }> => {
         setSyncing(true);
         try {
+            let latestCart = wcCart;
+            for (const item of cart) {
+                const productId = Number(item?.product?.id || 0);
+                const quantity = Number(item?.quantity || 0);
+                if (!productId || quantity <= 0) continue;
+
+                const syncedItem = latestCart?.items?.find(wi => wi.id === productId);
+                if (!syncedItem) {
+                    const added = await addToWCCart(productId, quantity);
+                    if (added && 'items' in added) latestCart = added;
+                } else if (Number(syncedItem.quantity || 0) !== quantity) {
+                    const updated = await updateWCCartItem(syncedItem.key, quantity);
+                    if (updated && 'items' in updated) latestCart = updated;
+                }
+            }
+
+            if (latestCart && 'items' in latestCart) {
+                setWcCart(latestCart);
+                setCart(prev => prev.map(item => {
+                    const wcItem = (latestCart?.items as WCCartItem[]).find(wi => wi.id === item.product.id);
+                    return wcItem ? { ...item, wcKey: wcItem.key } : item;
+                }));
+            }
+
             const result = await applyCoupon(code);
             if (result && 'items' in result) {
                 console.log('[Coupon] WC cart totals:', JSON.stringify(result.totals));

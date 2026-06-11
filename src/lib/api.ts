@@ -396,7 +396,10 @@ export async function fetchAllProducts(): Promise<Product[]> {
 
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
     try {
-        const url = getApiUrl(`wc/store/v1/products?slug=${slug}`);
+        const normalizedSlug = decodeURIComponent(String(slug || '')).trim();
+        const url = /^\d+$/.test(normalizedSlug)
+            ? getApiUrl(`wc/store/v1/products/${normalizedSlug}`)
+            : getApiUrl('wc/store/v1/products', { slug: normalizedSlug });
         const response = await fetchWithRetry(url, { 
             headers: {
                 'Accept': 'application/json',
@@ -405,8 +408,9 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
             next: { revalidate: 3600 } 
         });
         if (!response.ok) return null;
-        const data: Product[] = await response.json();
-        return data[0] ? decodeProduct(data[0]) : null;
+        const data = await response.json();
+        const product = Array.isArray(data) ? data[0] : data;
+        return product ? decodeProduct(product) : null;
     } catch (error) {
         console.warn(`Error fetching product ${slug}:`, error);
         return null;
@@ -455,7 +459,7 @@ export async function fetchProductSeoBySlug(slug: string): Promise<Pick<Product,
 export async function fetchProductsByIDs(ids: number[]): Promise<Product[]> {
     if (!ids || ids.length === 0) return [];
     try {
-        const url = getApiUrl(`wc/store/v1/products?include=${ids.join(',')}`);
+        const url = getApiUrl('wc/store/v1/products', { include: ids.join(',') });
         const response = await fetchWithRetry(url, {
             headers: {
                 'Accept': 'application/json',

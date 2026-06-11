@@ -416,6 +416,42 @@ export default function CheckoutPage() {
         return text.includes('confirm-payment-source') || text.includes('UNPROCESSABLE_ENTITY') || text.includes('status 422');
     };
 
+    const completePayPalOrderWithRetry = async (paypalOrderId: string, options: {
+        paypalTransactionId?: string;
+        shouldCapture?: boolean;
+    } = {}) => {
+        let lastError = 'Order could not be completed.';
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            const res = await fetch('/api/paypal/complete-order/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paypalOrderId,
+                    paypalTransactionId: options.paypalTransactionId,
+                    shouldCapture: options.shouldCapture,
+                    formData: formRef.current,
+                    cartItems: cartRef.current,
+                    checkoutTotals: getCheckoutTotalsPayload(),
+                    customerId: customerIdRef.current,
+                    checkoutProtection: checkoutProtectionRef.current,
+                    createAccount: createAccountRef.current,
+                    accountPassword: accountPasswordRef.current,
+                }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success) return data;
+
+            lastError = data.error || `Order completion failed (${res.status})`;
+            if (attempt < 3) {
+                await new Promise(resolve => setTimeout(resolve, attempt * 1500));
+            }
+        }
+
+        throw new Error(lastError);
+    };
+
     useEffect(() => {
         const originalConsoleError = console.error;
         console.error = (...args: any[]) => {
@@ -460,25 +496,6 @@ export default function CheckoutPage() {
             return data.id;
         };
 
-        const completeOrder = async (paypalOrderId: string, transactionId: string) => {
-            const res = await fetch('/api/paypal/complete-order/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    paypalOrderId,
-                    paypalTransactionId: transactionId,
-                    formData: formRef.current,
-                    cartItems: cartRef.current,
-                    checkoutTotals: getCheckoutTotalsPayload(),
-                    customerId: customerIdRef.current,
-                    checkoutProtection: checkoutProtectionRef.current,
-                    createAccount: createAccountRef.current,
-                    accountPassword: accountPasswordRef.current,
-                }),
-            });
-            return res.json();
-        };
-
         // PayPal Yellow Button (no startProcessing in createOrder — only in onApprove)
         if (paypalContainerRef.current && !paypalBtnsRef.current) {
             try {
@@ -487,17 +504,16 @@ export default function CheckoutPage() {
                     style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'checkout', height: 50 },
                     onClick: (_d: any, actions: any) => validateForm() ? actions.resolve() : actions.reject(),
                     createOrder: createOrderForPayPal,
-                    onApprove: async (data: any, actions: any) => {
+                    onApprove: async (data: any) => {
                         startProcessing();
                         try {
-                            const capture = await actions.order.capture();
-                            const result = await completeOrder(data.orderID, capture.id);
+                            const result = await completePayPalOrderWithRetry(data.orderID, { shouldCapture: true });
                             stopProcessing();
                             if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                             else throw new Error(result.error || 'Failed to complete order');
                         } catch (err: any) {
                             stopProcessing();
-                            setError(err.message || 'Order could not be placed. Please contact info@jerseyperfume.com.');
+                            setError(err.message || 'Payment was received, but order creation is still pending. Please contact info@jerseyperfume.com before trying again.');
                         }
                     },
                     onCancel: () => stopProcessing(),
@@ -564,27 +580,13 @@ export default function CheckoutPage() {
             },
             onApprove: async (data: { orderID: string }) => {
                 try {
-                    const result = await fetch('/api/paypal/complete-order/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            paypalOrderId: data.orderID,
-                            shouldCapture: true,
-                            formData: formRef.current,
-                            cartItems: cartRef.current,
-                            checkoutTotals: getCheckoutTotalsPayload(),
-                            customerId: customerIdRef.current,
-                            checkoutProtection: checkoutProtectionRef.current,
-                            createAccount: createAccountRef.current,
-                            accountPassword: accountPasswordRef.current,
-                        }),
-                    }).then(r => r.json());
+                    const result = await completePayPalOrderWithRetry(data.orderID, { shouldCapture: true });
                     stopProcessing();
                     if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                     else throw new Error(result.error || 'Order failed. Please contact info@jerseyperfume.com.');
                 } catch (err: any) {
                     stopProcessing();
-                    setError(err.message || 'Order failed. Please contact info@jerseyperfume.com.');
+                    setError(err.message || 'Payment was received, but order creation is still pending. Please contact info@jerseyperfume.com before trying again.');
                 }
             },
             onError: (err: any) => {
@@ -676,31 +678,16 @@ export default function CheckoutPage() {
                     if (!data.id) throw new Error(data.error || 'Failed to create PayPal order');
                     return data.id;
                 },
-                onApprove: async (data: any, actions: any) => {
+                onApprove: async (data: any) => {
                     startProcessing();
                     try {
-                        const capture = await actions.order.capture();
-                        const result = await fetch('/api/paypal/complete-order/', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                paypalOrderId: data.orderID,
-                                paypalTransactionId: capture.id,
-                                formData: formRef.current,
-                                cartItems: cartRef.current,
-                                checkoutTotals: getCheckoutTotalsPayload(),
-                                customerId: customerIdRef.current,
-                                checkoutProtection: checkoutProtectionRef.current,
-                                createAccount: createAccountRef.current,
-                                accountPassword: accountPasswordRef.current,
-                            }),
-                        }).then(r => r.json());
+                        const result = await completePayPalOrderWithRetry(data.orderID, { shouldCapture: true });
                         stopProcessing();
                         if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                         else throw new Error(result.error || 'Failed to complete order');
                 } catch (err: any) {
                     stopProcessing();
-                    setError(getPaymentErrorMessage(err));
+                    setError(err.message || 'Payment was received, but order creation is still pending. Please contact info@jerseyperfume.com before trying again.');
                 }
             },
             onCancel: () => stopProcessing(),

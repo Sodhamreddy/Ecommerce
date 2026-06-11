@@ -75,12 +75,14 @@ export default function ProductCard({ product, viewType = 'grid' }: ProductCardP
         : '';
 
     const cardClass = viewType === 'list' ? `${styles.card} ${styles.listCard}` : styles.card;
+    const productIdentifier = String(product.slug || product.id || '').trim();
+    const productHref = productIdentifier ? `/product/${encodeURIComponent(productIdentifier)}` : '/shop';
 
     return (
         <div className={cardClass}>
             {/* Image Block */}
             <div className={styles.imageContainer}>
-                <Link href={`/product/${product.slug}`} className={styles.imageLink}>
+                <Link href={productHref} className={styles.imageLink}>
                     <Image
                         src={mainImage}
                         alt={product.images[0]?.alt || product.name}
@@ -114,7 +116,7 @@ export default function ProductCard({ product, viewType = 'grid' }: ProductCardP
                         <Heart size={15} fill={wishlisted ? 'currentColor' : 'none'} />
                     </button>
                     <Link
-                        href={`/product/${product.slug}`}
+                        href={productHref}
                         className={styles.quickViewBtn}
                         aria-label="Quick view"
                         title="View product"
@@ -133,7 +135,7 @@ export default function ProductCard({ product, viewType = 'grid' }: ProductCardP
                 )}
 
                 <h3 className={styles.name}>
-                    <Link href={`/product/${product.slug}`}>{product.name}</Link>
+                    <Link href={productHref}>{product.name}</Link>
                 </h3>
 
                 {/* Rating */}

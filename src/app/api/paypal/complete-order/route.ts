@@ -158,7 +158,13 @@ async function capturePayPalOrder(orderId: string): Promise<VerifiedPayPalPaymen
         cache: 'no-store',
     });
     const data = await res.json() as PayPalOrder;
-    if (!res.ok) throw new Error(data.message || `PayPal capture failed (${res.status})`);
+    if (!res.ok) {
+        const existingOrder = await getPayPalOrder(orderId);
+        if (existingOrder?.status === 'COMPLETED') {
+            return verifyCompletedPayPalPayment(existingOrder);
+        }
+        throw new Error(data.message || `PayPal capture failed (${res.status})`);
+    }
     return verifyCompletedPayPalPayment(data);
 }
 
@@ -172,7 +178,7 @@ function toMoney(value: unknown) {
     return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
 
-async function wcRequest(path: string, method: 'POST' | 'PUT', body: unknown) {
+async function wcRequest(path: string, method: 'GET' | 'POST' | 'PUT', body?: unknown) {
     const credentials = Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
     const response = await fetch(`${SITE_DOMAIN}/wp-json/wc/v3/${path}`, {
         method,
@@ -180,7 +186,7 @@ async function wcRequest(path: string, method: 'POST' | 'PUT', body: unknown) {
             'Content-Type': 'application/json',
             'Authorization': `Basic ${credentials}`,
         },
-        body: JSON.stringify(body),
+        ...(body ? { body: JSON.stringify(body) } : {}),
         cache: 'no-store',
     });
 
@@ -191,6 +197,50 @@ async function wcRequest(path: string, method: 'POST' | 'PUT', body: unknown) {
     }
 
     return data;
+}
+
+type RecoverableOrder = {
+    id?: number;
+    order_key?: string;
+    transaction_id?: string;
+    billing?: { email?: string };
+    meta_data?: { key?: string; value?: unknown }[];
+};
+
+function orderHasPayPalReference(order: RecoverableOrder, paypalOrderId: string, transactionId?: string) {
+    if (transactionId && String(order.transaction_id || '') === transactionId) return true;
+
+    const refs = new Set(
+        (Array.isArray(order.meta_data) ? order.meta_data : [])
+            .filter((item) => [
+                'paypal_order_id',
+                'paypal_transaction_id',
+                '_ppcp_paypal_order_id',
+                '_paypal_transaction_id',
+                '_ppcp_paypal_payment_capture_id',
+            ].includes(String(item?.key || '')))
+            .map((item) => String(item?.value || ''))
+            .filter(Boolean)
+    );
+
+    return refs.has(paypalOrderId) || Boolean(transactionId && refs.has(transactionId));
+}
+
+async function findExistingWooOrder(paypalOrderId: string, transactionId: string | undefined, email?: string) {
+    const params = new URLSearchParams({
+        per_page: '50',
+        orderby: 'date',
+        order: 'desc',
+    });
+    if (email) params.set('search', email);
+
+    const orders = await wcRequest(`orders?${params.toString()}`, 'GET') as RecoverableOrder[];
+    if (!Array.isArray(orders)) return null;
+
+    return orders.find((order) =>
+        orderHasPayPalReference(order, paypalOrderId, transactionId) &&
+        (!email || String(order.billing?.email || '').toLowerCase() === email.toLowerCase())
+    ) || null;
 }
 
 
@@ -270,6 +320,16 @@ export async function POST(request: Request) {
         }
 
         const transactionId = verifiedPayment.transactionId;
+
+        const existingOrder = await findExistingWooOrder(paypalOrderId, transactionId, formData.email);
+        if (existingOrder?.id && existingOrder?.order_key) {
+            return NextResponse.json({
+                success: true,
+                orderId: existingOrder.id,
+                orderKey: existingOrder.order_key,
+                recovered: true,
+            });
+        }
 
         const lineItems = cartItems.map((item) => ({
             product_id: item.product.id,
@@ -373,7 +433,21 @@ export async function POST(request: Request) {
                 (customerId ? '[Account created]' : '[Account requested but could not be created]');
         }
 
-        const order = await wcRequest('orders', 'POST', orderData);
+        let order;
+        try {
+            order = await wcRequest('orders', 'POST', orderData);
+        } catch (err) {
+            const recoveredOrder = await findExistingWooOrder(paypalOrderId, transactionId, formData.email);
+            if (recoveredOrder?.id && recoveredOrder?.order_key) {
+                return NextResponse.json({
+                    success: true,
+                    orderId: recoveredOrder.id,
+                    orderKey: recoveredOrder.order_key,
+                    recovered: true,
+                });
+            }
+            throw err;
+        }
 
         return NextResponse.json({ success: true, orderId: order.id, orderKey: order.order_key });
     } catch (e: unknown) {

@@ -77,8 +77,13 @@ export default function AutoSuggestSearch() {
         }
     };
 
-    const handleProductClick = (slug: string) => {
-        router.push(`/product/${slug}`);
+    const productPath = (product: Product) => {
+        const identifier = String(product.slug || product.id || '').trim();
+        return identifier ? `/product/${encodeURIComponent(identifier)}` : '/shop';
+    };
+
+    const handleProductClick = (product: Product) => {
+        router.push(productPath(product));
         setIsOpen(false);
         setQuery('');
     };
@@ -114,7 +119,7 @@ export default function AutoSuggestSearch() {
                                 <div
                                     key={product.id}
                                     className={styles.resultItem}
-                                    onClick={() => handleProductClick(product.slug)}
+                                    onClick={() => handleProductClick(product)}
                                 >
                                     <div className={styles.resultImage}>
                                         <Image
@@ -147,7 +152,7 @@ export default function AutoSuggestSearch() {
                                 <div
                                     key={product.id}
                                     className={styles.resultItem}
-                                    onClick={() => handleProductClick(product.slug)}
+                                    onClick={() => handleProductClick(product)}
                                 >
                                     <div className={styles.resultImage}>
                                         <Image

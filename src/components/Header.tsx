@@ -51,6 +51,15 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'AHMED AL MAGHRIBI', href: '/shop/?search=ahmed+al+maghribi' },
     ],
   },
+  // Hidden from menu for now — uncomment to re-enable the Krisco cosmetics menu.
+  // The page itself stays live at /cosmetics/krisco/
+  // {
+  //   label: 'Cosmetics',
+  //   href: '/cosmetics/krisco/',
+  //   children: [
+  //     { label: 'Krisco', href: '/cosmetics/krisco/' },
+  //   ],
+  // },
   { label: 'Blog', href: '/blog' },
 ];
 
