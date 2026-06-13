@@ -9,6 +9,7 @@ import {
     getWCCart,
     applyCoupon,
     removeCoupon,
+    clearWCCart,
     updateCartCustomer,
     WCCart,
     WCCartItem,
@@ -26,7 +27,7 @@ export interface CartContextType {
     addToCart: (product: Product, quantity: number) => void;
     removeFromCart: (productId: number) => void;
     updateQuantity: (productId: number, quantity: number) => void;
-    clearCart: () => void;
+    clearCart: () => Promise<void>;
     cartTotal: number;
     cartCount: number;
     syncing: boolean;
@@ -181,10 +182,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [cart, wcCart]);
 
-    const clearCart = useCallback(() => {
+    const clearCart = useCallback(async () => {
+        const cartToClear = wcCart;
         setCart([]);
         setWcCart(null);
-    }, []);
+        localStorage.removeItem('cart');
+        await clearWCCart(cartToClear);
+    }, [wcCart]);
 
     const cartTotal = cart.reduce((total, item) => {
         const prices = item.product?.prices;
@@ -302,7 +306,7 @@ export function useCart(): CartContextType {
             addToCart: () => {},
             removeFromCart: () => {},
             updateQuantity: () => {},
-            clearCart: () => {},
+            clearCart: async () => {},
             cartTotal: 0,
             cartCount: 0,
             syncing: false,

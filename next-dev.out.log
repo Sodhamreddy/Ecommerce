@@ -1,0 +1,18 @@
+
+> eommerce@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://100.96.243.70:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · staticGenerationMaxConcurrency: 1
+  · staticGenerationRetryCount: 3
+
+✓ Starting...
+Creating turbopack project {
+  dir: 'C:\\Users\\Sodham\\OneDrive - Kleza Solutions Pvt Ltd\\Desktop\\Desktop\\eommerce',
+  testMode: true
+}
+✓ Ready in 89.6s

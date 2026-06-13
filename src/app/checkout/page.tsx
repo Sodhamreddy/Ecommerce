@@ -16,6 +16,17 @@ type CouponDefinition = {
     maximum_amount?: string;
 };
 
+function clampMoney(value: number, max: number) {
+    if (!Number.isFinite(value) || value <= 0) return 0;
+    return Math.min(value, Math.max(0, max));
+}
+
+async function fetchCouponDefinition(code: string): Promise<CouponDefinition | null> {
+    const res = await fetch(`/api/wc/coupons/?code=${encodeURIComponent(code)}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json() as CouponDefinition;
+}
+
 export default function CheckoutPage() {
     const {
         cart, clearCart, cartTotal, wcCart, cartInitialized,
@@ -121,26 +132,35 @@ export default function CheckoutPage() {
         const totals = coupon?.totals || {};
         return sum + (totals.total_discount ? getVal(totals.total_discount) / factor : 0);
     }, 0);
-    const rawDiscount = Math.max(
+    const wcReportedDiscount = Math.max(
         wcCart?.totals?.total_discount ? getVal(wcCart.totals.total_discount) / factor : 0,
         couponDiscount
     );
-    const apiPercentDiscount = couponCodes.reduce((sum, code) => {
+    const couponDefinitionDiscount = couponCodes.reduce((sum, code) => {
         const definition = couponDefinitions[code.toUpperCase()];
-        if (!definition || definition.discount_type !== 'percent') return sum;
+        if (!definition) return sum;
 
-        const percent = Number(definition.amount || 0);
+        const amount = Number(definition.amount || 0);
         const minimum = Number(definition.minimum_amount || 0);
         const maximum = Number(definition.maximum_amount || 0);
-        if (!Number.isFinite(percent) || percent <= 0) return sum;
+        if (!Number.isFinite(amount) || amount <= 0) return sum;
         if (minimum > 0 && subtotal < minimum) return sum;
 
-        const amount = subtotal * (percent / 100);
-        return sum + (maximum > 0 ? Math.min(amount, maximum) : amount);
+        let discountAmount = 0;
+        if (definition.discount_type === 'percent') {
+            discountAmount = subtotal * (amount / 100);
+        } else if (definition.discount_type === 'fixed_cart') {
+            discountAmount = amount;
+        }
+
+        if (maximum > 0) discountAmount = Math.min(discountAmount, maximum);
+        return sum + clampMoney(discountAmount, subtotal);
     }, 0);
+    const allCouponDefinitionsLoaded = couponCodes.length > 0
+        && couponCodes.every((code) => couponDefinitions[code.toUpperCase()]);
     const discount = Math.min(
         subtotal,
-        Math.max(rawDiscount, apiPercentDiscount)
+        couponCodes.length === 0 ? 0 : (allCouponDefinitionsLoaded ? couponDefinitionDiscount : (wcSynced ? wcReportedDiscount : 0))
     );
 
     let shipping: number;
@@ -192,11 +212,7 @@ export default function CheckoutPage() {
         if (missingCodes.length === 0) return;
 
         let cancelled = false;
-        Promise.all(missingCodes.map(async (code) => {
-            const res = await fetch(`/api/wc/coupons/?code=${encodeURIComponent(code)}`, { cache: 'no-store' });
-            if (!res.ok) return null;
-            return await res.json() as CouponDefinition;
-        })).then((definitions) => {
+        Promise.all(missingCodes.map(fetchCouponDefinition)).then((definitions) => {
             if (cancelled) return;
             setCouponDefinitions(prev => {
                 const next = { ...prev };
@@ -509,7 +525,7 @@ export default function CheckoutPage() {
                         try {
                             const result = await completePayPalOrderWithRetry(data.orderID, { shouldCapture: true });
                             stopProcessing();
-                            if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
+                            if (result.success) { await clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                             else throw new Error(result.error || 'Failed to complete order');
                         } catch (err: any) {
                             stopProcessing();
@@ -582,7 +598,7 @@ export default function CheckoutPage() {
                 try {
                     const result = await completePayPalOrderWithRetry(data.orderID, { shouldCapture: true });
                     stopProcessing();
-                    if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
+                    if (result.success) { await clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                     else throw new Error(result.error || 'Order failed. Please contact info@jerseyperfume.com.');
                 } catch (err: any) {
                     stopProcessing();
@@ -683,7 +699,7 @@ export default function CheckoutPage() {
                     try {
                         const result = await completePayPalOrderWithRetry(data.orderID, { shouldCapture: true });
                         stopProcessing();
-                        if (result.success) { clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
+                        if (result.success) { await clearCart(); router.push(`/order-success/?id=${result.orderId}&key=${result.orderKey}`); }
                         else throw new Error(result.error || 'Failed to complete order');
                 } catch (err: any) {
                     stopProcessing();
@@ -759,6 +775,14 @@ export default function CheckoutPage() {
         setCouponMsg(null);
         const res = await applyCouponToCart(couponCode.trim());
         if (res.success) {
+            const appliedCode = couponCode.trim().toUpperCase();
+            const definition = await fetchCouponDefinition(appliedCode).catch(() => null);
+            if (definition) {
+                setCouponDefinitions(prev => ({
+                    ...prev,
+                    [String(definition.code || appliedCode).toUpperCase()]: definition,
+                }));
+            }
             setCouponMsg({ text: 'Coupon applied!', type: 'success' });
             setCouponCode('');
         } else {

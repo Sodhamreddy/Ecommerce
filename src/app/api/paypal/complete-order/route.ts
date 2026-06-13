@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { SITE_DOMAIN } from '@/lib/config';
 import { validateCheckoutProtection } from '@/lib/checkout-protection';
+import { normalizeCheckoutTotals } from '@/lib/checkout-totals';
 
 const WC_KEY = process.env.WC_CONSUMER_KEY;
 const WC_SECRET = process.env.WC_CONSUMER_SECRET;
@@ -311,10 +312,10 @@ export async function POST(request: Request) {
             ? await capturePayPalOrder(paypalOrderId)
             : await verifyExistingPayPalOrder(paypalOrderId);
 
+        const normalizedTotals = await normalizeCheckoutTotals(checkoutTotals);
         if (checkoutTotals?.total != null) {
-            const expectedTotal = Number(checkoutTotals.total);
             const paidTotal = Number(verifiedPayment.amount);
-            if (!Number.isFinite(expectedTotal) || Math.abs(expectedTotal - paidTotal) > 0.01) {
+            if (!Number.isFinite(normalizedTotals.total) || Math.abs(normalizedTotals.total - paidTotal) > 0.01) {
                 throw new Error('PayPal payment amount does not match checkout total.');
             }
         }
@@ -400,12 +401,10 @@ export async function POST(request: Request) {
             orderData.customer_id = attachedCustomerId;
         }
 
-        const shippingTotal = Number(checkoutTotals?.shipping || 0);
-        const taxTotal = Number(checkoutTotals?.tax || 0);
-        const discountTotal = Number(checkoutTotals?.discount || 0);
-        const couponCodes = Array.isArray(checkoutTotals?.coupons)
-            ? checkoutTotals.coupons.map((code) => String(code).trim()).filter(Boolean)
-            : [];
+        const shippingTotal = normalizedTotals.shipping;
+        const taxTotal = normalizedTotals.tax;
+        const discountTotal = normalizedTotals.discount;
+        const couponCodes = normalizedTotals.coupons;
 
         if (shippingTotal > 0) {
             orderData.shipping_lines = [{

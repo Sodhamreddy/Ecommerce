@@ -191,6 +191,28 @@ export interface WCCart {
     needs_shipping: boolean;
 }
 
+export async function clearWCCart(cart?: WCCart | null): Promise<void> {
+    try {
+        const currentCart = cart || await getWCCart();
+        const couponCodes = (currentCart?.coupons || [])
+            .map((coupon: any) => String(coupon?.code || '').trim())
+            .filter(Boolean);
+        const itemKeys = (currentCart?.items || [])
+            .map((item) => item.key)
+            .filter(Boolean);
+
+        for (const code of couponCodes) {
+            try { await removeCoupon(code); } catch {}
+        }
+
+        for (const key of itemKeys) {
+            try { await removeFromWCCart(key); } catch {}
+        }
+    } finally {
+        clearNonce();
+    }
+}
+
 /**
  * Get current WooCommerce cart via local proxy (avoids CORS)
  */

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { validateCheckoutProtection } from '@/lib/checkout-protection';
+import { normalizeCheckoutTotals } from '@/lib/checkout-totals';
 
 const PAYPAL_API = process.env.PAYPAL_ENV === 'sandbox'
     ? 'https://api-m.sandbox.paypal.com'
@@ -25,6 +26,7 @@ type CheckoutTotals = {
     tax?: number;
     discount?: number;
     total?: number;
+    coupons?: string[];
 };
 
 function toMoney(value: number) {
@@ -112,11 +114,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
         }
 
+        const normalizedTotals = await normalizeCheckoutTotals(checkoutTotals);
+        if (Math.abs(normalizedTotals.total - parsed) > 0.01) {
+            return NextResponse.json({ error: 'Checkout totals changed. Please refresh the page and try again.' }, { status: 409 });
+        }
+
         const accessToken = await getAccessToken();
-        const subtotal = Number(checkoutTotals?.subtotal || 0);
-        const shipping = Number(checkoutTotals?.shipping || 0);
-        const tax = Number(checkoutTotals?.tax || 0);
-        const discount = Number(checkoutTotals?.discount || 0);
+        const subtotal = normalizedTotals.subtotal;
+        const shipping = normalizedTotals.shipping;
+        const tax = normalizedTotals.tax;
+        const discount = normalizedTotals.discount;
         const totalsMatch = Math.abs((subtotal + shipping + tax - discount) - parsed) <= 0.01;
         const paypalItems = buildPayPalItems(cartItems, subtotal > 0 ? subtotal : parsed);
         const amountPayload = {

@@ -13,9 +13,11 @@
  *     "pagination": { total, limit, offset, has_more } }
  */
 
-const API_BASE = process.env.KRISCO_API_BASE || 'https://api.kriscosalesllc.com/api/v1';
-const CLIENT_ID = process.env.KRISCO_CLIENT_ID || '';
-const CLIENT_SECRET = process.env.KRISCO_CLIENT_SECRET || '';
+// Trim + strip trailing slash: dashboard-pasted values often carry stray
+// whitespace, and the secret/path are case- and character-exact.
+const API_BASE = (process.env.KRISCO_API_BASE || 'https://api.kriscosalesllc.com/api/v1').trim().replace(/\/+$/, '');
+const CLIENT_ID = (process.env.KRISCO_CLIENT_ID || '').trim();
+const CLIENT_SECRET = (process.env.KRISCO_CLIENT_SECRET || '').trim();
 
 /** A single catalog product as returned by /catalog/products/. */
 export interface KriscoProduct {

@@ -231,7 +231,7 @@ export async function fetchProducts(
         const url = getApiUrl('wc/store/v1/products', params);
         const response = await fetchWithRetry(url, {
             headers: COMMON_HEADERS,
-            next: { revalidate: 3600 } 
+            next: { revalidate: 300 } 
         });
 
         if (!response.ok) {
@@ -269,7 +269,7 @@ export async function fetchCategories(): Promise<Category[]> {
         if (ckKey && ckSecret) {
             const res = await fetch(
                 `${API_BASE_URL}/wc/v3/products/categories?per_page=100&consumer_key=${ckKey}&consumer_secret=${ckSecret}`,
-                { next: { revalidate: 3600 } }
+                { next: { revalidate: 300 } }
             );
             if (res.ok) {
                 const data = await res.json();
@@ -287,7 +287,7 @@ export async function fetchCategories(): Promise<Category[]> {
         const url = getApiUrl('wc/store/v1/products/categories');
         const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
-            next: { revalidate: 3600 }
+            next: { revalidate: 300 }
         });
         if (!response.ok) return [];
         const data = await response.json();
@@ -325,7 +325,7 @@ export async function fetchCategoriesWithThumbnails(): Promise<Category[]> {
             const url = getApiUrl('wc/store/v1/products', { category: cat.id, per_page: 1 });
             const res = await fetchWithRetry(url, {
                 headers: { 'Accept': 'application/json' },
-                next: { revalidate: 3600 },
+                next: { revalidate: 300 },
             });
             if (!res.ok) return { id: cat.id, image: null };
             const products: Product[] = await res.json().catch(() => []);

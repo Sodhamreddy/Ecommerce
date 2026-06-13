@@ -339,7 +339,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                             ))}
                         </div>
                         <div className={styles.sectionCta}>
-                            <Link href="/shop" className={styles.outlineBtn}>View All Products <ChevronRight size={16} /></Link>
+                            <Link href="/product-category/best-sellers" className={styles.outlineBtn}>View All Best Sellers <ChevronRight size={16} /></Link>
                         </div>
                     </div>
                 </section>

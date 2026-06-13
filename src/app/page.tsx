@@ -1,4 +1,4 @@
-import { fetchProducts, fetchCategoriesWithThumbnails, Category } from "@/lib/api";
+import { fetchProducts, fetchCategoriesWithThumbnails } from "@/lib/api";
 import { fetchSmartSliderSlides, SlideData } from "@/lib/woocommerce";
 import { API_BASE_URL } from "@/lib/config";
 import { Metadata } from "next";
@@ -29,9 +29,13 @@ export const metadata: Metadata = {
 
 async function getHomepageData() {
   try {
-    const [bestSellersRes, newArrivalsRes, gourmandRes, onSaleRes, blogRes, categoriesRes, slidesRes] =
+    const categories = await fetchCategoriesWithThumbnails();
+    const bestSellersCategory = categories.find((category) => category.slug === "best-sellers");
+    const bestSellersCategoryParam = bestSellersCategory?.id.toString() ?? "best-sellers";
+
+    const [bestSellersRes, newArrivalsRes, gourmandRes, onSaleRes, blogRes, slidesRes] =
       await Promise.allSettled([
-        fetchProducts(1, 8, "", "", "", "", "popularity", "desc"),
+        fetchProducts(1, 8, "", bestSellersCategoryParam, "", "", "date", "desc"),
         fetchProducts(1, 8, "", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "Give Me Gourmand", "", "", "", "date", "desc"),
         fetchProducts(1, 8, "", "", "", "", "date", "desc", true),
@@ -43,13 +47,16 @@ async function getHomepageData() {
         }).then((r) =>
           r.ok ? r.json() : []
         ),
-        fetchCategoriesWithThumbnails(),
         fetchSmartSliderSlides(2),
       ]);
 
+    const bestSellers =
+      bestSellersRes.status === "fulfilled" && bestSellersRes.value.products.length > 0
+        ? bestSellersRes.value.products
+        : (await fetchProducts(1, 8, "", "", "", "", "popularity", "desc")).products;
+
     return {
-      bestSellers:
-        bestSellersRes.status === "fulfilled" ? bestSellersRes.value.products : [],
+      bestSellers,
       newArrivals:
         newArrivalsRes.status === "fulfilled" ? newArrivalsRes.value.products : [],
       gourmandProducts:
@@ -60,8 +67,7 @@ async function getHomepageData() {
         blogRes.status === "fulfilled" && Array.isArray(blogRes.value)
           ? blogRes.value
           : [],
-      categories:
-        categoriesRes.status === "fulfilled" ? (categoriesRes.value as Category[]) : [],
+      categories,
       slides:
         slidesRes.status === "fulfilled" ? (slidesRes.value as SlideData[]) : [],
     };
