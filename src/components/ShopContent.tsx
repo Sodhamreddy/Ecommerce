@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Product, Category } from '@/lib/api';
 import { fetchProductsAction } from '@/app/actions';
 import ProductCard from './ProductCard';
-import { Search, ChevronRight, LayoutGrid, List, ChevronLeft, SlidersHorizontal, X, Flame, Star, Tag, Sparkles, TrendingUp, Gift } from 'lucide-react';
+import { Search, ChevronRight, LayoutGrid, List, ChevronLeft, SlidersHorizontal, X, Star, Tag, Sparkles, TrendingUp, Gift } from 'lucide-react';
 import styles from './ShopContent.module.css';
 
 interface ShopContentProps {
@@ -17,6 +17,7 @@ interface ShopContentProps {
     initialSearchQuery?: string;
     initialOnSale?: boolean;
     initialTagQuery?: string;
+    initialPage?: number;
 }
 
 const SORT_OPTIONS = [
@@ -48,11 +49,11 @@ export default function ShopContent({
     initialProducts,
     initialCategories,
     initialTotalPages,
-    initialTotalProducts,
     initialCategoryQuery = '',
     initialSearchQuery = '',
     initialOnSale = false,
     initialTagQuery = '',
+    initialPage = 1,
 }: ShopContentProps) {
     const [products, setProducts] = useState(initialProducts);
     const [categories] = useState(initialCategories.filter(cat => {
@@ -65,9 +66,8 @@ export default function ShopContent({
             n !== 'man' && n !== 'men' && n !== 'women' && n !== 'woman'
         );
     }));
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(initialPage);
     const [totalPages, setTotalPages] = useState(initialTotalPages);
-    const [totalProducts, setTotalProducts] = useState(initialTotalProducts);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState(initialSearchQuery);
     const [selectedBrand, setSelectedBrand] = useState('');
@@ -82,21 +82,34 @@ export default function ShopContent({
     const lockedTag = useRef(initialTagQuery);
     const quickTabsRef = useRef<HTMLDivElement>(null);
 
+    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     
     // Sync with URL params only when they are explicitly present
     useEffect(() => {
         const cat = searchParams.get('category');
         const s = searchParams.get('search');
-        if (cat === null && s === null) return;
-        const catVal = cat || '';
-        const sVal = s || '';
-        if (catVal !== selectedCategory || sVal !== search) {
+        const pageParam = Math.max(1, Number(searchParams.get('page') || initialPage || 1));
+        if (cat === null && s === null && pageParam === page) return;
+        const catVal = cat === null ? selectedCategory : cat;
+        const sVal = s === null ? search : s;
+        if (catVal !== selectedCategory || sVal !== search || pageParam !== page) {
             if (catVal) setSelectedCategory(catVal);
             if (sVal) setSearch(sVal);
-            runFilter({ cat: catVal, s: sVal });
+            runFilter({ cat: catVal, s: sVal, pg: pageParam });
         }
+    // This effect intentionally reacts only to URL search param changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
+
+    const updatePageUrl = (newPage: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (newPage > 1) params.set('page', String(newPage));
+        else params.delete('page');
+        const query = params.toString();
+        router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    };
 
     // Sticky quick tabs on scroll
     useEffect(() => {
@@ -130,12 +143,11 @@ export default function ShopContent({
 
         // WC Store API v1 requires numeric category ID, not slug
         const catParam = resolveCatParam(catSlug);
-        const { products: newProducts, totalPages: newTotalPages, totalProducts: newTotal } =
+        const { products: newProducts, totalPages: newTotalPages } =
             await fetchProductsAction(pg, 24, s, catParam, pmn.toString(), pmx.toString(), sort, 'desc', isOnSale, lockedTag.current);
 
         setProducts(newProducts);
         setTotalPages(newTotalPages);
-        setTotalProducts(newTotal);
         setPage(pg);
         setLoading(false);
         if (pg === 1) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -192,6 +204,7 @@ export default function ShopContent({
 
     const handlePageChange = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages) return;
+        updatePageUrl(newPage);
         runFilter({ pg: newPage });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -286,7 +299,6 @@ export default function ShopContent({
                                         onClick={() => selectCategory(cat.slug)}
                                     >
                                         <span dangerouslySetInnerHTML={{ __html: cat.name }} />
-                                        <span className={styles.chipCount}>{cat.count}</span>
                                     </button>
                                 ))}
                             </div>
@@ -362,7 +374,7 @@ export default function ShopContent({
                                     <button onClick={clearCategory} className={styles.pillClear}><X size={12} /></button>
                                 </div>
                             ) : (
-                                <span className={styles.resultCount}>{totalProducts.toLocaleString()} Products</span>
+                                <span className={styles.resultCount}>Products</span>
                             )}
                         </div>
                         <div className={styles.topRight}>

@@ -70,13 +70,32 @@
     margin-bottom: 1.5rem;
 }
 
-.description h1,
-.description h2,
-.description h3,
-.description h4,
-.description h5,
-.description h6 {
+.tabContent .description :is(h1, h2, h3, h4, h5, h6) {
     text-align: left !important;
+    color: #111 !important;
+    font-family: var(--font-serif) !important;
+    line-height: 1.2 !important;
+    margin: 2rem 0 1rem !important;
+    display: block !important;
+}
+
+.tabContent .description h1 {
+    font-size: 2.5rem !important;
+    font-weight: 700 !important;
+}
+
+.tabContent .description h2 {
+    font-size: 1.9rem !important;
+    font-weight: 400 !important;
+}
+
+.tabContent .description h3 {
+    font-size: 1.45rem !important;
+    font-weight: 400 !important;
+}
+
+.tabContent .description :is(h4, h5, h6) {
+    font-weight: 400 !important;
 }
 
 .reviews {

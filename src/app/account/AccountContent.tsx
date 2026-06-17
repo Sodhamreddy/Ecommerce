@@ -92,6 +92,7 @@ export default function AccountContent() {
     const [orderDetailsError, setOrderDetailsError] = useState('');
     const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
     const [orderActionError, setOrderActionError] = useState('');
+    const [orderActionMessage, setOrderActionMessage] = useState('');
 
     const [showLoginPwd, setShowLoginPwd] = useState(false);
     const [showRegPwd, setShowRegPwd] = useState(false);
@@ -225,6 +226,7 @@ export default function AccountContent() {
     const handleOrderAction = async (order: Order, action: 'cancel' | 'refund') => {
         setOrderActionLoading(`${action}-${order.id}`);
         setOrderActionError('');
+        setOrderActionMessage('');
         try {
             const res = await fetch('/api/wc/orders', {
                 method: 'POST',
@@ -241,6 +243,7 @@ export default function AccountContent() {
 
             setOrders(prev => prev.map(item => item.id === data.id ? data : item));
             if (selectedOrder?.id === data.id) setSelectedOrder(data);
+            setOrderActionMessage(data.message || (action === 'cancel' ? 'Order cancelled successfully.' : 'Refund request submitted.'));
         } catch (err: any) {
             setOrderActionError(err.message || 'Order action failed.');
         } finally {
@@ -396,6 +399,7 @@ export default function AccountContent() {
                                                     </div>
                                                 </div>
                                                 {orderActionError && <div className={styles.errorMsg}>{orderActionError}</div>}
+                                                {orderActionMessage && <div className={styles.successMsg}>{orderActionMessage}</div>}
                                                 <div className={styles.orderActions}>
                                                     <button
                                                         type="button"

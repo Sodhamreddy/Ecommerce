@@ -76,6 +76,7 @@ type VerifiedPayPalPayment = {
     transactionId: string;
     amount: string;
     currency: string;
+    items: Array<{ productId: number; quantity: number }>;
 };
 
 type PayPalCapture = {
@@ -88,6 +89,10 @@ type PayPalCapture = {
 };
 
 type PayPalPurchaseUnit = {
+    items?: Array<{
+        sku?: string;
+        quantity?: string;
+    }>;
     payments?: {
         captures?: PayPalCapture[];
     };
@@ -136,6 +141,13 @@ function verifyCompletedPayPalPayment(paypalOrder: PayPalOrder): VerifiedPayPalP
         transactionId: capture.id!,
         amount,
         currency,
+        items: (paypalOrder?.purchase_units || [])
+            .flatMap((unit) => unit?.items || [])
+            .map((item) => ({
+                productId: Number(item?.sku || 0),
+                quantity: Math.max(1, Number(item?.quantity || 1)),
+            }))
+            .filter((item) => item.productId > 0),
     };
 }
 
@@ -332,11 +344,20 @@ export async function POST(request: Request) {
             });
         }
 
-        const lineItems = cartItems.map((item) => ({
+        const cartLineItems = (Array.isArray(cartItems) ? cartItems : []).map((item) => ({
             product_id: item.product.id,
             quantity: item.quantity,
             ...(item.variationId ? { variation_id: item.variationId } : {}),
+        })).filter((item) => item.product_id > 0 && item.quantity > 0);
+        const paypalLineItems = verifiedPayment.items.map((item) => ({
+            product_id: item.productId,
+            quantity: item.quantity,
         }));
+        const lineItems = paypalLineItems.length > cartLineItems.length ? paypalLineItems : cartLineItems;
+
+        if (lineItems.length === 0) {
+            throw new Error('No valid order items were found. Please contact info@jerseyperfume.com with your PayPal transaction ID.');
+        }
 
         const metaData: Array<{ key: string; value: string }> = [
             { key: 'paypal_order_id', value: paypalOrderId },
@@ -346,6 +367,7 @@ export async function POST(request: Request) {
             { key: '_ppcp_paypal_payment_capture_id', value: transactionId },
             { key: '_verified_paypal_amount', value: verifiedPayment.amount },
             { key: '_verified_paypal_currency', value: verifiedPayment.currency },
+            { key: '_headless_line_item_count', value: String(lineItems.length) },
         ];
 
         let customerId: number | null = null;

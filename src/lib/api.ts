@@ -64,6 +64,26 @@ interface RawCategory {
     image?: { id: number; src: string; alt?: string };
 }
 
+interface RawWCProduct {
+    id: number;
+    name: string;
+    slug: string;
+    description?: string;
+    short_description?: string;
+    price?: string;
+    regular_price?: string;
+    sale_price?: string;
+    currency?: string;
+    images?: { id: number; src: string; alt?: string }[];
+    categories?: { id: number; name: string; slug: string }[];
+    stock_status?: string;
+    on_sale?: boolean;
+    attributes?: { id: number; name: string; slug?: string; variation?: boolean; options?: string[] }[];
+    related_ids?: number[];
+    yoast_head_json?: Product['yoast_head_json'];
+    meta_data?: Product['meta_data'];
+}
+
 export function decodeHtmlEntities(value: string): string {
     if (!value) return '';
 
@@ -169,6 +189,93 @@ const getApiUrl = (path: string, params: Record<string, string | number> = {}) =
     return `/api/proxy?${finalProxyQueryString}`;
 };
 
+function toMinorUnits(value: string | number | undefined, minorUnit = 2): string {
+    const amount = Number(value || 0);
+    return Number.isFinite(amount) ? Math.round(amount * Math.pow(10, minorUnit)).toString() : '0';
+}
+
+function normalizeSlug(value: string): string {
+    return value
+        .toLowerCase()
+        .trim()
+        .replace(/&amp;/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function decodeV3Product(product: RawWCProduct): Product {
+    const minorUnit = 2;
+    const currencyCode = product.currency || 'USD';
+    return decodeProduct({
+        id: product.id,
+        name: product.name || '',
+        slug: product.slug || String(product.id),
+        description: product.description || '',
+        short_description: product.short_description || '',
+        prices: {
+            price: toMinorUnits(product.price, minorUnit),
+            regular_price: toMinorUnits(product.regular_price || product.price, minorUnit),
+            sale_price: toMinorUnits(product.sale_price || product.price, minorUnit),
+            currency_symbol: currencyCode === 'USD' ? '$' : currencyCode,
+            currency_code: currencyCode,
+            currency_minor_unit: minorUnit,
+        },
+        images: product.images?.map(image => ({
+            id: image.id,
+            src: image.src,
+            thumbnail: image.src,
+            alt: image.alt || product.name || '',
+        })) ?? [],
+        categories: product.categories?.map(category => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+        })) ?? [],
+        is_in_stock: String(product.stock_status || '').toLowerCase() === 'instock',
+        on_sale: Boolean(product.on_sale),
+        attributes: product.attributes?.map(attribute => ({
+            id: attribute.id,
+            name: attribute.name,
+            taxonomy: attribute.slug || '',
+            has_variations: Boolean(attribute.variation),
+            terms: (attribute.options || []).map((option, index) => ({
+                id: index,
+                name: option,
+                slug: normalizeSlug(option),
+            })),
+        })) ?? [],
+        related_products: product.related_ids ?? [],
+        yoast_head_json: product.yoast_head_json,
+        meta_data: product.meta_data,
+    });
+}
+
+async function fetchProductsViaV3(params: Record<string, string | number>): Promise<{ products: Product[], totalPages: number, totalProducts: number } | null> {
+    const ckKey = process.env.WC_CONSUMER_KEY;
+    const ckSecret = process.env.WC_CONSUMER_SECRET;
+    if (typeof window !== 'undefined' || !ckKey || !ckSecret) return null;
+
+    const query = new URLSearchParams({
+        consumer_key: ckKey,
+        consumer_secret: ckSecret,
+        status: 'publish',
+    });
+    Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') query.set(key, val.toString());
+    });
+
+    const response = await fetchWithRetry(`${API_BASE_URL}/wc/v3/products?${query.toString()}`, {
+        headers: { 'Accept': 'application/json' },
+        next: { revalidate: 300 },
+    });
+    if (!response.ok) return null;
+
+    const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0');
+    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
+    const data: RawWCProduct[] = await response.json();
+    return { products: data.map(decodeV3Product), totalPages, totalProducts };
+}
+
 export async function fetchProducts(
     page = 1,
     perPage = 20,
@@ -217,11 +324,17 @@ export async function fetchProducts(
 
         // Only add price filters if values are provided and non-zero/non-default
         if (minPrice && minPrice !== '0') {
-            params.min_price = (parseFloat(minPrice) * 100).toString();
+            params.min_price = minPrice;
         }
         if (maxPrice && maxPrice !== '400') {
-            params.max_price = (parseFloat(maxPrice) * 100).toString();
+            params.max_price = maxPrice;
         }
+
+        const v3Result = await fetchProductsViaV3(params);
+        if (v3Result) return v3Result;
+
+        if (params.min_price) params.min_price = (parseFloat(minPrice) * 100).toString();
+        if (params.max_price) params.max_price = (parseFloat(maxPrice) * 100).toString();
 
         const COMMON_HEADERS = {
             'Accept': 'application/json',
@@ -242,7 +355,7 @@ export async function fetchProducts(
             try {
                 const errorBody = JSON.parse(errorText);
                 console.warn('WooCommerce API Error Body (JSON):', errorBody);
-            } catch (e) {
+            } catch {
                 console.warn('WooCommerce API Error Body (Not JSON)');
             }
             
@@ -397,6 +510,13 @@ export async function fetchAllProducts(): Promise<Product[]> {
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
     try {
         const normalizedSlug = decodeURIComponent(String(slug || '')).trim();
+        const v3Result = await fetchProductsViaV3(
+            /^\d+$/.test(normalizedSlug)
+                ? { include: normalizedSlug, per_page: 1 }
+                : { slug: normalizedSlug, per_page: 1 }
+        );
+        if (v3Result?.products?.[0]) return v3Result.products[0];
+
         const url = /^\d+$/.test(normalizedSlug)
             ? getApiUrl(`wc/store/v1/products/${normalizedSlug}`)
             : getApiUrl('wc/store/v1/products', { slug: normalizedSlug });
@@ -459,6 +579,9 @@ export async function fetchProductSeoBySlug(slug: string): Promise<Pick<Product,
 export async function fetchProductsByIDs(ids: number[]): Promise<Product[]> {
     if (!ids || ids.length === 0) return [];
     try {
+        const v3Result = await fetchProductsViaV3({ include: ids.join(','), per_page: ids.length });
+        if (v3Result) return v3Result.products;
+
         const url = getApiUrl('wc/store/v1/products', { include: ids.join(',') });
         const response = await fetchWithRetry(url, {
             headers: {

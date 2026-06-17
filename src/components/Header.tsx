@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ShoppingBag, Search, User, Heart, Truck, Menu, Home, X, ChevronDown } from 'lucide-react';
 import styles from './Header.module.css';
 import AutoSuggestSearch from './AutoSuggestSearch';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 
 type NavChild = { label: string; href: string };
@@ -51,21 +51,13 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'AHMED AL MAGHRIBI', href: '/shop/?search=ahmed+al+maghribi' },
     ],
   },
-  { label: 'Beauty', href: '/beauty/' },
   { label: 'Blog', href: '/blog' },
 ];
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mobileOpenMenu, setMobileOpenMenu] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
   const { cart } = useCart();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
   return (
     <>
@@ -109,7 +101,6 @@ export default function Header() {
             <div className={styles.cartContainer}>
               <Link href="/cart" className={styles.iconBtn} style={{ gap: '6px' }}>
                 <ShoppingBag size={24} strokeWidth={1.5} />
-                {mounted && cartCount > 0 && <span className={styles.cartCountText}>{cartCount}</span>}
               </Link>
               <div className={styles.cartDropdown}>
                 {cart.length === 0 ? (
@@ -231,7 +222,6 @@ export default function Header() {
         <Link href="/cart" className={styles.mobileNavItem}>
           <span style={{ position: 'relative', display: 'inline-flex' }}>
             <ShoppingBag size={22} strokeWidth={1.5} />
-            {mounted && cartCount > 0 && <span className={styles.mobileCartBadge}>{cartCount > 99 ? '99+' : cartCount}</span>}
           </span>
           <span>Cart</span>
         </Link>

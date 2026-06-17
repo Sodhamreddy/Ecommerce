@@ -214,6 +214,33 @@
     padding-left: 1rem;
 }
 
+.shortDescription :is(h1, h2, h3, h4, h5, h6) {
+    color: #111 !important;
+    font-family: var(--font-serif) !important;
+    line-height: 1.2 !important;
+    margin: 1.4rem 0 0.8rem !important;
+    display: block !important;
+}
+
+.shortDescription h1 {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+}
+
+.shortDescription h2 {
+    font-size: 1.55rem !important;
+    font-weight: 400 !important;
+}
+
+.shortDescription h3 {
+    font-size: 1.25rem !important;
+    font-weight: 400 !important;
+}
+
+.shortDescription :is(h4, h5, h6) {
+    font-weight: 400 !important;
+}
+
 /* Stock Status */
 .stockStatus {
     display: inline-flex;
@@ -611,4 +638,4 @@
     .scentNote {
         min-width: 100%;
     }
-}
+}

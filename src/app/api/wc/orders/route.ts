@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/config';
+import { notifyBridgeOrderCancelled } from '@/lib/api2cart-bridge';
 
 const ckKey = process.env.WC_CONSUMER_KEY;
 const ckSecret = process.env.WC_CONSUMER_SECRET;
@@ -85,7 +86,7 @@ function getActionState(order: WCOrder) {
     const ageMs = Number.isFinite(createdAt.getTime()) ? Date.now() - createdAt.getTime() : Number.POSITIVE_INFINITY;
     const withinCancelWindow = ageMs >= 0 && ageMs <= 60 * 60 * 1000;
     const status = String(order?.status || '').toLowerCase();
-    const cancelableStatuses = ['pending', 'processing', 'on-hold'];
+    const cancelableStatuses = ['pending', 'processing', 'on-hold', 'completed'];
     const refundableStatuses = ['cancelled', 'canceled'];
     const alreadyRefunded = status === 'refunded' || (Array.isArray(order?.refunds) && order.refunds.length > 0);
 
@@ -183,15 +184,33 @@ export async function POST(request: Request) {
             if (!actions.can_cancel) {
                 return NextResponse.json({ error: actions.cancel_disabled_reason || 'This order cannot be cancelled.' }, { status: 400 });
             }
+            const cancelledAt = new Date().toISOString();
+            const previousStatus = String(order.status || '');
             const updated = await wcRequest(`orders/${id}`, 'PUT', {
                 status: 'cancelled',
                 customer_note: order.customer_note || '',
                 meta_data: [
                     ...(Array.isArray(order.meta_data) ? order.meta_data : []),
-                    { key: '_headless_cancelled_at', value: new Date().toISOString() },
+                    { key: '_headless_cancelled_at', value: cancelledAt },
+                    { key: '_veeqo_cancel_requested', value: 'yes' },
+                    { key: '_veeqo_cancel_requested_at', value: cancelledAt },
                 ],
             });
-            return NextResponse.json(withActions(updated as WCOrder));
+            const bridgeResult = await notifyBridgeOrderCancelled(Number(id), previousStatus);
+            try {
+                await wcRequest(`orders/${id}/notes`, 'POST', {
+                    note: bridgeResult.ok
+                        ? `Customer cancelled this order from My Account at ${cancelledAt}. Veeqo/API2Cart bridge notified.`
+                        : `Customer cancelled this order from My Account at ${cancelledAt}. Veeqo/API2Cart bridge notification failed: ${bridgeResult.message || 'Unknown bridge error'}`,
+                    customer_note: false,
+                });
+            } catch (noteErr) {
+                console.warn('[WC Order Action] Failed to add cancellation note:', noteErr);
+            }
+            return NextResponse.json({
+                ...withActions(updated as WCOrder),
+                message: 'Order cancelled successfully.',
+            });
         }
 
         if (action === 'refund') {
