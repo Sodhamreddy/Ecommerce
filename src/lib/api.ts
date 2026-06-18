@@ -259,6 +259,7 @@ async function fetchProductsViaV3(params: Record<string, string | number>): Prom
         consumer_key: ckKey,
         consumer_secret: ckSecret,
         status: 'publish',
+        stock_status: 'instock',
     });
     Object.entries(params).forEach(([key, val]) => {
         if (val !== undefined && val !== null && val !== '') query.set(key, val.toString());
