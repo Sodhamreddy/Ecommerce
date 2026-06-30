@@ -793,6 +793,126 @@ export interface SlideData {
     accent?: string;
 }
 
+function normalizeSlideHref(raw: unknown): string {
+    if (Array.isArray(raw)) {
+        raw = raw.find((item) => typeof item === 'string' && item.trim()) ?? raw[0];
+    } else if (raw && typeof raw === 'object') {
+        const value = raw as Record<string, unknown>;
+        raw = value.href ?? value.url ?? value.link ?? '';
+    }
+
+    let href = String(raw ?? '').trim();
+    if (!href) return '/shop';
+
+    href = href
+        .replace(/\$url\//g, `${SITE_DOMAIN}/`)
+        .replace(/\$upload\$/g, `${SITE_DOMAIN}/wp-content/uploads`)
+        .replace(/&amp;/g, '&')
+        .trim();
+
+    if (href.includes('|*|')) href = href.split('|*|')[0].trim();
+
+    // SmartSlider sometimes prefixes absolute links with "#", which makes them
+    // behave like same-page anchors unless we strip it before normalising.
+    href = href.replace(/^#+(?=https?:\/\/|\/)/i, '');
+
+    try {
+        const url = new URL(href);
+        const host = url.hostname.replace(/^www\./, '');
+        if (host === 'jerseyperfume.com' || host === 'backend.jerseyperfume.com') {
+            href = `${url.pathname}${url.search}${url.hash}`;
+        }
+    } catch {
+        // Relative URL; handled below.
+    }
+
+    href = href
+        .replace(/^https?:\/\/(?:www\.)?(?:backend\.)?jerseyperfume\.com\/index\.php/i, '')
+        .replace(/^https?:\/\/(?:www\.)?(?:backend\.)?jerseyperfume\.com/i, '')
+        .replace(/^\/index\.php(?=\/|$)/i, '')
+        .trim();
+
+    if (!href || href === '#' || href.toLowerCase().startsWith('javascript:') || href.startsWith('article')) {
+        return '/shop';
+    }
+
+    return href.startsWith('/') || href.startsWith('http') || href.startsWith('#') ? href : `/${href}`;
+}
+
+function decodeAttributeValue(value: string): string {
+    return value
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+}
+
+function pickHrefFromSmartSliderBlock(block: string): string {
+    const candidates = Array.from(block.matchAll(/\s(?:data-href|href)=["']([^"']+)["']/gi))
+        .map((match) => normalizeSlideHref(decodeAttributeValue(match[1])))
+        .filter((href) => href && href !== '/shop' && !href.startsWith('#'));
+
+    return candidates.find((href) => href.includes('/product/'))
+        ?? candidates.find((href) => href.includes('/product-category/'))
+        ?? candidates[0]
+        ?? '';
+}
+
+function normalizeSlideKey(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/\.[a-z0-9]+(?:\?.*)?$/i, '')
+        .replace(/\bcopy\b/g, '')
+        .replace(/[^a-z0-9]+/g, '');
+}
+
+function slideKeyFromBg(bg: string): string {
+    const filename = bg.split('/').pop() || bg;
+    return normalizeSlideKey(filename);
+}
+
+// Several slider banners advertise a specific product but carry no click-through
+// link in the SmartSlider backend, so the API returns "/shop" for them. Map each
+// banner image to the product/search it depicts, keyed by the normalized banner
+// filename (see slideKeyFromBg), so clicking the slide lands on the right page.
+// Note: Rayhaan Aquatica and Soprano Ice have no standalone product (bundles only),
+// so they point at a search that surfaces them rather than a dead product URL.
+const SLIDE_LINK_BY_BANNER: Record<string, string> = {
+    jerseybanner151: '/product/nitro-white-intensely-by-dumont-extrait-de-parfum-3-4-oz/',
+    jerseybanner13:  '/product/azure-royal-by-ahmed-al-maghribi-edp-3-4-oz/',
+    jerseybanner17:  '/product/khamrah-waha-by-lattafa-edp-3-4-oz/',
+    jerseybanner16:  '/shop?search=rayhaan+aquatica',
+    jerseybanner141: '/shop?search=soprano+ice',
+};
+
+async function fetchSmartSliderMarkupHrefs(sliderId: number): Promise<Record<string, string>> {
+    try {
+        const res = await fetchWithRetry(`${SITE_DOMAIN}/?_slider_link_check=${Date.now()}`, {
+            cache: 'no-store',
+            headers: COMMON_HEADERS,
+        }, 1, 500, 'SmartSlider markup');
+
+        if (!res.ok) return {};
+        const html = await res.text();
+        const sliderStart = html.indexOf(`id="n2-ss-${sliderId}"`);
+        if (sliderStart === -1) return {};
+
+        const sliderEnd = html.indexOf('<ss3-loader', sliderStart);
+        const sliderHtml = html.slice(sliderStart, sliderEnd === -1 ? undefined : sliderEnd);
+        const blocks = sliderHtml.match(/<div data-slide-duration[\s\S]*?(?=<div data-slide-duration|<div class="n2-ss-slider-controls|$)/g) || [];
+
+        return blocks.reduce<Record<string, string>>((links, block) => {
+            const title = block.match(/\sdata-title=["']([^"']+)["']/i)?.[1] || '';
+            const href = pickHrefFromSmartSliderBlock(block);
+            if (title && href) links[normalizeSlideKey(decodeAttributeValue(title))] = href;
+            return links;
+        }, {});
+    } catch {
+        return {};
+    }
+}
+
 /**
  * Fetches ONLY the published/active slides from SmartSlider 3 (slider ID 2)
  * via a custom WordPress REST endpoint.
@@ -866,22 +986,21 @@ export interface SlideData {
  * Falls back to hardcoded slides if the endpoint is not yet set up.
  */
 export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<SlideData[]> {
+    // Mirrors the current backend slider (jersey/v1/slides?id=2). Used only when the
+    // live endpoint is unreachable, so it must stay in sync with the backend's slides.
     const fallback: SlideData[] = [
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/05/Memorial-Day-Banner-1.png`,   href: '/shop',                                                              cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/05/Jersey-Banner-12.png`,       href: '/product/pride-new-york-the-city-of-dreams-by-lattafa-edp-3-4-oz/', cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-11.png`,       href: '/product/kaaf-noir-by-ahmed-al-maghribi-extrait-de-parfum-3-4-oz/', cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Jersey-banner-10.png`,       href: '/product/nitro-gold-by-dumont-extrait-de-parfum-3-4-oz-for-men/', cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/04/Mothers-Day-Banner-3-1.png`, href: '/product-category/womens-fragrances', cta: "SHOP WOMEN'S", accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`,    href: '/product/19-degree-extrait-de-parfum-3-4-oz-for-men-by-tumi/', cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/03/Easter-banner.png`,          href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-9-1.png`,      href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
-        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/02/Jersey-Banner-8-2-1.png`,    href: '/shop',                               cta: 'SHOP NOW',     accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/06/4th-July-Banner-1.png`,  href: '/shop',                                                             cta: 'SHOP NOW', accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-Banner-15-1.png`, href: '/product/nitro-white-intensely-by-dumont-extrait-de-parfum-3-4-oz/', cta: 'SHOP NOW', accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-banner-17.png`,   href: '/product/khamrah-waha-by-lattafa-edp-3-4-oz/',                       cta: 'SHOP NOW', accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-Banner-13.png`,   href: '/product/azure-royal-by-ahmed-al-maghribi-edp-3-4-oz/',              cta: 'SHOP NOW', accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-Banner-16.png`,   href: '/shop?search=rayhaan+aquatica',                                     cta: 'SHOP NOW', accent: '#d4a853' },
+        { bg: `${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-Banner-14-1.png`, href: '/shop?search=soprano+ice',                                          cta: 'SHOP NOW', accent: '#d4a853' },
     ];
 
     try {
         const res = await fetchWithRetry(
-            `${API_BASE_URL}/jersey/v1/slides?id=${sliderId}`,
-            { next: { revalidate: 60 } },
+            `${API_BASE_URL}/jersey/v1/slides?id=${sliderId}&_=${Date.now()}`,
+            { cache: 'no-store' },
             2, 800, 'Slides'
         );
 
@@ -890,13 +1009,13 @@ export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<Slid
         const slides: any[] = await res.json();
         if (!Array.isArray(slides) || slides.length === 0) return fallback;
 
-        return slides.map((s: any): SlideData => {
+        const apiSlides = slides.map((s: any): SlideData => {
             const bg = (s.bg || '').replace('$upload$', 'wp-content/uploads');
             const fallbackSlide = fallback.find(f => bg.includes(f.bg.split('/').pop() || '!!!'));
-            const rawHref = (s.href || '')
-                .replace(/https?:\/\/(?:backend\.)?jerseyperfume\.com\/index\.php/g, '')
-                .replace(/https?:\/\/(?:backend\.)?jerseyperfume\.com/g, '');
-            const href = rawHref && rawHref !== '/shop' ? rawHref : (fallbackSlide?.href || '/shop');
+            const override = SLIDE_LINK_BY_BANNER[slideKeyFromBg(bg)];
+            let href = normalizeSlideHref(s.href ?? s.url ?? s.link ?? fallbackSlide?.href);
+            // Backend has no link for some banners (returns "/shop"); fill from the map.
+            if (override && (href === '/shop' || !href)) href = override;
             return {
                 bg,
                 href,
@@ -904,6 +1023,19 @@ export async function fetchSmartSliderSlides(sliderId: number = 2): Promise<Slid
                 accent: '#d4a853',
             };
         }).filter(s => s.bg);
+
+        const hasMissingLinks = apiSlides.some((slide) => slide.href === '/shop');
+        if (!hasMissingLinks) return apiSlides;
+
+        const markupHrefsByTitle = await fetchSmartSliderMarkupHrefs(sliderId);
+        if (Object.keys(markupHrefsByTitle).length === 0) return apiSlides;
+
+        return apiSlides.map((slide, index) => ({
+            ...slide,
+            href: slide.href === '/shop' && markupHrefsByTitle[slideKeyFromBg(slide.bg)]
+                ? markupHrefsByTitle[slideKeyFromBg(slide.bg)]
+                : slide.href,
+        }));
     } catch {
         return fallback;
     }

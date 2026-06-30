@@ -22,32 +22,15 @@ interface Props {
     slides: SlideData[];
 }
 
-// Fallback slides — mirrors fetchSmartSliderSlides, used only if that function throws
+// Fallback slides — mirrors the current backend slider (jersey/v1/slides?id=2),
+// used only if fetchSmartSliderSlides returns nothing.
 const FALLBACK_SLIDES: SlideData[] = [
-    {
-        title: "LUXURY\nFRAGRANCES",
-        subtitle: "UP TO 80% OFF RETAIL PRICES",
-        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-1-1.jpg`,
-        href: "/shop",
-        cta: "SHOP COLLECTION",
-        accent: '#d4a853'
-    },
-    {
-        title: "EXCLUSIVE\nDEALS",
-        subtitle: "AUTHENTIC SCENTS FOR EVERY OCCASION",
-        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-2-1.jpg`,
-        href: "/shop",
-        cta: "DISCOVER MORE",
-        accent: '#d4a853'
-    },
-    {
-        title: "NEW\nARRIVALS",
-        subtitle: "EXPLORE THE LATEST FROM TOP BRANDS",
-        bg: `https://backend.jerseyperfume.com/wp-content/uploads/2025/02/Banner-3-1.jpg`,
-        href: "/shop",
-        cta: "SHOP NOW",
-        accent: '#d4a853'
-    }
+    { bg: `https://backend.jerseyperfume.com/wp-content/uploads/2026/06/4th-July-Banner-1.png`,  href: "/shop",                                                          cta: "SHOP NOW", accent: '#d4a853' },
+    { bg: `https://backend.jerseyperfume.com/wp-content/uploads/2026/06/Jersey-Banner-15-1.png`, href: "/product/nitro-white-intensely-by-dumont-extrait-de-parfum-3-4-oz/", cta: "SHOP NOW", accent: '#d4a853' },
+    { bg: `https://backend.jerseyperfume.com/wp-content/uploads/2026/06/Jersey-banner-17.png`,   href: "/product/khamrah-waha-by-lattafa-edp-3-4-oz/",                    cta: "SHOP NOW", accent: '#d4a853' },
+    { bg: `https://backend.jerseyperfume.com/wp-content/uploads/2026/06/Jersey-Banner-13.png`,   href: "/product/azure-royal-by-ahmed-al-maghribi-edp-3-4-oz/",           cta: "SHOP NOW", accent: '#d4a853' },
+    { bg: `https://backend.jerseyperfume.com/wp-content/uploads/2026/06/Jersey-Banner-16.png`,   href: "/shop?search=rayhaan+aquatica",                                  cta: "SHOP NOW", accent: '#d4a853' },
+    { bg: `https://backend.jerseyperfume.com/wp-content/uploads/2026/06/Jersey-Banner-14-1.png`, href: "/shop?search=soprano+ice",                                       cta: "SHOP NOW", accent: '#d4a853' },
 ];
 
 
@@ -289,13 +272,13 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             {/* PROMO BANNERS GRID */}
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
-                    <Link href="/shop?search=lattafa" className={styles.editorialLeft}>
-                        <Image src="/images/lattafa.jpeg" alt="Angham Second Song by Lattafa" fill style={{ objectFit: "cover" }} />
+                    <Link href="/product/nitro-white-intensely-by-dumont-extrait-de-parfum-3-4-oz/" className={styles.editorialLeft}>
+                        <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-Banner-15-1.png`} alt="Nitro White Intensely by Dumont" fill style={{ objectFit: "cover" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
                             <span className={styles.editorialTag}>Trending Now</span>
-                            <h2 className={styles.editorialHeading}>ANGHAM SECOND SONG</h2>
-                            <p className={styles.editorialSub}>by Lattafa</p>
+                            <h2 className={styles.editorialHeading}>NITRO WHITE INTENSELY</h2>
+                            <p className={styles.editorialSub}>by Dumont</p>
                             <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                         </div>
                     </Link>

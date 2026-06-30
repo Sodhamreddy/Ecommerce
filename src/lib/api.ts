@@ -511,6 +511,44 @@ export async function fetchAllProducts(): Promise<Product[]> {
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
     try {
         const normalizedSlug = decodeURIComponent(String(slug || '')).trim();
+        if (!normalizedSlug) return null;
+
+        const storeUrl = /^\d+$/.test(normalizedSlug)
+            ? getApiUrl(`wc/store/v1/products/${normalizedSlug}`)
+            : getApiUrl('wc/store/v1/products', { slug: normalizedSlug });
+        const storeResponse = await fetchWithRetry(storeUrl, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            },
+            next: { revalidate: 300 },
+        });
+        if (storeResponse.ok) {
+            const data = await storeResponse.json();
+            const product = Array.isArray(data) ? data[0] : data;
+            if (product) return decodeProduct(product);
+        }
+
+        if (!/^\d+$/.test(normalizedSlug)) {
+            const searchResponse = await fetchWithRetry(getApiUrl('wc/store/v1/products', {
+                search: normalizedSlug.replace(/-/g, ' '),
+                per_page: 10,
+            }), {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                },
+                next: { revalidate: 300 },
+            });
+            if (searchResponse.ok) {
+                const data = await searchResponse.json();
+                const product = Array.isArray(data)
+                    ? data.find((item) => item?.slug === normalizedSlug) ?? data[0]
+                    : data;
+                if (product) return decodeProduct(product);
+            }
+        }
+
         const v3Result = await fetchProductsViaV3(
             /^\d+$/.test(normalizedSlug)
                 ? { include: normalizedSlug, per_page: 1 }
@@ -518,20 +556,7 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
         );
         if (v3Result?.products?.[0]) return v3Result.products[0];
 
-        const url = /^\d+$/.test(normalizedSlug)
-            ? getApiUrl(`wc/store/v1/products/${normalizedSlug}`)
-            : getApiUrl('wc/store/v1/products', { slug: normalizedSlug });
-        const response = await fetchWithRetry(url, { 
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            },
-            next: { revalidate: 3600 } 
-        });
-        if (!response.ok) return null;
-        const data = await response.json();
-        const product = Array.isArray(data) ? data[0] : data;
-        return product ? decodeProduct(product) : null;
+        return null;
     } catch (error) {
         console.warn(`Error fetching product ${slug}:`, error);
         return null;
