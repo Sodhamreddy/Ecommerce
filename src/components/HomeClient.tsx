@@ -273,7 +273,7 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
             <section className={styles.section} style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
                 <div className={styles.editorialSection}>
                     <Link href="/product/nitro-white-intensely-by-dumont-extrait-de-parfum-3-4-oz/" className={styles.editorialLeft}>
-                        <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/06/Jersey-Banner-15-1.png`} alt="Nitro White Intensely by Dumont" fill style={{ objectFit: "cover" }} />
+                        <Image src="/images/editorial-nitro-white-intensely.png" alt="Nitro White Intensely by Dumont" fill sizes="(max-width:900px) 100vw, 60vw" style={{ objectFit: "cover", objectPosition: "center" }} />
                         <div className={styles.editorialOverlay} />
                         <div className={styles.editorialContent}>
                             <span className={styles.editorialTag}>Trending Now</span>
@@ -284,24 +284,24 @@ export default function HomeClient({ bestSellers, newArrivals, gourmandProducts,
                     </Link>
 
                     <div className={styles.editorialRight}>
-                        <Link href="/shop/?search=ahmed+al+maghribi" className={styles.editorialSmall}>
-                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Jersey-Banner-23-01.png`} alt="Ahmed Al Maghribi" fill style={{ objectFit: "cover" }} />
+                        <Link href="/product/freeze-by-riiffs-extrait-de-parfum-3-4-oz/" className={styles.editorialSmall}>
+                            <Image src="/images/editorial-freeze-riiffs.png" alt="Freeze by Riiffs" fill sizes="(max-width:900px) 50vw, 40vw" style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
-                                <span className={styles.editorialTag}>Featured Brand</span>
-                                <h3 className={styles.editorialHeadingSm}>THE LUXURY COLLECTION</h3>
-                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>Ahmed Al Maghribi</p>
-                                <span className={styles.editorialCta}>Explore Collection <ChevronRight size={14} /></span>
+                                <span className={styles.editorialTag}>New Arrival</span>
+                                <h3 className={styles.editorialHeadingSm}>FREEZE</h3>
+                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>by Riiffs</p>
+                                <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                             </div>
                         </Link>
 
-                        <Link href="/shop/?search=tumi" className={styles.editorialSmall}>
-                            <Image src={`${SITE_DOMAIN}/wp-content/uploads/2026/01/Tumi-Product-Banner.png`} alt="TUMI" fill style={{ objectFit: "cover" }} />
+                        <Link href="/product/wolf-by-rayhaan-edp-3-4-oz-for-men/" className={styles.editorialSmall}>
+                            <Image src="/images/editorial-wolf-rayhaan.png" alt="Wolf by Rayhaan" fill sizes="(max-width:900px) 50vw, 40vw" style={{ objectFit: "cover" }} />
                             <div className={styles.editorialOverlay} />
                             <div className={styles.editorialContent}>
-                                <span className={styles.editorialTag}>Exclusive</span>
-                                <h3 className={styles.editorialHeadingSm}>TUMI SIGNATURE</h3>
-                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>Luxury Travel Scents</p>
+                                <span className={styles.editorialTag}>For Men</span>
+                                <h3 className={styles.editorialHeadingSm}>WOLF</h3>
+                                <p className={styles.editorialSub} style={{ fontStyle: 'normal', fontSize: '0.7rem' }}>by Rayhaan</p>
                                 <span className={styles.editorialCta}>Shop Now <ChevronRight size={14} /></span>
                             </div>
                         </Link>

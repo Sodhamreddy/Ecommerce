@@ -295,9 +295,12 @@ async function createCheckoutCustomer(formData: CheckoutFormData, password: stri
 export async function POST(request: Request) {
     try {
         const body = (await request.json()) as CompleteOrderBody;
+        // Generous limit: the client retries completion up to 3x per checkout, and
+        // several shoppers can share one IP (mobile CGNAT / office). Blocking here
+        // before capture is fine, but blocking a legit customer must be rare.
         const protectionError = validateCheckoutProtection(request, body, {
-            maxAttempts: 6,
-            windowMs: 10 * 60 * 1000,
+            maxAttempts: 25,
+            windowMs: 15 * 60 * 1000,
         });
         if (protectionError) return protectionError;
 
@@ -325,12 +328,13 @@ export async function POST(request: Request) {
             : await verifyExistingPayPalOrder(paypalOrderId);
 
         const normalizedTotals = await normalizeCheckoutTotals(checkoutTotals);
-        if (checkoutTotals?.total != null) {
-            const paidTotal = Number(verifiedPayment.amount);
-            if (!Number.isFinite(normalizedTotals.total) || Math.abs(normalizedTotals.total - paidTotal) > 0.01) {
-                throw new Error('PayPal payment amount does not match checkout total.');
-            }
-        }
+        const paidTotal = Number(verifiedPayment.amount);
+        // The payment is already captured here. A totals mismatch must NOT abandon the
+        // order — that is exactly how a customer ends up charged with no order and no
+        // confirmation email. The captured amount was already validated at create-order
+        // time, so flag any drift for review and continue creating the order.
+        const totalsMismatch = checkoutTotals?.total != null
+            && (!Number.isFinite(normalizedTotals.total) || Math.abs(normalizedTotals.total - paidTotal) > 0.01);
 
         const transactionId = verifiedPayment.transactionId;
 
@@ -354,10 +358,9 @@ export async function POST(request: Request) {
             quantity: item.quantity,
         }));
         const lineItems = paypalLineItems.length > cartLineItems.length ? paypalLineItems : cartLineItems;
-
-        if (lineItems.length === 0) {
-            throw new Error('No valid order items were found. Please contact info@jerseyperfume.com with your PayPal transaction ID.');
-        }
+        // Payment already captured: if we can't resolve items, still record the order
+        // (held for review) rather than throwing away a paid transaction.
+        const missingLineItems = lineItems.length === 0;
 
         const metaData: Array<{ key: string; value: string }> = [
             { key: 'paypal_order_id', value: paypalOrderId },
@@ -369,6 +372,13 @@ export async function POST(request: Request) {
             { key: '_verified_paypal_currency', value: verifiedPayment.currency },
             { key: '_headless_line_item_count', value: String(lineItems.length) },
         ];
+
+        if (totalsMismatch) {
+            metaData.push({ key: '_headless_totals_mismatch', value: `expected=${normalizedTotals.total} paid=${paidTotal}` });
+        }
+        if (missingLineItems) {
+            metaData.push({ key: '_headless_missing_line_items', value: 'yes' });
+        }
 
         let customerId: number | null = null;
         if (createAccount && accountPassword) {
@@ -387,7 +397,9 @@ export async function POST(request: Request) {
             payment_method: 'ppcp-gateway',
             payment_method_title: transactionId ? `PayPal (${transactionId})` : 'PayPal',
             set_paid: true,
-            status: 'processing',
+            // Orders missing resolved items are held for manual review but still created
+            // and still email the customer — never silently dropped after a capture.
+            status: missingLineItems ? 'on-hold' : 'processing',
             created_via: 'headless-checkout',
             transaction_id: transactionId,
             billing: {
@@ -454,10 +466,26 @@ export async function POST(request: Request) {
                 (customerId ? '[Account created]' : '[Account requested but could not be created]');
         }
 
+        // No resolvable items: carry the captured amount as a fee so the order total
+        // still reflects the money received, and note it for manual reconciliation.
+        if (missingLineItems) {
+            orderData.fee_lines = [{
+                name: 'PayPal payment (items pending review)',
+                tax_status: 'none',
+                total: toMoney(paidTotal),
+            }];
+            orderData.customer_note = (orderData.customer_note ? orderData.customer_note + '\n' : '') +
+                `[Items could not be auto-resolved — verify against PayPal ${transactionId}]`;
+        }
+
         let order;
         try {
             order = await wcRequest('orders', 'POST', orderData);
         } catch (err) {
+            // The payment is captured. Do everything possible to still record an order so
+            // the customer gets a confirmation email and staff can see the sale.
+
+            // 1) A prior attempt (or a timed-out request) may already have created it.
             const recoveredOrder = await findExistingWooOrder(paypalOrderId, transactionId, formData.email);
             if (recoveredOrder?.id && recoveredOrder?.order_key) {
                 return NextResponse.json({
@@ -467,7 +495,50 @@ export async function POST(request: Request) {
                     recovered: true,
                 });
             }
-            throw err;
+
+            // 2) Retry without the fields that most often trip WC validation (coupons,
+            //    tax, shipping, fees, customer link). Held for review, but recorded.
+            console.error('[PayPal Complete Order] Order create failed, retrying simplified:', err);
+            const simplified: WooCommerceOrderPayload = {
+                payment_method: orderData.payment_method,
+                payment_method_title: orderData.payment_method_title,
+                set_paid: true,
+                status: 'on-hold',
+                created_via: 'headless-checkout',
+                transaction_id: transactionId,
+                billing: orderData.billing,
+                shipping: orderData.shipping,
+                line_items: lineItems,
+                customer_note: (orderData.customer_note ? orderData.customer_note + '\n' : '') +
+                    '[Auto-recovered order — original creation failed, please verify totals]',
+                meta_data: [...metaData, { key: '_headless_recovered_order', value: 'simplified' }],
+            };
+            try {
+                order = await wcRequest('orders', 'POST', simplified);
+            } catch (err2) {
+                // 3) Last resort: a minimal order carrying just the captured amount as a
+                //    fee, so a paid transaction is NEVER invisible to the store.
+                console.error('[PayPal Complete Order] Simplified create failed, minimal fallback:', err2);
+                const minimal: WooCommerceOrderPayload = {
+                    payment_method: orderData.payment_method,
+                    payment_method_title: orderData.payment_method_title,
+                    set_paid: true,
+                    status: 'on-hold',
+                    created_via: 'headless-checkout',
+                    transaction_id: transactionId,
+                    billing: orderData.billing,
+                    shipping: orderData.shipping,
+                    line_items: [],
+                    fee_lines: [{
+                        name: 'PayPal payment (order needs review)',
+                        tax_status: 'none',
+                        total: toMoney(paidTotal),
+                    }],
+                    customer_note: `[Auto-recovered minimal order — verify items & totals against PayPal ${transactionId}]`,
+                    meta_data: [...metaData, { key: '_headless_recovered_order', value: 'minimal' }],
+                };
+                order = await wcRequest('orders', 'POST', minimal);
+            }
         }
 
         return NextResponse.json({ success: true, orderId: order.id, orderKey: order.order_key });
