@@ -97,9 +97,11 @@ async function getAccessToken(): Promise<string> {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        // PayPal re-creates an order on every button interaction, so this fires often
+        // for a single shopper. Keep it high enough that normal use never trips it.
         const protectionError = validateCheckoutProtection(request, body, {
-            maxAttempts: 12,
-            windowMs: 10 * 60 * 1000,
+            maxAttempts: 40,
+            windowMs: 15 * 60 * 1000,
         });
         if (protectionError) return protectionError;
 

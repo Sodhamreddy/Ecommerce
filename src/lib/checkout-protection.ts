@@ -12,8 +12,11 @@ type ProtectionOptions = {
 };
 
 const attempts = new Map<string, number[]>();
-const DEFAULT_MIN_AGE_MS = 2500;
-const MAX_FORM_AGE_MS = 6 * 60 * 60 * 1000;
+// Low enough that a fast returning customer (autofilled form) is never blocked,
+// but still filters instant bot submissions.
+const DEFAULT_MIN_AGE_MS = 1000;
+// Shoppers often leave the checkout tab open for hours before paying.
+const MAX_FORM_AGE_MS = 24 * 60 * 60 * 1000;
 
 function getClientIp(request: Request) {
     const forwardedFor = request.headers.get('x-forwarded-for');
